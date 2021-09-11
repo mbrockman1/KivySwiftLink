@@ -135,30 +135,6 @@ func pointer2array<T>(data: UnsafePointer<T>,count: Int) -> [T] {
     return Array<T>(buffer)
 }
 ```
-
-Now the only thing left on the swift side is too add this piece of code, at the bottom of the PythonMain.swift file.
-
-```swift
-var pythonMain: PythonMain?
-
-@_cdecl("SDL_main")
-func main(_ argc: Int32, _ argv: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>) -> Int {
-    pythonMain = PythonMain.shared
-    run_main(argc, argv)
-    //run_python(argc: Int(argc), argv: argv)
-    
-    return 1
-}
-```
-
-This will replace the main.m function that normaly is triggered by SDL when app is launching. 
-why we needed to add that runMain.h and .m (copy of the main.m) so we can execute it as a normal function.
-
-the swift version of main will first init the "PythonMain" by using the shared and assign it to a global pythonMain var.
-this will be the global default class that will handle all future swift classes that needs to be wrapped. 
-
-![run main class](https://user-images.githubusercontent.com/2526171/112968795-ed514380-914c-11eb-8291-0e2afe5e7971.png)
-
 # Python File
 
 ### main.py
