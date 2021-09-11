@@ -230,8 +230,8 @@ cd <path of kivy-ios root project folder>
 
 | Python | Objective-C | Swift                       |
 | ------ | ----------- | --------------------------- |
-| bytes  | const char* | UnsafeMutablePointer\<Int8> |
-| str    | const char* | UnsafeMutablePointer\<Int8> |
+| bytes  | const char* | UnsafePointer\<Int8> |
+| str    | const char* | UnsafePointer\<Int8> |
 | int    | int         | Int32                       |
 | long   | long        | Int                         |
 | float  | float       | Float                       |
@@ -241,11 +241,11 @@ cd <path of kivy-ios root project folder>
 
 | Python       | Objective-C          | Swift                         |
 | ------------ | -------------------- | ----------------------------- |
-| List[int]    | const int*           | UnsafeMutablePointer\<Int32\> |
-| List[long]   | const long*          | UnsafeMutablePointer\<Int>    |
-| List[uint]   | const unsigned int*  | UnsafeMutablePointer\<UInt32> |
-| List[ulong]  | const unsigned long* | UnsafeMutablePointer\<UInt>   |
-| List[float]  | const float*         | UnsafeMutablePointer\<Float>  |
-| List[double] | const double*        | UnsafeMutablePointer\<Double> |
+| List[int]    | const int*           | UnsafePointer\<Int32\> |
+| List[long]   | const long*          | UnsafePointer\<Int>    |
+| List[uint]   | const unsigned int*  | UnsafePointer\<UInt32> |
+| List[ulong]  | const unsigned long* | UnsafePointer\<UInt>   |
+| List[float]  | const float*         | UnsafePointer\<Float>  |
+| List[double] | const double*        | UnsafePointer\<Double> |
 
 # [Implementing a wrapper into a kivy app class](https://github.com/psychowasp/PythonSwiftLink/tree/main/examples/1%20Implementing%20a%20wrapper%20into%20a%20kivy%20app%20class)
