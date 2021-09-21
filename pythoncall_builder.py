@@ -17,188 +17,33 @@ from os.path import join
 import shutil
 import random
 import string
-
+import platform 
 from typing import List
 
 from PythonSwiftLink.def_types import types2dict
 
+from PythonSwiftLink.create_recipe import create_recipe
 
+OSX_VERSION = ".".join(platform.mac_ver()[0].split(".")[:-1])
+PY_VERSION = ".".join(platform.python_version_tuple()[:-1])
 
 print(os.path.basename(sys.argv[0]))
 print(os.path.dirname(sys.argv[0]))
+
 root_path = os.path.dirname(sys.argv[0])
 
-#cstruct_list: list
-
-#calltitle = None 
-
-
-# ctypedef_types_dict = {
-#     "str": "const char*",
-#     "int": "int",
-#     "float": "float",
-#     "long": "long",
-#     "object": "const void*",
-#     "json": "const char*",
-#     "jsondata": "const unsigned char*",
-#     "bytes": "const char*",
-#     "short": "short",
-
-#     "data": "const unsigned char*",
-
-#     "uint8": "unsigned char",
-
-#     "bool": "bool_t",
-
-#     "PythonCallback": "PythonCallback"
-# }
+#### Dict as Enums for switch case  ####
 ctypedef_types_dict = types2dict("cython")
-print("\n\n\n\tctypedef_types_dict:\n")
-pprint(ctypedef_types_dict)
 ctypedef_list_dict = types2dict("cython", True)
-print("\n\n\n\tctypedef_list_dict:\n")
-pprint(ctypedef_list_dict)
-# ctypedef_list_dict = {
-#     "int": "const int*",
-#     "long": "const long*",
-#     "uint8": "const unsigned char*",
-#     "float": "const float*",
-#     "double": "const double*",
-#     "str": "const char* const*",
-#     "short": "const short*"
-    
-# }
 typedef_types_dict = types2dict("objc")
-print("\n\n\n\ttypedef_types_dict:\n")
-pprint(typedef_types_dict)
-# typedef_types_dict = {
-
-#     "str": "const char* _Nonnull",
-#     "int": "int",
-#     "float": "float",
-#     "long": "long",
-#     "object": "const void* _Nonnull",
-#     "json": "const char* _Nonnull",
-#     "jsondata": "const unsigned char* _Nonnull",
-#     "bytes": "const char*  _Nonnull",
-#     "data": "const unsigned char* _Nonnull",
-#     "short": "short",
-#     "bool": "BOOL",
-
-#     "uint8": "unsigned char",
-
-#     "PythonCallback": "PythonCallback"
-# }
-
 typedef_list_dict = types2dict("objc", True, True)
-print("\n\n\n\ttypedef_list_dict:\n")
-pprint(typedef_list_dict)
-
-# typedef_list_dict = {
-#     "int": "const int* _Nonnull",
-#     "long": "const long* _Nonnull",
-#     "uint8": "const unsigned char* _Nonnull",
-#     "float": "const float* _Nonnull",
-#     "double": "const double* _Nonnull",
-#     "str": "const char* _Nonnull const* _Nonnull",
-#     "short": "const short*  _Nonnull"
-# }
 python_types_dict = types2dict("python")
-print("\n\n\n\tpython_types_dict:\n")
-pprint(python_types_dict)
-# python_types_dict = {
-
-#     "str": "str",
-#     "int": "int",
-#     "float": "float",
-#     "long": "int",
-#     "uint8": "int",
-#     "uint16": "int",
-#     "object": "object",
-#     "json" : "object",
-#     "jsondata": "object",
-#     "bytes": "bytes",
-#     "data": "bytes",
-#     "short": "int",
-
-#     "PythonCallback": "PythonCallback"
-# }
-
 send_args_dict = types2dict("send_arg")
-print("\n\n\n\tsend_args_dict:\n")
-pprint(send_args_dict)
-# send_args_dict = {
-#     "str": "{arg}.encode('utf-8')",
-#     "int": "{arg}",
-#     "float": "{arg}",
-#     "long": "{arg}",
-#     "object": "<const void*>{arg}",
-#     "json": "json.dumps({arg}).encode('utf-8')",
-#     "jsondata": "json.dumps({arg}).encode('utf-8')",
-#     "bytes": "{arg}",
-
-#     "PythonCallback": "{arg}",
-#     "": "{arg}"
-# }
 call_args_dict = types2dict("call_arg")
-print("\n\n\n\tcall_args_dict:\n")
-pprint(call_args_dict)
-# call_args_dict = {
-#     "str": "{arg}.decode('utf8')",
-#     "int": "{arg}",
-#     "float": "{arg}",
-#     "long": "{arg}",
-#     "object": "<object>{arg}",
-#     "json": "json.loads({arg})",
-#     "jsondata": "json.loads({arg}[:{arg}_size])",
-#     "bytes": "{arg}",
-#     "data": "<bytes>{arg}[0:{arg}_size]",
-
-#     "PythonCallback": "PythonCallback"
-# }
-
 call_list_dict = types2dict("list_call_arg")
-print("\n\n\n\tcall_list_dict:\n")
-pprint(call_list_dict)
-
-# call_list_dict = {
-#     "int": "[{arg}[x] for x in range({arg}_size)]",
-#     "long": "[{arg}[x] for x in range({arg}_size)]",
-#     "uint8": "{arg}[:{arg}_size]",
-#     "bytes": "{arg}",
-#     "data": "{arg}[:{arg}_size]",
-#     "float": "[{arg}[x] for x in range({arg}_size)]",
-#     "double": "[{arg}[x] for x in range({arg}_size)]",
-#     "str": "[{arg}[x].decode('utf8') for x in range({arg}_size)]",
-#     "PythonCallback": "PythonCallback"
-# }
-
 arg_size_dict = types2dict("size")
-print("\n\n\n\targ_size_dict:\n")
-pprint(arg_size_dict)
-# arg_size_dict = {
-#         "str": 1,
-#         "data": 1,
-#         "uint8": 1,
-#         "int": 4,
-#         "float": 4,
-#         "long": 8,
-#         "double": 8,
-#         "short": 2,
-#     }
 ptr_type_dict = types2dict("cython")
-print("\n\n\n\tptr_type_dict:\n")
-pprint(ptr_type_dict)
-# ptr_type_dict = {
-#         "str": "const char*",
-#         "int": "long",
-#         "float": "float",
-#         "long": "long",
-#         "double": "double",
-#         "uint8": "unsigned char",
-#         "short": "short",
-        
-#     }
+
 
 
 func_pointer_string = """\
@@ -222,6 +67,7 @@ typedef {returns} (*{title})({args});
 
 cython_class = """\
 cdef public void* {_class}_voidptr
+cdef public {_class} {_class}_shared
 cdef class {_class}:
 
 \t@staticmethod
@@ -266,11 +112,11 @@ cdef class {_class}(EventDispatcher):
 
 ext_cyfunc = "\t{returns} {title}({args})"
 
-class_cyfunc_send = """\
+CLASS_CYFUNC_SEND = """\
 \tdef {title}(self,{args}):
 \t\tpass
 """
-class_cyfunc_send_rtn = """\
+CLASS_CYFUNC_SEND_RTN = """\
 \tdef {title}(self,{args}) -> {rtn_arg}:
 {body}
 \t\t{call}
@@ -639,8 +485,6 @@ class WrapClass:
     def new_from_parsed_code(string:str) -> list:
         module = ast.parse(string.replace("List[","["))
         wrap_list = []
-        #wrap_class.parse_code(module)
-
 
         for class_body in module.body:
             
@@ -666,22 +510,11 @@ class WrapClass:
         new_func_ptrs: List[Function] = self.new_func_ptrs
         send_functions = self.send_functions
         kivy_properties = self.kivy_properties
-        #global calltitle
-        #self.calltitle = ""
-        # for class_body in module.body:
-        #     if isinstance(class_body,ast.Assign):
-        #         pass
-            
-        #if isinstance(class_body,ast.ClassDef):
 
         self.calltitle = class_body.name
         
-        #self.gen_send_start_function(send_functions)
         _cdec = self.handle_class_decorators(class_body)
-        # if _cdec:
-        #     new_func_ptrs.extend(func_pointers)
-        #if not _cdec:
-        
+    
         self.gen_send_start_function(send_functions)
         
         _cdec = None #Quick fix for deco bug
@@ -790,29 +623,7 @@ class WrapClass:
         for func in pointer_test:
             self.add_callback_function(func)
 
-        #     rtns = func.returns
 
-        #     if not rtns:
-        #         rtns = "void"
-
-        #     #_arg: Arg
-        #     compare =  [rtns]
-        #     #compare.append(rtns)
-        #     for _arg in func.args_:
-        #         compare.append(_arg.cy_type)
-            
-        #     compare_string = " ".join(compare)
-        #     func.compare_string = compare_string
-        #     if 'callback' in func.decs:
-        #         #print(compare_string not in ptr_compare, compare_string)
-        #         if compare_string not in ptr_compare:
-        #             print(f"adding {func.name}")
-        #             ptr_compare.append(compare_string)
-        #             ptr_types2.append(func)
-        #         else:
-        #             print(f"{func.name} already in there")
-        #print(ptr_compare[0])
-            
         for func in send_functions:
             real_arg = tuple(zip(func.arg_types,func.args))
             name = func.name
@@ -834,9 +645,6 @@ class WrapClass:
 
 
     def add_callback_function(self,func: Function):
-        # pointer_test = func_pointers
-        # for func in pointer_test:
-
         rtns = func.returns
 
         if not rtns:
@@ -854,18 +662,14 @@ class WrapClass:
         #print(compare_string not in ptr_compare, compare_string)
         if compare_string not in self.pointer_compare_strings:
             self.pointer_compare_strings.append(compare_string)
-            #ptr_types2.append(func)
+
             self.pointer_types.append(func)
-        else:
-            print(f"{func.name} already in there")
-        #self.func_pointers.append(func)
+        # else:
+        #     print(f"{func.name} already in there")
+
 
     def gen_cyfunction_pointers(self, objc=True):
-        #print("gen_cyfunction_pointers",func_list, ptr_types) 
-        #ptr_types = []
-        #calltitle = self.calltitle
-        #func_list = self.func_pointers
-        #ptr_types: List[Function] = self.pointer_types
+
         count = 0
         function_pointers = []
         for func in self.pointer_types:
@@ -1435,14 +1239,14 @@ class PythonCallBuilder():
         ###### body #####
         body_list = []
         func:Function
-        print(f"function {func.name} - args_: {func.args_}")
+        #print(f"function {func.name} - args_: {func.args_}")
         for i, arg in enumerate(func.args_):
             if arg is not "PythonCallback":
                 _arg = self.gen_send_args(arg)
                 if _arg:
                     #type_size = arg_size_dict[_type]
                     body_list.append(_arg)
-                    print("body",_arg)
+                    #print("body",_arg)
                
         p_arg_list = []
         free_list = []
@@ -1460,7 +1264,7 @@ class PythonCallBuilder():
         if func.returns == None:
             rtn_string = class_cyfunc_send_plain.format(title=title,args=", ".join(p_arg_list),call=call, body="\n".join(body_list))
         else:
-            rtn_string = class_cyfunc_send_rtn.format(title=title,args=", ".join(p_arg_list),call=call, body="\n".join(body_list),rtn_arg=python_types_dict[func.returns])
+            rtn_string = CLASS_CYFUNC_SEND_RTN.format(title=title,args=", ".join(p_arg_list),call=call, body="\n".join(body_list),rtn_arg=python_types_dict[func.returns])
         for free in free_list:
             rtn_string += "\n\t\t" + free
         
@@ -1577,11 +1381,11 @@ class PythonCallBuilder():
                     #for arg in func.args_:
                     
                     types_str = ", ".join([" ".join((arg.cy_type,arg.cy_name)) for arg in func.args_])
-                    #sfunctions.append( ext_cyfunc.format(title=func.name, args=types_str ,returns=_rtns) )
                     if i != 0:
-                        sfunctions.append( ext_cyfunc.format(title=utitle, args=types_str ,returns=_rtns) )
+                        sfunctions.append( f"\t{_rtns} {utitle}({types_str})" )
                     else:
-                        sfunctions.append( ext_cyfunc.format(title=func.name, args=types_str ,returns=_rtns) )
+                        sfunctions.append( f"\t{_rtns} {func.name}({types_str})" )
+                        
                 else:
                     #print("send_func",func.name)
                     # for _arg_ in func.args_:
@@ -1765,56 +1569,28 @@ class PythonCallBuilder():
 
         }
         
-        _mfile = {
-            
-            "#MODULE_NAME" : self.module_title,
-
-            #"root_name" : "",
-
-            "#MODULE_FOLDER" : None,
-
-            #"module_name_as_root" : True ,
-
-            #"#PYTHONLINKROOT" : os.path.dirname(__file__)
-            #"#PYTHONLINKROOT" : self.root_path
-            "#PYTHONLINKROOT" : "/"
-
-        }
-
-
-        # try:
-        #with open("./builds/%s/module.ini" % class_name, 'w') as configfile:
-        
         if not os.path.exists(join(self.app_dir,"builds",class_name)):
             os.mkdir(join(self.app_dir,"builds",class_name))
         with open(join(self.app_dir,"builds",class_name,"module.ini"), 'w') as configfile:
             configfile.write(json.dumps([class_name,_tmp],indent=4))
             #configfile.close()
 
-        
-
-        #json.dump(_mfile,join(root_path,"builds",class_name,"module_name.json"))
-        #kivy_recipe_path = join("/Volumes/WorkSSD/kivy-ios-11.04.20_copy/recipes",calltitle)
         builds = join(self.app_dir,"builds",class_name)
-        with open(join(builds,"kivy_recipe.py"),'w') as recipe:
-            new_recipe = kivy_recipe
 
-            new_recipe = new_recipe.replace("#MODULE_NAME","\"%s\"" % _mfile["#MODULE_NAME"])
-            if _mfile["#MODULE_FOLDER"] != None:
-                new_recipe = new_recipe.replace("#MODULE_FOLDER","\"%s\"" % _mfile["#MODULE_FOLDER"])
-            else:
-                new_recipe = new_recipe.replace("#MODULE_FOLDER","None")
-            new_recipe = new_recipe.replace("#PYTHONLINKROOT","\"%s\"" % _mfile["#PYTHONLINKROOT"])
-            #RECIPENAME_
-            new_recipe = new_recipe.replace("#RECIPENAME_",self.module_title)
+        recipe_patches = {
+            "module_title": self.module_title,
+            "MODULE_NAME" : str(self.module_title),
+            "MODULE_FOLDER" : None,
+            #"PYTHONLINKROOT" : "/",
+            "CUSTOM_ROOT": None,
+            "PY_VERSION": PY_VERSION,
+            "OSX_VERSION": OSX_VERSION
+        }
+
+        with open(join(builds,"kivy_recipe.py"),'w') as recipe:
+            new_recipe = create_recipe(self.app_dir, recipe_patches)
             recipe.write(new_recipe)
-        # with open(join(root_path,"builds",class_name,"module_name.json"), 'w') as module_file:
-        #     json.dump(_mfile,module_file)
-        # shutil.copy(join(root_path,"builds",class_name,"module_name.json"),join(kivy_recipe_path))
-        #     for key,value in _tmp.items():
-        #         module_file.write("{0} = \"{1}\"\n".format(key,value))
-        # except:
-        #     pass
+
 
     ##############################################################
     ############# Builder ########################################
@@ -1988,16 +1764,11 @@ class PythonCallBuilder():
         wrap_classes: List[WrapClass] = WrapClass.new_from_parsed_code(test)
         self.wrap_classes = wrap_classes
         wrap_class = wrap_classes[0]
-        #functions = self.parse_code(test)
-        #self.calltitle = calltitle = wrap_class.calltitle
+
         self.module_title = module_title = file_title
         site_manager_path = join(root_path,"venv/lib/python3.8/site-packages")
         self.dispatch_mode = wrap_class.dispatch_mode
-        # py_string = ""
-        # with open(py_file, "r") as f:
-        #     py_string = str( f.read().replace("@callback", "") )
-        #     #py_string.splitlines()
-        # with open(join(site_manager_path,"%s_cy.py" % calltitle), "w") as f:
+
         with open(join(site_manager_path,"%s.py" % module_title.lower()), "w") as f:
             f.write(self.parse_helper(test))
         pyfile.close()
@@ -2006,7 +1777,6 @@ class PythonCallBuilder():
 
         try:
             os.mkdir(BUILD_DIR)
-            #os.mkdir("builds/%s" % calltitle.lower())
         except:
             print("builds exist")
         try:
@@ -2024,85 +1794,6 @@ class PythonCallBuilder():
 
         with open(join(BUILD_DIR,module_title,f"_{module_title}.m"), "w+") as objcm_file:
             objcm_file.write( self.generate_objc_m() )
-        # f.write("\n")
-        # f.write(self.gen_send_functions(send_functions,True,calltitle))
-        # f.write(objc_hscript)
-        # f = open(join(BUILD_DIR,calltitle.lower(),calltitle.lower()+"_cy.pyx"), "w+")
-        # if self.dispatch_mode:
-        #     dispatch_import = "from kivy._event cimport EventDispatcher"
-        # else:
-        #     dispatch_import = ""
-        # if len(self.enum_list) != 0:
-        #     export_enum_list = f"cdef list {calltitle}_events = {self.enum_list[0][1]}"
-        # else:
-        #     export_enum_list = ""
-        # with open(join(BUILD_DIR,calltitle.lower(),calltitle.lower()+".pyx"), "w+") as f:
-        #     cy_list = [
-        #         "#cython: language_level=3",
-        #         dispatch_import,
-        #         "import json",
-        #         "from libc.stdlib cimport malloc, free",
-        #         "from libcpp cimport bool as bool_t",
-        #         f"cdef extern from \"_{calltitle.lower()}.h\":",
-        #         "\t\n".join([self.gen_c_enum(arg[0],arg[1]) for arg in self.enum_list]),
-        #         "\t\n".join([self.gen_c_struct_custom(arg[0],arg[1]) for arg in self.cstruct_list]),
-        #         "",
-        #         "\t######## cdef extern Callback Function Pointers: ########",
-        #         "\t" + "\t".join(c_pointers ),
-        #         "",
-        #         "\t######## cdef extern Callback Struct: ########",
-        #         self.gen_c_struct(func_pointers),
-        #         "",
-        #         #self.gen_structtype_init_funct(calltitle,False) ,
-        #         "\t######## cdef extern Send Functions: ########\n",
-        #         self.gen_send_functions(send_functions,False,None,True),
-        #         "",
-        #         "######## Callbacks Functions: ########\n",
-        #         self.gen_cython_callbacks(func_pointers),
-        #         "######## Cython Class: ########",
-        #         export_enum_list,
-        #         self.gen_cython_class(calltitle,calltitle + "_voidptr",self.fill_cstruct(func_pointers)) ,
-        #         "",
-        #         self.gen_global_events(),
-        #         "######## Send Functions: ########",
-        #         self.gen_send_functions(send_functions,False)
-        #     ]
-
-        # #f.write(fill_cstruct(c_pointers))
-        #     cy_script = "\n".join(cy_list)
-        #     f.write(cy_script + "\n")
-
-        # objc_hlist = []
-        
-        # objc_hlist.append("#import <Foundation/Foundation.h>\n")
-        # objc_hlist.append("\t\n".join([self.gen_c_enum(arg[0],arg[1], True) for arg in self.enum_list]))
-        # objc_hlist.append("\n".join([self.gen_c_struct_custom(arg[0],arg[1],True) for arg in self.cstruct_list]))
-        # objc_hlist.append("\n\n")
-        # objc_hlist.append("//######## cdef extern Callback Function Pointers: ########//\n")
-        # objc_hlist.append("".join(objc_pointers ) )
-        # objc_hlist.append("\n")
-        # objc_hlist.append("//######## cdef extern Callback Struct: ########//\n")
-        # objc_hlist.append(self.gen_objc_struct(func_pointers))
-        # objc_hlist.append("\n\n")
-        # #objc_hlist.append(self.gen_structtype_init_funct(calltitle,True) )
-        # objc_hlist.append("\n")
-        # objc_hlist.append("//######## cdef extern Send Functions: ########//\n")
-        # objc_hlist.append(self.gen_objc_protocol(send_functions,calltitle))
-        # objc_hlist.append("\n")
-        # objc_hlist.append("//######## Send Functions: ########//\n")
-        # objc_hlist.append(self.gen_send_functions(send_functions,True,None,True))
-
-        # objc_hscript = "".join(objc_hlist)
-        # f = open(join(BUILD_DIR,calltitle.lower(),"_%s.h" % calltitle.lower()), "w+")
-        # f.write(objc_hscript)
-        # f.close()
-
-        # f = open(join(BUILD_DIR,calltitle.lower(),"_%s.m" % calltitle.lower()), "w+")
-        # f.write(self.gen_objc_m_header(calltitle.lower()))
-        # f.write("\n")
-        # f.write(self.gen_send_functions(send_functions,True,calltitle))
-
-        # f.close()
 
         self.gen_module_file(module_title.lower())
 

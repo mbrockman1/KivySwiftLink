@@ -912,7 +912,10 @@ class KivySwiftLink(App):
                         text= f"{title}-ios",
                         path= self.project_target
                         )
-        self.project_tv.add_node(t,self.xcode_projects)
+        #if hasattr(self,"project_tv"):
+        p_tv = self.project_tv
+
+        p_tv.add_node(t,self.xcode_projects)
         self.projects.append(t)
 
     def show_projects(self):
