@@ -54,6 +54,7 @@ elif [ "$INPUT_STRING" = "w" ]; then
     cp ./PythonSwiftLink/cli_mode.py ./
     cp ./PythonSwiftLink/wrapper_tool_cli.sh ./
 
+
     chmod +x wrapper_tool_cli.sh
     chmod +x wrapper_tool.sh
     toolchain build kivy
