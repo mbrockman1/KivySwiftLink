@@ -40,11 +40,12 @@ def remove_cache_file(src):
 
 def create_temp_copy_files(app_dir,src,dst,key):
     modules = {}
+    src_folder = join(dst,"src")
     #config = configparser.ConfigParser()
     
 
-    if not os.path.exists(dst):
-        os.makedirs(dst)
+    if not os.path.exists(src_folder):
+        os.makedirs(src_folder)
     for root, dirs, files in os.walk(src):
         #print("create_temp_copy_files",root,dirs,files)
         for file in files:
@@ -53,7 +54,8 @@ def create_temp_copy_files(app_dir,src,dst,key):
                 
                 #print("create_temp_copy_files",root,dirs,files)
                 s = os.path.join(root, file)
-                d = os.path.join(dst, file)
+                d = os.path.join(src_folder, file)
+                parent_dir = dst
                 if file == 'module.ini':
                     with open(s, 'r') as configfile:
                         #print(configfile.read())
@@ -63,6 +65,9 @@ def create_temp_copy_files(app_dir,src,dst,key):
                         _key,_dict = _list
                         modules[_key] = _dict
                         configfile.close()
+                elif file == "kivy_recipe.py":
+                    print("kivy_recipe", d)
+                    shutil.copy(s,join(dst,"__init__.py"))
                 else:
                     shutil.copy(s,d)
 
@@ -73,19 +78,28 @@ def create_temp_copy_files(app_dir,src,dst,key):
     #         shutil.copytree(s, d, False, None)
     
     #print(root_path)
-    shutil.copy(join(app_dir,"build_files/Setup.py"),join(app_dir,"tmp/Setup.py"))
-    shutil.copy(join(app_dir,"build_files/files_list.py"),join(app_dir,"tmp/files_list.py"))
+    shutil.copy(join(app_dir,"build_files/Setup.py"),src_folder)
+    shutil.copy(join(app_dir,"build_files/files_list.py"),src_folder)
     
-
-    # ex_config = configparser.ConfigParser()
-    # ex_config.read_dict(modules)
-    #shutil.copy("./builds/compile_modules.ini","./tmp/compile_modules.txt")
-    # with open(os.path.join("./tmp","compile_modules.ini"), 'w') as configfile:
-    #     ex_config.write(configfile)
-    #     configfile.close()
-    with open(os.path.join(dst,"compile_modules.ini"), 'w') as configfile:
+    with open(os.path.join(src_folder,"compile_modules.ini"), 'w') as configfile:
         configfile.write(json.dumps(modules,indent=4))
         configfile.close()
+
+
+def create_package(root_dir, app_dir, name):
+    clear_temp(app_dir)
+    
+    builds = join(app_dir,"tmp")
+    sources = []
+    exports_path = join(root_path,"wrapper_builds")
+    export_dest = join(exports_path,name)
+    if not os.path.exists(exports_path):
+        os.makedirs(exports_path)
+    if not os.path.exists( export_dest ):
+        os.makedirs(export_dest)
+
+    create_temp_copy_files(app_dir,join(app_dir,"builds"),export_dest,name.lower())
+    
 
 
 def pack_all(root_dir, app_dir, src, dst):
