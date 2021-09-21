@@ -22,3 +22,5 @@ cython_headers/_appleapi.h
 .DS_Store
 .DS_Store
 .DS_Store
+builds/.DS_Store
+.DS_Store
