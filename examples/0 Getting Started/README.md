@@ -135,30 +135,6 @@ func pointer2array<T>(data: UnsafePointer<T>,count: Int) -> [T] {
     return Array<T>(buffer)
 }
 ```
-
-Now the only thing left on the swift side is too add this piece of code, at the bottom of the PythonMain.swift file.
-
-```swift
-var pythonMain: PythonMain?
-
-@_cdecl("SDL_main")
-func main(_ argc: Int32, _ argv: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>) -> Int {
-    pythonMain = PythonMain.shared
-    run_main(argc, argv)
-    //run_python(argc: Int(argc), argv: argv)
-    
-    return 1
-}
-```
-
-This will replace the main.m function that normaly is triggered by SDL when app is launching. 
-why we needed to add that runMain.h and .m (copy of the main.m) so we can execute it as a normal function.
-
-the swift version of main will first init the "PythonMain" by using the shared and assign it to a global pythonMain var.
-this will be the global default class that will handle all future swift classes that needs to be wrapped. 
-
-![run main class](https://user-images.githubusercontent.com/2526171/112968795-ed514380-914c-11eb-8291-0e2afe5e7971.png)
-
 # Python File
 
 ### main.py
@@ -230,8 +206,8 @@ cd <path of kivy-ios root project folder>
 
 | Python | Objective-C | Swift                       |
 | ------ | ----------- | --------------------------- |
-| bytes  | const char* | UnsafeMutablePointer\<Int8> |
-| str    | const char* | UnsafeMutablePointer\<Int8> |
+| bytes  | const char* | UnsafePointer\<Int8> |
+| str    | const char* | UnsafePointer\<Int8> |
 | int    | int         | Int32                       |
 | long   | long        | Int                         |
 | float  | float       | Float                       |
@@ -241,11 +217,11 @@ cd <path of kivy-ios root project folder>
 
 | Python       | Objective-C          | Swift                         |
 | ------------ | -------------------- | ----------------------------- |
-| List[int]    | const int*           | UnsafeMutablePointer\<Int32\> |
-| List[long]   | const long*          | UnsafeMutablePointer\<Int>    |
-| List[uint]   | const unsigned int*  | UnsafeMutablePointer\<UInt32> |
-| List[ulong]  | const unsigned long* | UnsafeMutablePointer\<UInt>   |
-| List[float]  | const float*         | UnsafeMutablePointer\<Float>  |
-| List[double] | const double*        | UnsafeMutablePointer\<Double> |
+| List[int]    | const int*           | UnsafePointer\<Int32\> |
+| List[long]   | const long*          | UnsafePointer\<Int>    |
+| List[uint]   | const unsigned int*  | UnsafePointer\<UInt32> |
+| List[ulong]  | const unsigned long* | UnsafePointer\<UInt>   |
+| List[float]  | const float*         | UnsafePointer\<Float>  |
+| List[double] | const double*        | UnsafePointer\<Double> |
 
 # [Implementing a wrapper into a kivy app class](https://github.com/psychowasp/PythonSwiftLink/tree/main/examples/1%20Implementing%20a%20wrapper%20into%20a%20kivy%20app%20class)
