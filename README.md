@@ -73,17 +73,4 @@ now goto the new build folder **kivyswift**(in this tutorial)
 cd kivyswift
 ```
 
-and run the following:
 
-```sh
-./wrapper_tool.sh
-```
-
-[Next Step - Setting up your project and writing first Python wrapper file](https://github.com/psychowasp/PythonSwiftLink/tree/main/examples/0%20Getting%20Started)
-
-[Using an example]()
-
-
-```
-
-```
