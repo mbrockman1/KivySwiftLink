@@ -58,6 +58,7 @@ elif [ "$INPUT_STRING" = "w" ]; then
     chmod +x wrapper_tool_cli
 
     cp ./PythonSwiftLink/build_files/swift_types.py ./venv/lib/python3.8/site-packages/
+    cp ./PythonSwiftLink/build_files/free_type_fix.py ./venv/lib/python3.8/site-packages/kivy_ios/recipes/freetype/__init__.py
     chmod +x wrapper_tool
     
     toolchain build kivy
