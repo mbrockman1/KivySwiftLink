@@ -231,7 +231,7 @@ when returning to your project run the following:
 
 ```sh
 cd <path of kivy-ios root project folder>
-./wrapper_tool.sh
+./wrapper_tool_cli <commands>
 ```
 
 [Implementing a wrapper into a kivy app class](https://github.com/psychowasp/PythonSwiftLink/tree/main/examples/1%20Implementing%20a%20wrapper%20into%20a%20kivy%20app%20class)
