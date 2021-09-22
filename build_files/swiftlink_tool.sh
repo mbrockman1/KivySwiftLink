@@ -50,15 +50,15 @@ elif [ "$INPUT_STRING" = "w" ]; then
     #        rsync -av --delete --exclude '.git' /Users/macdaw/kivyios_swift/PythonSwiftLink/* ./PythonSwiftLink
     git clone https://github.com/psychowasp/PythonSwiftLink
     cp ./PythonSwiftLink/main.py ./wrapper_tool.py
-    cp ./PythonSwiftLink/wrapper_tool.sh ./wrapper_tool.sh
+    cp ./PythonSwiftLink/wrapper_tool.sh ./wrapper_tool
     
     cp ./PythonSwiftLink/cli_mode.py ./
     
-    cp ./PythonSwiftLink/wrapper_tool_cli.sh ./
-    chmod +x wrapper_tool_cli.sh
+    cp ./PythonSwiftLink/wrapper_tool_cli.sh ./wrapper_tool_cli
+    chmod +x wrapper_tool_cli
 
     cp ./PythonSwiftLink/build_files/swift_types.py ./venv/lib/python3.8/site-packages/
-    chmod +x wrapper_tool.sh
+    chmod +x wrapper_tool
     
     toolchain build kivy
     mkdir wrapper_sources

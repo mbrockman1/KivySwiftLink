@@ -73,6 +73,5 @@ now goto the new build folder **kivyswift**(in this tutorial)
 cd kivyswift
 ```
 
-
-
 ### [Create a new project](https://github.com/psychowasp/KivySwiftLink/tree/main/examples/0%20Getting%20Started ) 
+
