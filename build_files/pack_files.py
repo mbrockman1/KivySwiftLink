@@ -1,5 +1,6 @@
 
 import os
+from posixpath import splitext
 import zipfile
 import sys
 import shutil
@@ -38,7 +39,7 @@ def remove_cache_file(src):
         os.remove(src)
             
 
-def create_temp_copy_files(app_dir,src,dst,key):
+def create_temp_copy_files(app_dir,root_path,src,dst,key):
     modules = {}
     src_folder = join(dst,"src")
     #config = configparser.ConfigParser()
@@ -55,6 +56,7 @@ def create_temp_copy_files(app_dir,src,dst,key):
                 #print("create_temp_copy_files",root,dirs,files)
                 s = os.path.join(root, file)
                 d = os.path.join(src_folder, file)
+                name,ext = splitext(file)
                 parent_dir = dst
                 if file == 'module.ini':
                     with open(s, 'r') as configfile:
@@ -70,6 +72,8 @@ def create_temp_copy_files(app_dir,src,dst,key):
                     shutil.copy(s,join(dst,"__init__.py"))
                 else:
                     shutil.copy(s,d)
+                if ext == ".h":
+                    shutil.copy2(join(root, f"_{key}.h"), join(root_path,"wrapper_headers",f"{key}.h"))
 
     # for item in os.listdir(src):
     #     s = os.path.join(src, item)
@@ -91,14 +95,14 @@ def create_package(root_dir, app_dir, name):
     
     builds = join(app_dir,"tmp")
     sources = []
-    exports_path = join(root_path,"wrapper_builds")
+    exports_path = join(root_dir,"wrapper_builds")
     export_dest = join(exports_path,name)
     if not os.path.exists(exports_path):
         os.makedirs(exports_path)
     if not os.path.exists( export_dest ):
         os.makedirs(export_dest)
 
-    create_temp_copy_files(app_dir,join(app_dir,"builds"),export_dest,name.lower())
+    create_temp_copy_files(app_dir,root_dir ,join(app_dir,"builds"),export_dest,name.lower())
     
 
 

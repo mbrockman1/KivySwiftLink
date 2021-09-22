@@ -246,8 +246,8 @@ c_structinit_string = """\
 \tctypedef {title}Struct {call}
 
 """
-
-protocol_start = "@protocol {title}Delegate <NSObject>"
+protocol_start = "@protocol {title}Delegate"
+# protocol_start = "@protocol {title}Delegate <NSObject>"
 protocol_line_start = "- ({returns}){title}:{args};"
 protocol_line_noarg = "- ({returns}){title};"
 protocol_arg = "{arg}:({type}){arg}"
@@ -479,7 +479,7 @@ class WrapClass:
         self.pointer_types = []
         self.cy_pointers = []
         self.objc_pointers = []
-
+        self.global_events = []
 
     @staticmethod
     def new_from_parsed_code(string:str) -> list:
@@ -760,6 +760,7 @@ class WrapClass:
         #else:
             if id == "EventDispatcher":
                 self.dispatch_mode = True
+                print("handle_class_decorators",cdec)
                 self.handle_event_dispatcher(cdec, func_ptrs, new_func_pointers)
             if id == "enum":
                 enum_args = []
@@ -788,11 +789,12 @@ class WrapClass:
         calltitle = self.calltitle
         if len(decorator.args) != 0:
             events: ast.List = decorator.args[0]
-            
+            print("handle_event_dispatcher",events.elts)
             #key: ast.Constant
             d = {}
             ptr_compare = []
             self.global_events = _events_ = [event.value for event in events.elts]
+            print("handle_event_dispatcher",self.global_events)
             enum = (self.calltitle,_events_)
             self.enum_list.append(enum)
 
@@ -924,7 +926,7 @@ class PythonCallBuilder():
         self.root_path = root_path
         self.dispatch_mode = False
         self.wrap_classes = []
-
+        self.global_events = []
 
     def get_calltitle(self):
         return self.module_title
@@ -1139,7 +1141,9 @@ class PythonCallBuilder():
         #kivy_props = wrap.kivy_properties
         class_list = []
         if self.dispatch_mode:
-            class_list.append(cython_class_dispatch.format(_class=title,call_var=call_var, events = wrap.enum_list[0][1]) )
+            events = [f"on_{evt}" for evt in wrap.global_events]
+            #wrap.enum_list[0][1])
+            class_list.append(cython_class_dispatch.format(_class=title,call_var=call_var, events = events ))
         else:
             class_list.append(cython_class.format(_class=title,call_var=call_var) )
         class_list.append(fill_struct )
@@ -1270,11 +1274,13 @@ class PythonCallBuilder():
         
         return rtn_string + "\n"
 
-    def gen_global_events(self):
+    def gen_global_events(self, wrap: WrapClass):
         event_strings = ["######## Global Dispatch Events ########"]
-        for event in self.global_events:
+        print("gen_global_events",wrap.global_events)
+        for event in wrap.global_events:
+            print("gen_global_events", event)
             s = global_event_function.format(
-                title = event
+                title = f"on_{event}"
             )
             event_strings.append(s)
         if self.dispatch_mode:
@@ -1603,7 +1609,6 @@ class PythonCallBuilder():
             dispatch_import = "from kivy._event cimport EventDispatcher"
         else:
             dispatch_import = ""
-        
         cy_list = [
             "#cython: language_level=3",
             dispatch_import,
@@ -1613,7 +1618,7 @@ class PythonCallBuilder():
             f"cdef extern from \"_{self.module_title}.h\":",
         ]
         
-        
+        print(self.global_events)
         enums_structs = []
         if len(self.cstruct_list):
             enums_structs.append("\t\n".join([self.gen_c_struct_custom(arg[0],arg[1]) for arg in self.cstruct_list]))
@@ -1657,10 +1662,11 @@ class PythonCallBuilder():
         for wrap in classes:
             
             if len(wrap.enum_list) != 0:
-                export_enum_list = f"cdef list {wrap.calltitle}_events = {wrap.enum_list[0][1]}"
+                events = [f"on_{event}" for event in wrap.enum_list[0][1]]
+                export_enum_list = f"cdef list {wrap.calltitle}_events = {events}"
             else:
                 export_enum_list = ""
-
+            print(self.global_events)
             cy_classes = [
                 # "\t\n".join([self.gen_c_enum(arg[0],arg[1]) for arg in enum_list]),
                 # "\t\n".join([self.gen_c_struct_custom(arg[0],arg[1]) for arg in self.cstruct_list]),
@@ -1681,7 +1687,7 @@ class PythonCallBuilder():
                 export_enum_list,
                 self.gen_cython_class(wrap,wrap.calltitle + "_voidptr",self.fill_cstruct(wrap)) ,
                 "",
-                self.gen_global_events(),
+                self.gen_global_events(wrap),
                 "######## Send Functions: ########",
                 self.gen_send_functions(wrap,False)
             ]
@@ -1755,7 +1761,8 @@ class PythonCallBuilder():
         #global cstruct_list
         self.cstruct_list = []
         
-        self.global_events = []
+        
+        print("build_py_files")
         #script = sys.argv[2]
         py3_compiler = "#cython: language_level=3\n"
         pyfile = open("{}".format(script), "r" )
@@ -1768,13 +1775,13 @@ class PythonCallBuilder():
         self.module_title = module_title = file_title
         site_manager_path = join(root_path,"venv/lib/python3.8/site-packages")
         self.dispatch_mode = wrap_class.dispatch_mode
-
+        print("new_mark",self.global_events)
         with open(join(site_manager_path,"%s.py" % module_title.lower()), "w") as f:
             f.write(self.parse_helper(test))
         pyfile.close()
 
         BUILD_DIR = join(self.app_dir,"builds")
-
+        
         try:
             os.mkdir(BUILD_DIR)
         except:
