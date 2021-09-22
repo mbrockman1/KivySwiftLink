@@ -246,8 +246,8 @@ c_structinit_string = """\
 \tctypedef {title}Struct {call}
 
 """
-
-protocol_start = "@protocol {title}Delegate <NSObject>"
+protocol_start = "@protocol {title}Delegate"
+# protocol_start = "@protocol {title}Delegate <NSObject>"
 protocol_line_start = "- ({returns}){title}:{args};"
 protocol_line_noarg = "- ({returns}){title};"
 protocol_arg = "{arg}:({type}){arg}"

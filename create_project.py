@@ -5,16 +5,16 @@ import shutil
 from os.path import dirname, abspath, join, exists
 from pbxproj import XcodeProject,PBXKey
 from pbxproj.pbxextensions.ProjectFiles import FileOptions
-
+from typing import *
 toolchain = "toolchain"
 
 class ProjectCreator:
-
+    bridge_header: str
     def __init__(self, root_path, app_dir):
         self.app_dir = app_dir
         self.root_path = root_path
         self.project_target = root_path
-
+        self.bridge_header = None
     def create_project(self,title,path):
         command = " ".join([toolchain, "create", title, path])  # the shell command
         # self.execute(command,0,False)
@@ -34,6 +34,69 @@ class ProjectCreator:
             except:
                 print("project failed invalid path:", str(self.project_target))
                 return
+            bridge_header = join(self.project_target,f"{target_name}-Bridging-Header.h")
+            if exists(bridge_header):
+                self.bridge_header = bridge_header
+
+    def add_swift_files(self,group,files_dir):
+        print("adding swift files", files_dir)
+        #self.load_xcode_project()
+        project = self.project
+        project_updated = False
+        sources = project.get_or_create_group("Sources")
+        _group = project.get_or_create_group(group,parent = sources)
+        group_dir = join(self.project_target,group)
+        if not exists(group_dir):
+            os.mkdir(group_dir)
+        for (dirpath, dirnames, filenames) in os.walk(files_dir):
+            for item in filenames:
+                file = join((dirpath, dirnames, filenames))
+                is_dir = os.path.isdir(file)
+                if item != ".DS_Store" and item.lower().endswith(".swift"):
+                    print(item,join(self.project_target,item))
+                    
+                    shutil.copy(join(dirpath,item), group_dir )
+                    has_file = project.get_files_by_name(item, _group)
+                    if len(has_file) == 0:
+                        project.add_file(join(group_dir,item), parent=_group)
+                        project_updated = True
+                    else:
+                        print("has_file: ",has_file)
+        self.update_bridging_header(["kivytest"]) 
+
+        if project_updated:
+            project.backup()
+            project.save()
+
+
+    def update_bridging_header(self, keys: List[str]):
+        header = self.bridge_header
+        if header:
+            with open(self.bridge_header, "r") as f:
+                header_string = f.readlines()
+            header_export = [*header_string]
+            for i, line in enumerate(header_string):
+                if "//#Wrappers Start" in line:
+                    wrap_start = i
+                    print("//#Wrappers Start",i)
+                if "//#Wrappers End" in line:
+                    print("//#Wrappers End",i)
+                    wrap_end = i
+                    break
+            
+
+            for key in keys:
+                has_key = False
+                s_key = f"#import \"{key}.h\""
+                for i, line in enumerate(header_string[wrap_start:wrap_end]):
+                    if s_key in line:
+                        has_key = True
+                        break
+                if not has_key:
+                    header_export.insert(wrap_start + 2,f"{s_key}\n")
+        
+            with open(self.bridge_header, "w") as f:
+                f.write("".join(header_export))
 
     def update_classes_group(self):
         self.load_xcode_project()
@@ -90,6 +153,7 @@ class ProjectCreator:
                 pro_file = f.read()
             update_bridge = False
             bridge_header = join(self.project_target,f"{target_name}-Bridging-Header.h")
+            self.bridge_header = bridge_header
             if not exists(bridge_header):
                 bridge_strings = [
                     "\n#import \"runMain.h\"",
