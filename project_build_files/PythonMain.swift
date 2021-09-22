@@ -6,18 +6,13 @@
 //
 
 import Foundation
-import UIKit
-import WebKit
 
-
-class PythonMain : NSObject {
+class PythonMain {
     
     static let shared = PythonMain()
     
-    private override init() {
+    private init() {
         
-        super.init()
-         
     }
 }
 
