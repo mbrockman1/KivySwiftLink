@@ -14,7 +14,7 @@ PATCH_LIST = [
 def create_recipe(app_dir: str, recipe_dict: dict) -> str:
 
     with open(join(app_dir,"build_files","kivy_recipe.py")) as f:
-        kivy_recipe = str(f.read())
+        kivy_recipe = str(f.read()) 
 
     d = recipe_dict
     new_recipe = kivy_recipe
