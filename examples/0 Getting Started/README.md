@@ -238,14 +238,15 @@ cd <path of kivy-ios root project folder>
 
 ### Arg Types:
 
-| Python | Objective-C | Swift                |
-| ------ | ----------- | -------------------- |
-| bytes  | const char* | UnsafePointer\<Int8> |
-| str    | const char* | UnsafePointer\<Int8> |
-| int    | int         | Int32                |
-| long   | long        | Int                  |
-| float  | float       | Float                |
-| double | double      | Double               |
+| Python | Objective-C           | Swift                                              |
+| ------ | --------------------- | -------------------------------------------------- |
+| bytes  | const char*           | UnsafePointer\<Int8>                               |
+| str    | const char*           | UnsafePointer\<Int8>                               |
+| int    | int                   | Int32                                              |
+| long   | long                  | Int                                                |
+| float  | float                 | Float                                              |
+| double | double                | Double                                             |
+| data   | const unsigned uint8* | UnsafePointer<UInt8>  (can be converted to "Data") |
 
 ### Special list types:
 
