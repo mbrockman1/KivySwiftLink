@@ -6,16 +6,12 @@
 //
 
 import Foundation
-import UIKit
-import WebKit
-
 
 class PythonMain {
     
     static let shared = PythonMain()
     
     private init() {
-        
         
     }
 }
