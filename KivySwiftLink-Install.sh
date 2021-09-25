@@ -59,12 +59,12 @@ elif [ "$INPUT_STRING" = "w" ]; then
     
     #cp ./PythonSwiftLink/cli_mode.py ./
     
-    cp ./KivySwiftLink/wrapper_tool_cli.sh ./wrapper_tool_cli
-    chmod +x wrapper_tool_cli
+    cp ./KivySwiftLink/wrapper_tool_cli.sh ./wrapper_tool
+    chmod +x wrapper_toolc
 
     cp ./KivySwiftLink/src/swift_types.py ./venv/lib/python3.8/site-packages/
     rm -R -f KivySwiftLink
-    chmod +x wrapper_tool
+    #chmod +x wrapper_tool
     
     mkdir wrapper_sources
     mkdir wrapper_builds
