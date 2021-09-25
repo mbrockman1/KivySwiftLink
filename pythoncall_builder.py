@@ -10,10 +10,10 @@ import re
 import sys
 import os
 import subprocess
-from PythonSwiftLink.build_files.pack_files import pack_all,remove_cache_file
+#from PythonSwiftLink.build_files.pack_files import pack_all,remove_cache_file
 import configparser
 import json
-from os.path import join
+from os.path import join,exists
 import shutil
 import random
 import string
@@ -22,7 +22,7 @@ from typing import List
 
 from PythonSwiftLink.def_types import types2dict
 
-from PythonSwiftLink.create_recipe import create_recipe
+from PythonSwiftLink.create_recipe import create_recipe, create_setup_py
 from PythonSwiftLink.typedef_generator import load_c_types
 
 OSX_VERSION = ".".join(platform.mac_ver()[0].split(".")[:-1])
@@ -408,7 +408,7 @@ class Arg():
             if header:
                 return f"{self.cy_type} {self.cy_name}"
             else:
-                if self.python_name is "":
+                if self.python_name == "":
                     send_arg = self.objc_name
                 else:
                     send_arg = self.python_name
@@ -1432,7 +1432,7 @@ class PythonCallBuilder():
         func:Function
         #print(f"function {func.name} - args_: {func.args_}")
         for i, arg in enumerate(func.args_):
-            if arg is not "PythonCallback":
+            if arg != "PythonCallback":
                 _arg = self.gen_send_args(arg)
                 if _arg:
                     #type_size = arg_size_dict[_type]
@@ -1548,7 +1548,7 @@ class PythonCallBuilder():
             for _args in func.args_:
                 _types = []
                 args2.append(_args.objc_type)
-                if _args.python_name is "":
+                if _args.python_name == "":
                     send_arg = _args.objc_name
                 else:
                     send_arg = _args.python_name
@@ -1669,7 +1669,7 @@ class PythonCallBuilder():
             for _args in func.args_:
                 _types = []
                 args2.append(_args.objc_type)
-                if _args.python_name is "":
+                if _args.python_name == "":
                     send_arg = _args.objc_name
                 else:
                     send_arg = _args.python_name
@@ -1862,7 +1862,7 @@ class PythonCallBuilder():
             x:Arg
             for i, x in enumerate(func.args_):
                 #print(func.name,x.cy_name,x.python_name)
-                if x.python_name is "":
+                if x.python_name == "":
                     proto_arg = x.cy_name
                 else:
                     proto_arg = x.python_name
@@ -1912,24 +1912,24 @@ class PythonCallBuilder():
         
         if not os.path.exists(join(self.app_dir,"builds",class_name)):
             os.mkdir(join(self.app_dir,"builds",class_name))
-        with open(join(self.app_dir,"builds",class_name,"module.ini"), 'w') as configfile:
-            configfile.write(json.dumps([class_name,_tmp],indent=4))
+        # with open(join(self.app_dir,"builds",class_name,"module.ini"), 'w') as configfile:
+        #     configfile.write(json.dumps([class_name,_tmp],indent=4))
             #configfile.close()
 
         builds = join(self.app_dir,"builds",class_name)
 
-        recipe_patches = {
-            "module_title": self.module_title,
-            "MODULE_NAME" : str(self.module_title),
-            "MODULE_FOLDER" : None,
-            #"PYTHONLINKROOT" : "/",
-            "CUSTOM_ROOT": None,
-            "PY_VERSION": PY_VERSION,
-            "OSX_VERSION": OSX_VERSION
-        }
+        # recipe_patches = {
+        #     "module_title": self.module_title,
+        #     "MODULE_NAME" : str(self.module_title),
+        #     "MODULE_FOLDER" : None,
+        #     #"PYTHONLINKROOT" : "/",
+        #     "CUSTOM_ROOT": None,
+        #     "PY_VERSION": PY_VERSION,
+        #     "OSX_VERSION": OSX_VERSION
+        # }
 
         with open(join(builds,"kivy_recipe.py"),'w') as recipe:
-            new_recipe = create_recipe(self.app_dir, recipe_patches)
+            new_recipe = create_recipe(self.module_title)
             recipe.write(new_recipe)
 
 
@@ -2126,8 +2126,8 @@ class PythonCallBuilder():
         global kivy_recipe
         #calltitle = self.calltitle
         file_title = os.path.basename(script)[:-3]
-        with open(join(self.app_dir,"build_files","kivy_recipe.py")) as f:
-            kivy_recipe = str(f.read())
+        # with open(join(self.app_dir,"build_files","kivy_recipe.py")) as f:
+        #     kivy_recipe = str(f.read())
         #global cstruct_list
         self.cstruct_list = []
         
@@ -2150,29 +2150,37 @@ class PythonCallBuilder():
             f.write(self.parse_helper(test))
         pyfile.close()
 
-        BUILD_DIR = join(self.app_dir,"builds")
-        
-        try:
+        BUILD_DIR = join(self.root_path,"wrapper_builds")
+        MODULE_FOLDER = join(BUILD_DIR, module_title.lower())
+        SRC_FOLDER = join(MODULE_FOLDER,"src")
+        if not exists(BUILD_DIR):
             os.mkdir(BUILD_DIR)
-        except:
-            print("builds exist")
-        try:
-            os.mkdir(join(BUILD_DIR,module_title))
-        except:
-            print("builds/%s exist" % module_title)
+        if not exists(MODULE_FOLDER):
+            os.mkdir(MODULE_FOLDER)
+        if not exists(SRC_FOLDER):
+            os.mkdir(SRC_FOLDER)
+
         pyx_script = self.generate_pyx()
         join(BUILD_DIR,module_title)
-        with open(join(BUILD_DIR,module_title,f"{module_title}.pyx"), "w+") as pyx_file:
+        with open(join(SRC_FOLDER,f"{module_title}.pyx"), "w+") as pyx_file:
             pyx_file.write( pyx_script )
 
         objc_script = self.generate_objc_h()
-        with open(join(BUILD_DIR,module_title,f"_{module_title}.h"), "w+") as objch_file:
+        with open(join(SRC_FOLDER,f"_{module_title}.h"), "w+") as objch_file:
             objch_file.write( objc_script )
 
-        with open(join(BUILD_DIR,module_title,f"_{module_title}.m"), "w+") as objcm_file:
+        with open(join(SRC_FOLDER,f"_{module_title}.m"), "w+") as objcm_file:
             objcm_file.write( self.generate_objc_m() )
 
-        self.gen_module_file(module_title.lower())
+        with open(join(SRC_FOLDER, "setup.py"),'w') as recipe:
+            setup_py = create_setup_py(self.module_title)
+            recipe.write(setup_py)
+
+        with open(join(MODULE_FOLDER, "__init__.py"),'w') as recipe:
+            new_recipe = create_recipe(self.module_title)
+            recipe.write(new_recipe)
+
+        shutil.copy2(join(self.app_dir,"wrapper_typedefs.h"), SRC_FOLDER)
 
         return (pyx_script,objc_script)
 

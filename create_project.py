@@ -8,6 +8,14 @@ from pbxproj.pbxextensions.ProjectFiles import FileOptions
 from typing import *
 toolchain = "toolchain"
 
+BRIDGE_STRING = """
+#import \"runMain.h\"
+//#Wrappers Start"
+//#Wrappers End
+//Insert Other OBJ-C Headers Here:
+"""
+
+
 class ProjectCreator:
     bridge_header: str
     def __init__(self, root_path, app_dir):
@@ -71,6 +79,7 @@ class ProjectCreator:
 
     def update_bridging_header(self, keys: List[str]):
         header = self.bridge_header
+        keys.insert(0, "wrapper_typedefs")
         if header:
             with open(self.bridge_header, "r") as f:
                 header_string = f.readlines()
@@ -92,7 +101,7 @@ class ProjectCreator:
                         has_key = True
                         break
                 if not has_key:
-                    header_export.insert(wrap_start + 2,f"{s_key}\n")
+                    header_export.insert(wrap_start + 1,f"{s_key}\n")
         
             with open(self.bridge_header, "w") as f:
                 f.write("".join(header_export))
@@ -154,19 +163,17 @@ class ProjectCreator:
             bridge_header = join(self.project_target,f"{target_name}-Bridging-Header.h")
             self.bridge_header = bridge_header
             if not exists(bridge_header):
-                bridge_strings = [
-                    "\n#import \"runMain.h\"",
-                    "\n\n",
-                    "//#Wrappers Start",
-                    "//  Insert Your Wrapper Headers Here -> #import \"wrapper_class_name\".h//  ",
-                    "\n",
-                    "//#Wrappers End",
-                    "\n\n",
-                    "//Insert Other OBJ-C Headers Here:"
+                # bridge_strings = [
+                #     "\n#import \"runMain.h\"",
+                #     "//#Wrappers Start",
+                #     "//  Insert Your Wrapper Headers Here -> #import \"wrapper_class_name\".h//  ",
+                #     "//#Wrappers End",
+                #     "\n",
+                #     "//Insert Other OBJ-C Headers Here:"
 
-                ] 
+                # ] 
                 with open(bridge_header, "w") as b:
-                    b.write("\n".join(bridge_strings))
+                    b.write(BRIDGE_STRING)
             project.set_flags("SWIFT_OBJC_BRIDGING_HEADER",f"{target_name}-Bridging-Header.h")
             project.set_flags("SWIFT_VERSION","5.0")
             project.set_flags("IPHONEOS_DEPLOYMENT_TARGET","11.0")
