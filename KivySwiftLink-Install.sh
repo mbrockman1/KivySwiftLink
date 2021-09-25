@@ -36,28 +36,32 @@ elif [ "$INPUT_STRING" = "w" ]; then
     mkdir ./$folder_var
     cd $folder_var
     echo $(dirname $0)
-
+    
+    git clone https://github.com/psychowasp/KivySwiftLink
+    
     python3.8 -m venv venv
     . venv/bin/activate
-        pip install cython
+    pip install cython
     pip install kivy
     pip install kivy-ios
     pip install astor
     pip install tinydb
     pip install applescript
     pip install watchdog
+    
+    pip install ./KivySwiftLink
 
     #        rsync -av --delete --exclude '.git' /Users/macdaw/kivyios_swift/PythonSwiftLink/* ./PythonSwiftLink
-    git clone https://github.com/psychowasp/PythonSwiftLink
-    cp ./PythonSwiftLink/main.py ./wrapper_tool.py
-    cp ./PythonSwiftLink/wrapper_tool.sh ./wrapper_tool
     
-    cp ./PythonSwiftLink/cli_mode.py ./
+    #cp ./KivySwiftLink/main.py ./wrapper_tool.py
+    #cp ./KivySwiftLink/wrapper_tool.sh ./wrapper_tool
+    
+    #cp ./PythonSwiftLink/cli_mode.py ./
     
     cp ./PythonSwiftLink/wrapper_tool_cli.sh ./wrapper_tool_cli
     chmod +x wrapper_tool_cli
 
-    cp ./PythonSwiftLink/build_files/swift_types.py ./venv/lib/python3.8/site-packages/
+    #cp ./PythonSwiftLink/build_files/swift_types.py ./venv/lib/python3.8/site-packages/
     chmod +x wrapper_tool
     
     toolchain build kivy
