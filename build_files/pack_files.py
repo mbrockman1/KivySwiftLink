@@ -43,7 +43,7 @@ def create_temp_copy_files(app_dir,root_path,src,dst,key):
     modules = {}
     src_folder = join(dst,"src")
     #config = configparser.ConfigParser()
-    
+    wrapper_headers = join(root_path,"wrapper_headers")
 
     if not os.path.exists(src_folder):
         os.makedirs(src_folder)
@@ -59,22 +59,27 @@ def create_temp_copy_files(app_dir,root_path,src,dst,key):
                 name,ext = splitext(file)
                 parent_dir = dst
                 if file == 'module.ini':
-                    with open(s, 'r') as configfile:
-                        #print(configfile.read())
-                        _str = configfile.read()
-                        #print(_str)
-                        _list = json.loads(_str)
-                        _key,_dict = _list
-                        modules[_key] = _dict
-                        configfile.close()
+                    pass
+                    # with open(s, 'r') as configfile:
+                    #     #print(configfile.read())
+                    #     _str = configfile.read()
+                    #     #print(_str)
+                    #     _list = json.loads(_str)
+                    #     _key,_dict = _list
+                    #     modules[_key] = _dict
+                    #     configfile.close()
                 elif file == "kivy_recipe.py":
-                    print("kivy_recipe", d)
-                    shutil.copy(s,join(dst,"__init__.py"))
+                    pass
+                    # print("kivy_recipe", d)
+                    # shutil.copy(s,join(dst,"__init__.py"))
                 else:
                     shutil.copy(s,d)
                 if ext == ".h":
-                    shutil.copy2(join(root, f"_{key}.h"), join(root_path,"wrapper_headers",f"{key}.h"))
-
+                    shutil.copy2(join(root, f"_{key}.h"), join(wrapper_headers,f"{key}.h"))
+    shutil.copy2(join(app_dir, "wrapper_typedefs.h"), src_folder)
+    ### remember to uncomment this
+    #if not os.path.exists(join(wrapper_headers,"wrapper_typedefs.h")):
+    shutil.copy2(join(app_dir, "wrapper_typedefs.h"), wrapper_headers)
     # for item in os.listdir(src):
     #     s = os.path.join(src, item)
     #     d = os.path.join(dst, item)

@@ -41,8 +41,7 @@ elif [ "$INPUT_STRING" = "w" ]; then
     . venv/bin/activate
         pip install cython
     pip install kivy
-    #pip install kivy-ios
-    pip install kivy-ios https://github.com/meow464/kivy-ios/tree/custom_recipes@custom_recipes
+    pip install kivy-ios
     pip install astor
     pip install tinydb
     pip install applescript
@@ -59,7 +58,6 @@ elif [ "$INPUT_STRING" = "w" ]; then
     chmod +x wrapper_tool_cli
 
     cp ./PythonSwiftLink/build_files/swift_types.py ./venv/lib/python3.8/site-packages/
-    cp ./PythonSwiftLink/build_files/free_type_fix.py ./venv/lib/python3.8/site-packages/kivy_ios/recipes/freetype/__init__.py
     chmod +x wrapper_tool
     
     toolchain build kivy
