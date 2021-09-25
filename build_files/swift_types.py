@@ -4,7 +4,7 @@ from ctypes import c_uint8
 from ctypes import c_int8 
 from ctypes import c_uint
 from ctypes import c_long
-from typing import List,Tuple,Dict
+from typing import List,Tuple
 #from ctypes import c_int8 as
 long = c_long
 ulong = c_ulong
@@ -29,9 +29,9 @@ __all__ = [
     "longlong",
     "ulonglong",
     "uint8",
-    "short",
+    #"short",
     "int16",
-    "ushort",
+    #"ushort",
     "uint16",
     "double",
     "float32",
@@ -42,7 +42,6 @@ __all__ = [
     ## other types
     "List",
     "Tuple",
-    "Dict"
     "callback",
     "EventDispatcher",
     "swift_func",
@@ -55,6 +54,7 @@ def callback(*args):
 
 def EventDispatcher(_: List[str]):
     pass
+
 
 def swift_func(): ...
 
