@@ -41,7 +41,8 @@ elif [ "$INPUT_STRING" = "w" ]; then
     . venv/bin/activate
         pip install cython
     pip install kivy
-    pip install kivy-ios
+    #pip install kivy-ios
+    pip install kivy-ios https://github.com/meow464/kivy-ios/tree/custom_recipes@custom_recipes
     pip install astor
     pip install tinydb
     pip install applescript
