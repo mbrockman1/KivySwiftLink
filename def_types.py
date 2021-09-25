@@ -8,7 +8,7 @@ def_types = [
     {
         "type": "PythonCallback",
         "cython": "PythonCallback",
-        "objc": "PythonCallback",
+        "objc": "PythonCallback _Nonnull",
         "python": "PythonCallback",
         "size": 0,
         "send_arg": None,
@@ -18,8 +18,8 @@ def_types = [
     },
     {
         "type": "str",
-        "cython": "const char*",
-        "objc": "const char* _Nonnull",
+        "cython": "PythonString",
+        "objc": "PythonString _Nonnull",
         "python": "str",
         "size": 1,
         "send_arg": str_enc,
@@ -29,8 +29,8 @@ def_types = [
     },
     {
         "type": "bytes",
-        "cython": "const char*",
-        "objc": "const char* _Nonnull",
+        "cython": "PythonBytes",
+        "objc": "PythonBytes _Nonnull",
         "python": "bytes",
         "size": 1,
         "send_arg": None,
@@ -51,8 +51,8 @@ def_types = [
     },
     {
         "type": "jsondata",
-        "cython": "const unsigned char*",
-        "objc": "const unsigned char* _Nonnull",
+        "cython": "PythonJsonData",
+        "objc": "PythonJsonData _Nonnull",
         "python": "object",
         "size": 1,
         "send_arg": "json.dumps({arg}).encode('utf-8')",
@@ -296,10 +296,7 @@ def_types = [
     },
 
 ]
-
-
-
-
+from PythonSwiftLink.typedef_generator import GetSwiftTypes
 def types2dict(t: str, is_list=False, objc=False) -> dict:
     rtn = {}
     
@@ -318,9 +315,36 @@ def types2dict(t: str, is_list=False, objc=False) -> dict:
         else:
             if is_list:
                 list_type = d[t]
-                rtn[_type] = f"const {list_type}*{end_string}"
+                #rtn[_type] = f"const {list_type}*{end_string}"
+                rtn[_type] = f"PythonList_{GetSwiftTypes(_type)}"
             else:
                 rtn[_type] = d[t]
     if t == "send_arg":
         rtn[""] = "{arg}"
     return rtn
+
+##### old ####
+# def types2dict(t: str, is_list=False, objc=False) -> dict:
+#     rtn = {}
+    
+#     if objc:
+#         end_string = " _Nonnull"
+#     else:
+#         end_string = ""
+#     for d in def_types:
+#         _type = d['type']
+#         if t in ("call_arg","send_arg","list_call_arg","list_send_arg"):
+#             arg = d[t]
+#             if arg:
+#                 rtn[_type] = arg
+#             else:
+#                 rtn[_type] = "{arg}"
+#         else:
+#             if is_list:
+#                 list_type = d[t]
+#                 rtn[_type] = f"const {list_type}*{end_string}"
+#             else:
+#                 rtn[_type] = d[t]
+#     if t == "send_arg":
+#         rtn[""] = "{arg}"
+#     return rtn

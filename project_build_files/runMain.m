@@ -1,16 +1,10 @@
-//
-//  runMain.m
-//  touchbay
-//
-//  Created by MacDaW on 19/02/2021.
-//
+
 
 #import <Foundation/Foundation.h>
 #import "runMain.h"
 
 //
 //  main.m
-//  touchbay
 //
 
 #import <Foundation/Foundation.h>
@@ -19,14 +13,12 @@
 #include "{$project_path}/dist/root/python3/include/python3.8/Python.h"
 #include "{$project_path}/dist/include/common/sdl2/SDL_main.h"
 #include <dlfcn.h>
-//#include "touchbay-Swift.h"
 
 void export_orientation(void);
 void load_custom_builtin_importer(void);
 
 int run_main(int argc, char *argv[]) {
     int ret = 0;
-    //PythonMain *obj_test = [[PythonMain alloc] init];
     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 
     // Change the executing path to YourApp

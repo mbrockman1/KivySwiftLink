@@ -27,7 +27,7 @@ class ProjectCreator:
             try:
                 target = self.project_target
                 target_name = os.path.basename(target)[:-4]
-                print("target_name: ",target_name)
+                #print("target_name: ",target_name)
                 path = "%s/%s.xcodeproj/project.pbxproj" % (target, target_name)
                 self.project = XcodeProject.load(path)
             # for 
@@ -39,7 +39,7 @@ class ProjectCreator:
                 self.bridge_header = bridge_header
 
     def add_swift_files(self,group,files_dir):
-        print("adding swift files", files_dir)
+        #print("adding swift files", files_dir)
         #self.load_xcode_project()
         project = self.project
         project_updated = False
@@ -53,7 +53,7 @@ class ProjectCreator:
                 file = join((dirpath, dirnames, filenames))
                 is_dir = os.path.isdir(file)
                 if item != ".DS_Store" and item.lower().endswith(".swift"):
-                    print(item,join(self.project_target,item))
+                    #print(item,join(self.project_target,item))
                     
                     shutil.copy(join(dirpath,item), group_dir )
                     has_file = project.get_files_by_name(item, _group)
@@ -78,9 +78,8 @@ class ProjectCreator:
             for i, line in enumerate(header_string):
                 if "//#Wrappers Start" in line:
                     wrap_start = i
-                    print("//#Wrappers Start",i)
                 if "//#Wrappers End" in line:
-                    print("//#Wrappers End",i)
+       
                     wrap_end = i
                     break
             
@@ -110,7 +109,7 @@ class ProjectCreator:
             project.remove_library_search_paths(["/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator14.4.sdk/usr/lib"])
             target = self.project_target
             target_name = os.path.basename(target)[:-4]
-            print("target_name: ",target_name)
+            #print("target_name: ",target_name)
             path = "%s/%s.xcodeproj/project.pbxproj" % (target, target_name)
             # project = XcodeProject.load(path)
             project = self.project
