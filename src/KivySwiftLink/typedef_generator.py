@@ -124,7 +124,7 @@ def load_objc_types() -> dict:
 if __name__ == '__main__':
 
 
-    with open("./PythonSwiftLink/wrapper_typedefs.h", "w") as f:
+    with open("./KivySwiftLink/wrapper_typedefs.h", "w") as f:
         for key, val in load_objc_types().items():
             f.write(f"//{key}\n")
             f.write(f"{val}\n\n")

@@ -20,10 +20,10 @@ import string
 import platform 
 from typing import List
 
-from PythonSwiftLink.def_types import types2dict
+from KivySwiftLink.def_types import types2dict
 
-from PythonSwiftLink.create_recipe import create_recipe, create_setup_py
-from PythonSwiftLink.typedef_generator import load_c_types
+from KivySwiftLink.create_recipe import create_recipe, create_setup_py
+from KivySwiftLink.typedef_generator import load_c_types
 
 OSX_VERSION = ".".join(platform.mac_ver()[0].split(".")[:-1])
 PY_VERSION = ".".join(platform.python_version_tuple()[:-1])
