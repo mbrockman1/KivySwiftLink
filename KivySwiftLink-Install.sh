@@ -59,7 +59,7 @@ elif [ "$INPUT_STRING" = "w" ]; then
     
     #cp ./PythonSwiftLink/cli_mode.py ./
     
-    cp ./PythonSwiftLink/wrapper_tool_cli.sh ./wrapper_tool_cli
+    cp ./KivySwiftLink/wrapper_tool_cli.sh ./wrapper_tool_cli
     chmod +x wrapper_tool_cli
 
     #cp ./PythonSwiftLink/build_files/swift_types.py ./venv/lib/python3.8/site-packages/
