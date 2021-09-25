@@ -238,29 +238,30 @@ cd <path of kivy-ios root project folder>
 
 ### Arg Types:
 
-| Python | Objective-C           | Swift                                               |
-| ------ | --------------------- | --------------------------------------------------- |
-| bytes  | const char*           | UnsafePointer\<Int8> (can be converted to "String") |
-| str    | const char*           | UnsafePointer\<Int8> (can be converted to "String") |
-| int    | long                  | Int                                                 |
-| int32  | int32                 | Int32                                               |
-| long   | long                  | Int                                                 |
-| float  | float                 | Float                                               |
-| double | double                | Double                                              |
-| data   | const unsigned uint8* | UnsafePointer\<UInt8>  (can be converted to "Data") |
+| Python                                | Objective-C           | Swift                                                        |
+| ------------------------------------- | --------------------- | ------------------------------------------------------------ |
+| str                                   | const char*           | PythonString ( can be converted to **String** )              |
+| bytes                                 | const char*           | PythonBytes ( can be converted to **String** )               |
+| data                                  | const unsigned uint8* | PythonData  ( can be converted to **Data** or **Array\<UInt8>** ) |
+| json (list/dict as input/output)      | const char*           | PythonJson ( can be converted to swift **Dictionary**/**Array**) |
+| jsondata  (list/dict as input/output) | const unsigned uint8* | PythonJsonData ( can be converted to **Data** or swift **Dictionary**/**Array**) |
+| int                                   | long                  | Int                                                          |
+| int16                                 | short                 | Int16                                                        |
+| int32                                 | int                   | Int32                                                        |
+| float                                 | double                | Double                                                       |
+| double                                | double                | Double                                                       |
+| float32                               | float                 | Float                                                        |
 
 ### Special list types:
 
-| Python                                | Objective-C           | Swift                                                        |
-| ------------------------------------- | --------------------- | ------------------------------------------------------------ |
-| List[int]                             | const int*            | UnsafePointer\<Int32\> (can be converted to "Array")         |
-| List[long]                            | const long*           | UnsafePointer\<Int> (can be converted to "Array")            |
-| List[uint]                            | const unsigned int*   | UnsafePointer\<UInt32> (can be converted to "Array")         |
-| List[ulong]                           | const unsigned long*  | UnsafePointer\<UInt> (can be converted to "Array")           |
-| List[float]                           | const float*          | UnsafePointer\<Float> (can be converted to "Array")          |
-| List[double]                          | const double*         | UnsafePointer\<Double> (can be converted to "Array")         |
-| data                                  | const unsigned uint8* | UnsafePointer\<UInt8>  (can be converted to "Data")          |
-| json (list/dict as input/output)      | const char*           | UnsafePointer\<Int8> (can be converted to swift dictionary/array) |
-| jsondata  (list/dict as input/output) | const unsigned uint8* | UnsafePointer\<UInt8>  (can be converted to "Data" or swift dictionary/array) |
+| Python        | Objective-C          | Swift                                            |
+| ------------- | -------------------- | ------------------------------------------------ |
+| List[int]     | const long*          | PythonList_Int ( can be converted to "Array")    |
+| List[int32]   | const int*           | PythonList_Int32 ( can be converted to "Array")  |
+| List[uint]    | const unsigned long* | PythonList_UInt ( can be converted to "Array")   |
+| List[uint32]  | const unsigned int*  | PythonList_UInt32 ( can be converted to "Array") |
+| List[float]   | const double*        | PythonList_Double ( can be converted to "Array") |
+| List[double]  | const double*        | PythonList_Double ( can be converted to "Array") |
+| List[float32] | const float*         | PythonList_Float ( can be converted to "Array")  |
 
 # [Implementing a wrapper into a kivy app class](https://github.com/psychowasp/PythonSwiftLink/tree/main/examples/1%20Implementing%20a%20wrapper%20into%20a%20kivy%20app%20class)
