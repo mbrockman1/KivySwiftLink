@@ -1,6 +1,6 @@
-from PythonSwiftLink.build_files.pack_files import pack_all,remove_cache_file, create_package
-from PythonSwiftLink.pythoncall_builder import PythonCallBuilder
-from PythonSwiftLink.create_project import ProjectCreator
+from KivySwiftLink.build_files.pack_files import pack_all,remove_cache_file, create_package
+from KivySwiftLink.pythoncall_builder import PythonCallBuilder
+from KivySwiftLink.create_project import ProjectCreator
 import sys
 import os
 import subprocess

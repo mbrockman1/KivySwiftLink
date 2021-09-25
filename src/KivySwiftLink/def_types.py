@@ -296,7 +296,7 @@ def_types = [
     },
 
 ]
-from PythonSwiftLink.typedef_generator import GetSwiftTypes
+from KivySwiftLink.typedef_generator import GetSwiftTypes
 def types2dict(t: str, is_list=False, objc=False) -> dict:
     rtn = {}
     
