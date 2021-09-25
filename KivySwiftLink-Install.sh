@@ -62,15 +62,15 @@ elif [ "$INPUT_STRING" = "w" ]; then
     cp ./KivySwiftLink/wrapper_tool_cli.sh ./wrapper_tool_cli
     chmod +x wrapper_tool_cli
 
-    cp ./KivySwiftLink/build_files/swift_types.py ./venv/lib/python3.8/site-packages/
+    cp ./KivySwiftLink/src/swift_types.py ./venv/lib/python3.8/site-packages/
     rm -R -f KivySwiftLink
     chmod +x wrapper_tool
     
-    toolchain build kivy
     mkdir wrapper_sources
     mkdir wrapper_builds
     mkdir wrapper_headers
-    
+    toolchain build kivy
+
     echo
     echo "Working folder <$folder_var> is now ready"
     echo
