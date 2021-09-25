@@ -23,12 +23,13 @@ from typing import List
 from PythonSwiftLink.def_types import types2dict
 
 from PythonSwiftLink.create_recipe import create_recipe
+from PythonSwiftLink.typedef_generator import load_c_types
 
 OSX_VERSION = ".".join(platform.mac_ver()[0].split(".")[:-1])
 PY_VERSION = ".".join(platform.python_version_tuple()[:-1])
 
-print(os.path.basename(sys.argv[0]))
-print(os.path.dirname(sys.argv[0]))
+# print(os.path.basename(sys.argv[0]))
+# print(os.path.dirname(sys.argv[0]))
 
 root_path = os.path.dirname(sys.argv[0])
 
@@ -44,7 +45,7 @@ call_list_dict = types2dict("list_call_arg")
 arg_size_dict = types2dict("size")
 ptr_type_dict = types2dict("cython")
 
-
+used_types: List[str] = []
 
 func_pointer_string = """\
 ctypedef void (*{title})({args})
@@ -69,6 +70,7 @@ cython_class = """\
 cdef public void* {_class}_voidptr
 cdef public {_class} {_class}_shared
 cdef class {_class}:
+{class_vars}
 
 \t@staticmethod
 \tdef default(call: object):
@@ -83,6 +85,7 @@ cdef class {_class}:
 \t\tglobal {call_var}
 \t\t{call_var} = <const void*>callback_class
 \t\tprint("{call_var} init:", (<object>{call_var}))
+\t\tprint({_class}_shared)
 """
 
 cython_class_dispatch = """\
@@ -90,23 +93,34 @@ cdef public void* {_class}_voidptr
 cdef public void* {_class}_dispatch
 cdef public {_class} {_class}_shared
 cdef class {_class}(EventDispatcher):
+
+{class_vars}
 \t__events__ = {events}
 
 \t@staticmethod
-\tdef default(call: object):
+\tdef default():
 \t\tglobal {_class}_shared
 \t\tif {_class}_shared != None:
+\t\t\tprint(KivyEventsTest_shared)
 \t\t\treturn {_class}_shared
-\t\telse:
-\t\t\t{_class}_shared = {_class}(call)
-\t\t\treturn {_class}_shared
+# \t\telse:
+# \t\t\t{_class}_shared = {_class}(call)
+# \t\t\tprint(KivyEventsTest_shared)
+# \t\t\treturn {_class}_shared
+\t\treturn None
 
 \tdef __init__(self,object callback_class):
 \t\tglobal {call_var}
 \t\tglobal {_class}_dispatch
 \t\t{_class}_dispatch = <const void*>self.dispatch
 \t\t{call_var} = <const void*>callback_class
-\t\tprint("{call_var} init:", (<object>{call_var}))
+#\t\t#print("{call_var} init:", (<object>{call_var}))
+
+
+\t\tglobal {_class}_shared
+\t\tif {_class}_shared == None:
+\t\t\t{_class}_shared = self
+\t\t\t#print({_class}_shared)
 """
 
 
@@ -140,6 +154,11 @@ global_event_function = """\
 \t\tpass
 """
 
+SWIFT_FUNCTION_INIT = """\
+\tcdef set_swift_functions(self, {title}SwiftFuncs func_struct ):
+{args}
+\t\tprint("set_swift_functions")
+"""
 
 call_args_dict2 = {
     "str": "{arg}.decode('utf8')",
@@ -228,12 +247,19 @@ cdef {returns} {_class}_{title}({args}) with gil:
 cython_global_dispatch = """\
 cdef {returns} {_class}_{title}({args}) with gil:
 \t{call_class}{callback}
+
 """
 
 cython_callback3 = """\
 cdef {returns} {_class}_{title}({args}) with gil:
 \t{code}
 \t(<object> {call_class}).{call}{callback}
+
+"""
+
+cython_callback4 = """\
+cdef {returns} {_class}_{title}({args}) with gil:
+\t(<object> {call_class}){callback}
 
 """
 
@@ -315,7 +341,9 @@ class Arg():
             func_arg.python_type = "list"
             func_arg.cy_type = ctypedef_list_dict[arg_type]
             func_arg.list_type = arg_type
-
+            if f"list_{arg_type}" not in used_types:
+                used_types.append(f"list_{arg_type}")
+          
             func_arg.objc_type = typedef_list_dict[arg_type]
 
             list_counter = Arg()
@@ -367,6 +395,9 @@ class Arg():
                 list_counter.objc_type = "long"
                 list_counter.objc_name = "arg%d_size" % i
 
+            if arg_type not in used_types:
+                used_types.append(arg_type)
+      
         return (func_arg, arg_type)
 
 #objc_arg_first = "({t}){arg}"
@@ -418,6 +449,8 @@ class Function():
     uuid: str
     wrap_class: object
     init_func: bool
+    is_swift_func: bool
+    exclude_from_func_pointers: bool
 
     def __init__(self,main):
         self.args_ = []
@@ -443,7 +476,9 @@ class Function():
         self.global_dispatch = False
         self.uuid = self.uniqid()
         self.init_func = False
-    
+        self.is_swift_func = False
+        self.exclude_from_func_pointers = False
+            
     def uniqid(self):
         return f"{random.choice(string.ascii_letters)}{hex(int(time()*10000000))[6:]}{random.choice(string.ascii_letters)}"
 
@@ -454,6 +489,7 @@ class Function():
 class WrapClass:
     calltitle: str
     func_pointers: List[Function]
+    swift_func_pointers: List[Function]
     new_func_ptrs: List[Function]
     send_functions: list
     kivy_properties: list
@@ -462,12 +498,14 @@ class WrapClass:
     dispatch_mode: bool
     cy_pointers: list
     objc_pointers: list
-
+    has_swift_functions: bool
     pointer_compare_strings: List[str]
-
+    swift_funcs_set: Function
 
     def __init__(self) -> None:
         self.func_pointers = []
+        self.swift_func_pointers = []
+        self.has_swift_functions = False
         self.new_func_ptrs = []
         self.send_functions = []
         self.kivy_properties = []
@@ -480,6 +518,7 @@ class WrapClass:
         self.cy_pointers = []
         self.objc_pointers = []
         self.global_events = []
+        self.swift_funcs_set = None
 
     @staticmethod
     def new_from_parsed_code(string:str) -> list:
@@ -507,6 +546,7 @@ class WrapClass:
     def parse_code(self,class_body):
 
         func_pointers: List[Function] = self.func_pointers
+        swift_func_pointers: List[Function] = self.swift_func_pointers
         new_func_ptrs: List[Function] = self.new_func_ptrs
         send_functions = self.send_functions
         kivy_properties = self.kivy_properties
@@ -557,14 +597,10 @@ class WrapClass:
                             temp.callback = item.value.s
                 ##Property Handler
                 if isinstance(cbody,ast.AnnAssign):
-                    #print("found AnnAssign",cbody.__dict__)
-                    #print("\t%s"%cbody.target.id)
-                    #print("\t%s"%cbody.annotation.id)
                     if cbody.annotation.id in ("NumericProperty"):
                         print("Dictionary")
+                ## handle class properties ##
                 if isinstance(cbody,ast.Assign):
-                    #print("found Assign",cbody.__dict__)
-                    #print(cbody.targets[0].__dict__,cbody.value.__dict__)
                     if isinstance(cbody.value,ast.Call):
                         if hasattr(cbody.value,"func"):
                             #print(cbody.value.__dict__)
@@ -623,6 +659,8 @@ class WrapClass:
         for func in pointer_test:
             self.add_callback_function(func)
 
+        for func in self.swift_func_pointers:
+            self.add_swift_function(func)
 
         for func in send_functions:
             real_arg = tuple(zip(func.arg_types,func.args))
@@ -636,13 +674,17 @@ class WrapClass:
     def setup_callback_type(self):
         
         for i, string in enumerate(self.pointer_compare_strings):
-            for real_func in self.func_pointers:
+            for real_func in [*self.func_pointers,*self.swift_func_pointers]:
                     #print(f"{func.name}:\n\tfunc: {func.compare_string}\n\tcompare {real_func.name}:{real_func.compare_string} \n\tmatch:{real_func.compare_string == func.compare_string}")
 
                 if real_func.compare_string == string:
                 #if [arg.cy_type for arg in real_func.args_ ] == [arg.cy_type for arg in func.args_ ]:
                     real_func.func_ptr = f"{self.calltitle}_ptr{i}"
 
+
+    # def setup_swift_type(self):
+
+        
 
     def add_callback_function(self,func: Function):
         rtns = func.returns
@@ -666,6 +708,27 @@ class WrapClass:
             self.pointer_types.append(func)
         # else:
         #     print(f"{func.name} already in there")
+
+    def add_swift_function(self,func: Function):
+        rtns = func.returns
+
+        if not rtns:
+            rtns = "void"
+
+        #_arg: Arg
+        compare =  [rtns]
+        #compare.append(rtns)
+        for _arg in func.args_:
+            compare.append(_arg.cy_type)
+        
+        compare_string = " ".join(compare)
+        func.compare_string = compare_string
+        #if 'callback' in func.decs:
+        #print(compare_string not in ptr_compare, compare_string)
+        if compare_string not in self.pointer_compare_strings:
+            self.pointer_compare_strings.append(compare_string)
+
+            self.pointer_types.append(func)
 
 
     def gen_cyfunction_pointers(self, objc=True):
@@ -760,7 +823,7 @@ class WrapClass:
         #else:
             if id == "EventDispatcher":
                 self.dispatch_mode = True
-                print("handle_class_decorators",cdec)
+                #print("handle_class_decorators",cdec)
                 self.handle_event_dispatcher(cdec, func_ptrs, new_func_pointers)
             if id == "enum":
                 enum_args = []
@@ -789,12 +852,12 @@ class WrapClass:
         calltitle = self.calltitle
         if len(decorator.args) != 0:
             events: ast.List = decorator.args[0]
-            print("handle_event_dispatcher",events.elts)
+            #print("handle_event_dispatcher",events.elts)
             #key: ast.Constant
             d = {}
             ptr_compare = []
             self.global_events = _events_ = [event.value for event in events.elts]
-            print("handle_event_dispatcher",self.global_events)
+            #print("handle_event_dispatcher",self.global_events)
             enum = (self.calltitle,_events_)
             self.enum_list.append(enum)
 
@@ -873,6 +936,81 @@ class WrapClass:
             call_args_dict.update({body_name:"{arg}"})
             send_args_dict.update({body_name:"{arg}"})
 
+    def handle_swift_function_callback(self):
+        calltitle = self.calltitle
+        
+        func: Function = Function(self)
+        func.name = f"set_SwiftFunctions"
+        #func.call_class = f"{calltitle}_shared.set_swift_functions"
+        func.call_class = f"{self.calltitle}_shared.set_swift_functions"
+        func.call_target = ""
+        func.code = None
+        func.global_dispatch = True
+        body_name = f"{calltitle}SwiftFuncs"
+        #func_ptrs.append(func)
+        func.exclude_from_func_pointers = True
+        arg0 = Arg()
+        #arg0.is_json = True
+        arg0.python_name = "event"
+        arg0.cy_name = "event"
+        arg0.cy_type = body_name
+        arg0.python_type = "object"
+        arg0.objc_name = "arg0"
+        arg0.objc_type = body_name
+        arg0.custom_call = True
+        # arg0.call_code = "{arg}"
+        
+        arg0.call_code = f"arg0"
+        #arg0.call_code = f"{calltitle}"
+        
+        func.args_.append(arg0)
+        
+        # arg1 = Arg()
+        # arg1.is_json = True
+        # arg1.python_name = "largs"
+        # arg1.cy_name = "largs"
+        # arg1.cy_type = ctypedef_types_dict["json"]
+        # arg1.python_type = "object"
+
+        # arg1.objc_name = "arg1"
+        # arg1.objc_type = typedef_types_dict["json"]
+        # func.args_.append(arg1)
+        # arg1.custom_call = True
+        #arg1.call_code = f"*json.loads(arg1)"
+
+        # arg2 = Arg()
+        # arg2.is_json = True
+        # arg2.python_name = "kwargs"
+        # arg2.cy_name = "kwargs"
+        # arg2.cy_type = ctypedef_types_dict["json"]
+        # arg2.python_type = "object"
+        # arg2.custom_call = True
+        # #arg2.call_code = f"**json.loads(arg2)"
+
+        # arg2.objc_name = "arg2"
+        # arg2.objc_type = typedef_types_dict["json"]
+        # func.args_.append(arg2)
+        #func.
+        #func.call_args.extend(["event", "value"])
+        objc = False
+        types_list = []
+
+        #func.compare_string = compare_string = " ".join(["void", arg0.cy_type, arg1.cy_type])
+        func.decs.append("callback")
+        
+
+        func_ptrs = self.func_pointers
+        func_ptrs.append(func)
+        self.swift_funcs_set = func
+
+        
+        python_types_dict.update({body_name:body_name})
+        #print(python_types_dict)
+        ctypedef_types_dict.update({body_name:body_name})
+        typedef_types_dict.update({body_name:body_name})
+        call_args_dict.update({body_name:"{arg}"})
+        send_args_dict.update({body_name:"{arg}"})
+
     def handle_function_return(self, body: FunctionDef, func: Function):
         rtns = body.returns
         if rtns:
@@ -882,7 +1020,7 @@ class WrapClass:
                     "slice": rtns.slice.__dict__,
                     "ctx": rtns.ctx.__dict__
                 }
-                pprint(d)
+                #pprint(d)
             else:
                 func.returns = rtns.id
         else:
@@ -900,20 +1038,31 @@ class WrapClass:
                 #print(_dec)
                 func.decs.append(_dec)
                 if _dec == 'callback':
-                    pass
                     #self.add_callback_function(func)
                     func_pointers.append(func)
+                elif _dec == "swift_func":
+                    if not self.has_swift_functions:
+                        self.has_swift_functions = True
+                        self.handle_swift_function_callback()
+                        #func_pointers.append(func)
+                    func.is_swift_func = True
+
+                    self.swift_func_pointers.append(func)
                 elif _dec == 'call_args':
                     for arg in dec.args:
                         #print(arg.id)
                         func.call_args.append(arg.id)
                 elif _dec == "call_class":
                     #print("call_class:",dec.args[0].id)
+                    func.call_class = dec.args[0].value
+                    #_call_class = dec.args[0].id
+                elif _dec == "call_object":
+                    #print(dir(dec))
                     func.call_class = dec.args[0].id
-                    _call_class = dec.args[0].id
+
                 elif _dec == "call_target":
                     #print("call_target:",dec.args[0].id)
-                    func.call_target = dec.args[0].id
+                    func.call_target = dec.args[0].value
         return _dec
 
 class PythonCallBuilder():
@@ -921,12 +1070,15 @@ class PythonCallBuilder():
     root_path: str
     dispatch_mode: bool
     wrap_classes: List[WrapClass]
+    
     def __init__(self,app_dir,root_path):
         self.app_dir = app_dir
         self.root_path = root_path
         self.dispatch_mode = False
         self.wrap_classes = []
         self.global_events = []
+        global used_types
+        used_types.clear()
 
     def get_calltitle(self):
         return self.module_title
@@ -1005,6 +1157,7 @@ class PythonCallBuilder():
         ptr_types = wrap.pointer_types
         count = 0
         function_pointers = []
+        swift_pointers = []
         for func in ptr_types:
             types_list = []
             _arg: Arg
@@ -1042,7 +1195,14 @@ class PythonCallBuilder():
                     args=types_str, returns=_rtns
                     
                     )
-            function_pointers.append(obj_point)
+            if not func.exclude_from_func_pointers:
+                function_pointers.append(obj_point)
+            else:
+                swift_pointers.append(obj_point)
+
+            # if func.is_swift_func:
+            #     swift_pointers.append(obj_point)
+            
 
             for real_func in func_list:
                 #print(f"{func.name}:\n\tfunc: {func.compare_string}\n\tcompare {real_func.name}:{real_func.compare_string} \n\tmatch:{real_func.compare_string == func.compare_string}")
@@ -1052,13 +1212,21 @@ class PythonCallBuilder():
                     real_func.func_ptr = f"{calltitle}_ptr{count}"
 
             count += 1
-        return function_pointers
+        return (function_pointers, swift_pointers)
 
-    def gen_c_struct(self,wrap: WrapClass):
-        cython_struct = f"\tctypedef struct {wrap.calltitle}Callback:"
+    def gen_c_struct(self,wrap: WrapClass, subtitle: str, swift_mode=False):
+        if swift_mode:
+            if not wrap.has_swift_functions:
+                return ""
+        cython_struct = f"\tctypedef struct {wrap.calltitle}{subtitle}:"
         struct_strings = [cython_struct]
         func: Function
-        for func in wrap.func_pointers:
+        if swift_mode:
+            pointers = wrap.swift_func_pointers
+        else:
+            pointers = wrap.func_pointers
+        
+        for func in pointers:
             string = f"\t\t{func.func_ptr} {func.name}"
             struct_strings.append(string)
 
@@ -1103,9 +1271,12 @@ class PythonCallBuilder():
             #struct_strings.append("\tctypedef %s %s" % (title +"Struct",title.lower()+"struct"))
         return "\n".join(struct_strings)
 
-    def gen_objc_struct(self, wrap:WrapClass):
-        pointers = wrap.func_pointers
-        cython_struct = "typedef struct %sCallback {" % wrap.calltitle
+    def gen_objc_struct(self, wrap:WrapClass, subtitle: str, swift_mode=False):
+        if swift_mode:
+            pointers = wrap.swift_func_pointers
+        else:
+            pointers = wrap.func_pointers
+        cython_struct = f"typedef struct {wrap.calltitle}{subtitle} {{" 
         struct_strings = [cython_struct]
         func: Function
         for func in pointers:
@@ -1115,7 +1286,7 @@ class PythonCallBuilder():
                 rtns = "void"
             string = "\t%s _Nonnull %s;" % (func.func_ptr,func.name)
             struct_strings.append(string)
-        struct_strings.append("} %sCallback;" % wrap.calltitle)
+        struct_strings.append(f"}} {wrap.calltitle}{subtitle};")
         return "\n".join(struct_strings)
 
     def fill_cstruct(self,wrap: WrapClass):
@@ -1140,12 +1311,17 @@ class PythonCallBuilder():
         title = wrap.calltitle
         #kivy_props = wrap.kivy_properties
         class_list = []
+        if wrap.has_swift_functions:
+            class_vars = self.gen_swift_class_func(wrap)
+        else:
+            class_vars = ""
         if self.dispatch_mode:
             events = [f"on_{evt}" for evt in wrap.global_events]
+            
             #wrap.enum_list[0][1])
-            class_list.append(cython_class_dispatch.format(_class=title,call_var=call_var, events = events ))
+            class_list.append(cython_class_dispatch.format(_class=title,call_var=call_var, events = events , class_vars=class_vars))
         else:
-            class_list.append(cython_class.format(_class=title,call_var=call_var) )
+            class_list.append(cython_class.format(_class=title,call_var=call_var, class_vars=class_vars))
         class_list.append(fill_struct )
         class_list.append("\t\tset_%s_Callback(callbacks)" % title )
         #print(kivy_properties)
@@ -1153,6 +1329,15 @@ class PythonCallBuilder():
             prop_str = "{0}.bind({1}=self.on_{1})".format("callback_class",_prop)
             class_list.append("\t\t%s" % prop_str)
         return "\n".join(class_list)
+
+    def gen_swift_class_func(self, wrap: WrapClass):
+        #print("gen_swift_class_func")
+        output_list = []
+        for func in wrap.swift_func_pointers:
+            string = f"\tcdef {func.func_ptr} _{func.name}_"
+            output_list.append(string)
+        #print("gen_swift_class_func ended")
+        return "\n".join(output_list)
 
     def gen_send_args(self, func_arg:Arg):
         #arg_type = func_arg.cy_type
@@ -1187,19 +1372,21 @@ class PythonCallBuilder():
                 )
             return array_line
         if func_arg.is_data:
-            lines = [f"cdef int {func_arg.python_name}_size = len({func_arg.python_name})"]
+            lines = []
             if func_arg.is_json:
-                lines.append(f"cdef bytes jbytes = json.dumps({func_arg.python_name}).encode('utf-8')")
-
+                lines.append(f"cdef bytes jbytes_{func_arg.python_name} = json.dumps({func_arg.python_name}).encode('utf-8')")
+                lines.append(f"cdef int {func_arg.python_name}_size = len(jbytes_{func_arg.python_name})")
+            else:
+                lines.append(f"cdef int {func_arg.python_name}_size = len({func_arg.python_name})")
             output = "\n\t\t".join(lines)
             return f"\t\t{output}"
         #else: 
             #return send_args_dict[func_arg.python_type].format(arg=func_arg.python_name)
         return None
 
-    def gen_cyfunc_sends(self, func:Function,args,args2,rtn,has_args=False):
+    def gen_cyfunc_sends(self, func:Function,utitle: str,args,args2,rtn,has_args=False):
         title = func.name
-        utitle = f"{func.wrap_class.calltitle}_{title}"
+        # utitle = f"{func.wrap_class.calltitle}_{title}"
         if has_args:
             args2_list = []
             _arg: Arg
@@ -1213,7 +1400,7 @@ class PythonCallBuilder():
                     #args2_list.append(_arg.cy_name)
                     if _arg.is_json:
                         if _arg.is_data:
-                            args2_list.append("jbytes")
+                            args2_list.append(f"jbytes_{_arg.python_name}")
                         else:
                             args2_list.append(send_args_dict["json"].format(arg=_arg.python_name) )
                     else:
@@ -1276,18 +1463,53 @@ class PythonCallBuilder():
 
     def gen_global_events(self, wrap: WrapClass):
         event_strings = ["######## Global Dispatch Events ########"]
-        print("gen_global_events",wrap.global_events)
+        #print("gen_global_events",wrap.global_events)
         for event in wrap.global_events:
-            print("gen_global_events", event)
+            #print("gen_global_events", event)
             s = global_event_function.format(
                 title = f"on_{event}"
             )
             event_strings.append(s)
         if self.dispatch_mode:
             return "\n".join(event_strings)
-        else:
-            return ""
 
+        return ""
+
+    def gen_swift_funcs_init(self, wrap: WrapClass):
+        
+        if wrap.has_swift_functions:
+            func_list = []
+
+            #wrap.swift_func_pointers[0].name
+            args = [func.name for func in wrap.swift_func_pointers]
+            #print(wrap.calltitle, "has_swift_functions",wrap.swift_func_pointers)
+            args_list = []
+            for func in wrap.swift_func_pointers:
+                a = f"\t\tself._{func.name}_ = func_struct.{func.name}"
+                args_list.append(a)
+
+                # func_args = [f"{_arg.python_name}: {_arg.cy_type}" for _arg in func.args_]
+                # call_arg_names = [_arg.python_name for _arg in func.args_]
+
+                # print(func.name, func.args_)
+                # f = class_cyfunc_send_plain.format(
+                #     title = func.name,
+                #     args = "",
+                #     body = "",
+                #     call = f"self._{func.name}_({', '.join(call_arg_names)})"
+                #     )
+                # func_list.append(f)
+
+            s = SWIFT_FUNCTION_INIT.format(
+                title = wrap.calltitle,
+                args = "\n".join(args_list)
+            )
+            func_list.append(s)
+            return "\n".join(func_list)
+        return ""
+
+
+    
     def gen_send_functions(self,wrap: WrapClass, objc=False, subtitle=None, header=False):
         pointers = wrap.send_functions
         
@@ -1396,13 +1618,82 @@ class PythonCallBuilder():
                     #print("send_func",func.name)
                     # for _arg_ in func.args_:
                     #     #print(_arg_.__dict__)
-                    sfunctions.append( self.gen_cyfunc_sends(func,types_list,", ".join(args2),func.returns,len(func.args_) != 0) )
+                    sfunctions.append( self.gen_cyfunc_sends(
+                        func,
+                        f"{func.wrap_class.calltitle}_{func.name}",
+                        types_list,
+                        ", ".join(args2),
+                        func.returns,
+                        len(func.args_) != 0
+                        ) )
                 # pprint("".join(sfunctions)
             
         if not header and not objc:
             if len(sfunctions) != 0:
                 del sfunctions[0]
         return "\n".join( sfunctions )
+
+
+    def gen_swift_send_functions(self,wrap: WrapClass):
+        pointers = wrap.swift_func_pointers
+        
+        # for i in range(len(pointers)):
+        #     ptr:Function = pointers[i]
+        #     calltitle = self.calltitle
+        #     #print(ptr.name)
+        calltitle = wrap.calltitle
+        
+        sfunctions = []
+        # if not header and objc:
+        s1 = re.sub( r"([A-Z])", r" \1", calltitle).split()
+        s2 = []
+        for item in s1:
+            s2.append(item.lower())
+        # s3 = "_".join(s2)
+        # sfunctions.append(ext_send_callback.format(title=calltitle,title_l=calltitle,subtitle=s3,returns="void"))
+
+        for i,func in enumerate(pointers):
+            utitle = f"{func.wrap_class.calltitle}_{func.name}"
+            types_list = []
+            types_list2 = []
+            rtns = func.returns
+            if rtns is not None:
+
+                _rtns = ctypedef_types_dict[rtns]
+            else:
+                _rtns = "void"
+
+            args2 = []
+            func: Function
+            _args: Arg
+            for _args in func.args_:
+                _types = []
+                args2.append(_args.objc_type)
+                if _args.python_name is "":
+                    send_arg = _args.objc_name
+                else:
+                    send_arg = _args.python_name
+                        
+                str0 = " ".join((_args.objc_type,send_arg))
+                types_list.append(str0)
+        
+            types_str = ", ".join(types_list)
+
+            sfunctions.append( self.gen_cyfunc_sends(
+                func,
+                f"self._{func.name}_",
+                types_list,
+                ", ".join(args2),
+                func.returns,
+                len(func.args_) != 0) 
+                )
+                # pprint("".join(sfunctions)
+            
+        #if not header and not objc:
+        # if len(sfunctions) != 0:
+        #     del sfunctions[0]
+        return "\n".join( sfunctions )
+
 
     def gen_cython_callbacks(self, pointers:list):
         cy_functions = []
@@ -1436,7 +1727,9 @@ class PythonCallBuilder():
             #call_arg: Arg
             _call_class = func.call_class
             for call_arg in func.args_:
-                if _call_class != call_arg.python_name:
+                ###### add arg as call_target or class_call here instead #####
+                #print(call_arg.python_name,_call_class != call_arg.python_name , func.call_target != call_arg.python_name)
+                if _call_class != call_arg.python_name and func.call_target != call_arg.python_name:
                     if call_arg.is_list:
                         call_args.append(call_list_dict[call_arg.list_type].format(arg=call_arg.objc_name))
                     else:
@@ -1458,12 +1751,14 @@ class PythonCallBuilder():
 
             callback = "(%s)" % ", ".join(call_args)#.split(".")[-1]
             rtns = func.returns
+            arg_as_call = False
+            arg_is_function = False
             if rtns:
                 _rtns = ctypedef_types_dict[rtns]
             else:
                 _rtns = "void"
-            if len(func.call_args) != 0:
-                callback = "(%s)" % ", ".join(func.call_args)
+            # if len(func.call_args) != 0:
+            #     callback = "(%s)" % ", ".join(func.call_args)
             if func.call_target != "":
                 call = ".".join((func.call_target,_title))
             else:
@@ -1471,6 +1766,25 @@ class PythonCallBuilder():
                     call = ""
                 else:
                     call = _title
+            #if 
+            ### arg as call_class and use objc_name
+            arg_names = [a.python_name for a in func.args_]
+            #print(func.name,func.call_class,func.call_target,arg_names)
+            if func.call_class in arg_names:
+                
+                for i, arg in enumerate(func.args_):
+                    if arg.python_name == func.call_class:
+                        call = arg.objc_name
+                        break
+                arg_as_call = True
+            elif func.call_target in arg_names:
+                for i, arg in enumerate(func.args_):
+                    if arg.python_name == func.call_target:
+                        call = arg.objc_name
+                        break
+                arg_is_function = True
+            else:
+                pass
             if func.code:
                 code = func.code.replace("\n","\n\t") #+ callback
                 
@@ -1493,13 +1807,34 @@ class PythonCallBuilder():
                                                         )
             
                 else:
-                    s = cython_callback2.format(title=_title,
-                                                call=call,callback=callback,
-                                                args = args_str,
-                                                call_class=func.call_class,
-                                                _class=func.wrap_class.calltitle,
-                                                returns=_rtns
-                                                )
+                    if arg_as_call:
+                        s = cython_callback.format(title=_title,
+                                                    callback=callback,
+                                                    args=args_str,
+                                                    call_class=call,
+                                                    _class=func.wrap_class.calltitle,
+
+                                                    )
+                    elif arg_is_function:
+                        #print("cython_call4",call)
+                        s = cython_callback4.format(
+                            title=_title,
+                            callback=callback,
+                            args=args_str,
+                            call_class=call,
+                            _class=func.wrap_class.calltitle,
+                            returns=_rtns
+
+                        
+                        )
+                    else:
+                        s = cython_callback2.format(title=_title,
+                                                    call=call,callback=callback,
+                                                    args = args_str,
+                                                    call_class=func.call_class,
+                                                    _class=func.wrap_class.calltitle,
+                                                    returns=_rtns
+                                                    )
             cy_functions.append(s)
         
         return "".join(cy_functions)
@@ -1609,16 +1944,28 @@ class PythonCallBuilder():
             dispatch_import = "from kivy._event cimport EventDispatcher"
         else:
             dispatch_import = ""
+
+        ctypedefs = []
+        for key, value in load_c_types().items():
+            if key in used_types:
+                ctypedefs.append(value)
+        ctypedef_strings = []
+        if len(ctypedefs) > 0:
+            ctypedef_strings.append(f"cdef extern from \"wrapper_typedefs.h\":\n\t")
+            ctypedef_strings.extend(ctypedefs)
         cy_list = [
             "#cython: language_level=3",
             dispatch_import,
             "import json",
             "from libc.stdlib cimport malloc, free",
             "from libcpp cimport bool as bool_t",
+            #f"cdef extern from \"wrapper_typedefs.h\":",
+            "\n\t".join(ctypedef_strings),
+            "\n",
             f"cdef extern from \"_{self.module_title}.h\":",
         ]
         
-        print(self.global_events)
+        #print(self.global_events)
         enums_structs = []
         if len(self.cstruct_list):
             enums_structs.append("\t\n".join([self.gen_c_struct_custom(arg[0],arg[1]) for arg in self.cstruct_list]))
@@ -1645,10 +1992,19 @@ class PythonCallBuilder():
         for wrap in classes:
             cy_ext = [
                 
-                self.gen_c_struct(wrap),   
+                self.gen_c_struct(wrap, "Callback"),   
                 "" 
             ]
             cy_list.extend(cy_ext)
+        
+        for wrap in classes:
+            cy_swift_funcs = [
+                #f"void Init{wrap.calltitle}Swift_Functions();",
+                "",
+                self.gen_c_struct(wrap, "SwiftFuncs", True),
+                ""
+            ]
+            cy_list.extend(cy_swift_funcs)
 
         cy_list.append("\n\t######## cdef extern Send Functions: ########")
         for wrap in classes:
@@ -1666,7 +2022,7 @@ class PythonCallBuilder():
                 export_enum_list = f"cdef list {wrap.calltitle}_events = {events}"
             else:
                 export_enum_list = ""
-            print(self.global_events)
+            #print(self.global_events)
             cy_classes = [
                 # "\t\n".join([self.gen_c_enum(arg[0],arg[1]) for arg in enum_list]),
                 # "\t\n".join([self.gen_c_struct_custom(arg[0],arg[1]) for arg in self.cstruct_list]),
@@ -1687,6 +2043,10 @@ class PythonCallBuilder():
                 export_enum_list,
                 self.gen_cython_class(wrap,wrap.calltitle + "_voidptr",self.fill_cstruct(wrap)) ,
                 "",
+                self.gen_swift_funcs_init(wrap),
+                "",
+                self.gen_swift_send_functions(wrap),
+                "",
                 self.gen_global_events(wrap),
                 "######## Send Functions: ########",
                 self.gen_send_functions(wrap,False)
@@ -1699,7 +2059,8 @@ class PythonCallBuilder():
         classes = self.wrap_classes
 
         objc_strings = [
-            "#import <Foundation/Foundation.h>\n"
+            "#import <Foundation/Foundation.h>\n",
+            "#import \"wrapper_typedefs.h\"\n"
         ]
         for wrap in classes:
             
@@ -1709,9 +2070,13 @@ class PythonCallBuilder():
             func_pointers = wrap.func_pointers
             ptr_types = wrap.pointer_types
             enum_list = wrap.enum_list
-            objc_pointers = self.gen_cyfunction_pointers(wrap,True)
-
-
+            objc_pointers,swift_pointers = self.gen_cyfunction_pointers(wrap,True)
+            
+            if wrap.has_swift_functions:
+                swift_funcs: str = self.gen_objc_struct(wrap, "SwiftFuncs", True)
+                swift_funcs += "\n\n"
+            else:
+                swift_funcs = ""
             objc_hlist = [
             
             "\t\n".join([self.gen_c_enum(arg[0],arg[1], True) for arg in enum_list]),
@@ -1720,9 +2085,14 @@ class PythonCallBuilder():
             "//######## cdef extern Callback Function Pointers: ########//\n",
             "".join(objc_pointers ) ,
             "\n",
+            swift_funcs,
+            "".join(swift_pointers ) ,
+            "\n",
             "//######## cdef extern Callback Struct: ########//\n",
-            self.gen_objc_struct(wrap),
+            self.gen_objc_struct(wrap,"Callback"),
             "\n\n",
+
+            
             # #objc_hlist.append(self.gen_structtype_init_funct(calltitle,True) )
             "\n",
             "//######## cdef extern Send Functions: ########//\n",
@@ -1762,7 +2132,7 @@ class PythonCallBuilder():
         self.cstruct_list = []
         
         
-        print("build_py_files")
+        #print("build_py_files")
         #script = sys.argv[2]
         py3_compiler = "#cython: language_level=3\n"
         pyfile = open("{}".format(script), "r" )
@@ -1775,7 +2145,7 @@ class PythonCallBuilder():
         self.module_title = module_title = file_title
         site_manager_path = join(root_path,"venv/lib/python3.8/site-packages")
         self.dispatch_mode = wrap_class.dispatch_mode
-        print("new_mark",self.global_events)
+        #print("new_mark",self.global_events)
         with open(join(site_manager_path,"%s.py" % module_title.lower()), "w") as f:
             f.write(self.parse_helper(test))
         pyfile.close()
@@ -1806,31 +2176,7 @@ class PythonCallBuilder():
 
         return (pyx_script,objc_script)
 
-#kivy_folder = "/Volumes/WorkSSD/kivy-ios-11.04.20_copy/"
-kivy_folder = "/Volumes/WorkSSD/kivy_ios/"
-def ProcessFiles(t,pack):
-    p_build = PythonCallBuilder()
-    t = sys.argv[1]
-    pack = sys.argv[2]
-    if t == "build":
-        p_build.build_py_files()
-        pack_all("PythonSwiftLink.zip",kivy_folder + ".cache/")
-    elif t == "build_compile":
-        p_build.build_py_files()
-        pack_all("master.zip",calltitle)
-        # subprocess.call(['python3.7',"%s/toolchain.py" % kivy_folder, "clean", calltitle])
-        # subprocess.call(['python3.7',"%s/toolchain.py" % kivy_folder, "build", calltitle])
-        subprocess.call(['',"toolchain" % kivy_folder, "clean", calltitle])
-        subprocess.call(['',"toolchain" % kivy_folder, "build", calltitle])
-        remove_cache_file(kivy_folder+".cache/"+calltitle+"-master.zip")
 
-        
-
-         
-    elif t == "compile_all":
-        pack_all("PythonSwiftLink-main.zip",kivy_folder + ".cache/")
-        subprocess.call(['python3.7',"%s/toolchain.py" % kivy_folder, "clean", "PythonSwiftLink"])
-        subprocess.call(['python3.7',"%s/toolchain.py" % kivy_folder, "build", "PythonSwiftLink"])
          
 #(<object> classtest).func0(test.decode('utf-8'),test2)
 #[test[x] for x in range(test_count)]
