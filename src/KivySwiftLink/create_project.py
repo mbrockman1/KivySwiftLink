@@ -27,7 +27,7 @@ class ProjectCreator:
 
     def create_project(self,title,path):
         print(title, path)
-        subprocess.run(f"toolchain crate {title} {path}", shell=True)
+        subprocess.run(f"toolchain create {title} {path}", shell=True)
         self.project_target = join(self.root_path,f"{title}-ios")
         self.update_classes_group()
         subprocess.run(f"toolchain xcode {title}-ios", shell=True)
