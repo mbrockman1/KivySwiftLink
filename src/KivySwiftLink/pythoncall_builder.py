@@ -2150,6 +2150,7 @@ class PythonCallBuilder():
             f.write(self.parse_helper(test))
         pyfile.close()
         SUPPORT_FILES = join(self.root_path,"project_support_files")
+        HEADER_DIR = join(self.root_path,"wrapper_headers")
         BUILD_DIR = join(self.root_path,"wrapper_builds")
         MODULE_FOLDER = join(BUILD_DIR, module_title.lower())
         SRC_FOLDER = join(MODULE_FOLDER,"src")
@@ -2181,6 +2182,11 @@ class PythonCallBuilder():
             recipe.write(new_recipe)
 
         shutil.copy2(join(SUPPORT_FILES,"wrapper_typedefs.h"), SRC_FOLDER)
+
+        
+        shutil.copy2(join(SRC_FOLDER,f"_{module_title}.h"), join(HEADER_DIR,f"{module_title}.h"))
+        if not exists(join(HEADER_DIR,"wrapper_typedefs.h")):
+            shutil.copy2(join(SUPPORT_FILES,"wrapper_typedefs.h"), HEADER_DIR)
 
         return (pyx_script,objc_script)
 

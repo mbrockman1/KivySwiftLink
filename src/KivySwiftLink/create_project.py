@@ -18,30 +18,32 @@ BRIDGE_STRING = """
 
 class ProjectCreator:
     bridge_header: str
+    
     def __init__(self, root_path, app_dir):
         self.app_dir = app_dir
         self.root_path = root_path
         self.project_target = root_path
         self.bridge_header = None
+
     def create_project(self,title,path):
         print(title, path)
-        command = " ".join([toolchain, "create", title, path])  # the shell command
-        # self.execute(command,0,False)
-        subprocess.run(command, shell=True)
+        subprocess.run(f"toolchain crate {title} {path}", shell=True)
         self.project_target = join(self.root_path,f"{title}-ios")
         self.update_classes_group()
+        subprocess.run(f"toolchain xcode {title}-ios", shell=True)
 
     def load_xcode_project(self):
         if self.project_target:
             try:
                 target = self.project_target
                 target_name = os.path.basename(target)[:-4]
-                #print("target_name: ",target_name)
-                path = "%s/%s.xcodeproj/project.pbxproj" % (target, target_name)
+
+                print("target_name: ",target_name, self.project_target)
+                path = f"{target}/{target_name}.xcodeproj/project.pbxproj"
                 self.project = XcodeProject.load(path)
             # for 
             except:
-                print("project failed invalid path:", str(self.project_target))
+                print("project failed invalid path:", str(path))
                 return
             bridge_header = join(self.project_target,f"{target_name}-Bridging-Header.h")
             if exists(bridge_header):
@@ -149,15 +151,16 @@ class ProjectCreator:
                     project.add_file(join(self.project_target,item), parent=classes)
                     project_updated = True
 
-                        
+            EXCLUDE_FILES = ["old_PythonSupport.swift"]
             for (dirpath, dirnames, filenames) in os.walk(project_support_files):
                 for item in filenames:
                     if item not in sources_list and item != ".DS_Store" and item.lower().endswith(".swift"):
-                        dst = join(self.project_target,item)
-                        shutil.copy(join(dirpath,item),dst)
-                        #print(dirpath,item)
-                        project.add_file(dst, parent=sources)
-                        project_updated = True
+                        if item not in EXCLUDE_FILES:
+                            dst = join(self.project_target,item)
+                            shutil.copy(join(dirpath,item),dst)
+                            #print(dirpath,item)
+                            project.add_file(dst, parent=sources)
+                            project_updated = True
             pro_file = ""
             with open(path, "r") as f:
                 pro_file = f.read()
@@ -165,15 +168,6 @@ class ProjectCreator:
             bridge_header = join(self.project_target,f"{target_name}-Bridging-Header.h")
             self.bridge_header = bridge_header
             if not exists(bridge_header):
-                # bridge_strings = [
-                #     "\n#import \"runMain.h\"",
-                #     "//#Wrappers Start",
-                #     "//  Insert Your Wrapper Headers Here -> #import \"wrapper_class_name\".h//  ",
-                #     "//#Wrappers End",
-                #     "\n",
-                #     "//Insert Other OBJ-C Headers Here:"
-
-                # ] 
                 with open(bridge_header, "w") as b:
                     b.write(BRIDGE_STRING)
             project.set_flags("SWIFT_OBJC_BRIDGING_HEADER",f"{target_name}-Bridging-Header.h")
