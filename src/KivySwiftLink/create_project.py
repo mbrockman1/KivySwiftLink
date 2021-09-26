@@ -11,6 +11,7 @@ toolchain = "toolchain"
 BRIDGE_STRING = """
 #import \"runMain.h\"
 //#Wrappers Start"
+#import "wrapper_typedefs.h"
 //#Wrappers End
 //Insert Other OBJ-C Headers Here:
 """
