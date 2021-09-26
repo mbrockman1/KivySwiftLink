@@ -52,7 +52,7 @@ elif [ "$INPUT_STRING" = "w" ]; then
     
     pip install ./KivySwiftLink
 
-    mv ./KivySwiftLink/python_support_files ./     
+    cp ./KivySwiftLink/python_support_files ./     
     cp ./KivySwiftLink/wrapper_tool_cli.sh ./ksl
     chmod +x wrapper_tool
 
