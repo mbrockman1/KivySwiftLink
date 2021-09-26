@@ -8,7 +8,7 @@ import shutil
 import json
 from argparse import ArgumentParser
 from os.path import dirname, abspath, join, exists,splitext
-
+from pprint import pprint
 toolchain = "toolchain"
 
 class BuildHandler:
@@ -20,7 +20,7 @@ class BuildHandler:
         self.root_path = root_path
 
 
-    def build_single(self, file: str):
+    def build_single(self, file: str, project: str):
         app_dir, root_path = self.app_dir, self.root_path
 
         name = file.split(".")[0]
@@ -36,8 +36,10 @@ class BuildHandler:
             cmd = f"toolchain clean {name}"
             subprocess.run(cmd,  shell=True, stdout=None, stderr=None)
 
-
             cmd = f"toolchain build {name} --add-custom-recipe {join(root_path, 'wrapper_builds', name)}"
+            subprocess.run(cmd, shell=True)
+
+            cmd = f"toolchain update {project}-ios --add-custom-recipe {join(root_path, 'wrapper_builds', name)}"
             subprocess.run(cmd, shell=True)
 
     
@@ -50,13 +52,16 @@ class BuildHandler:
             for file in files:
                 if file != ".DS_Store":
                     print(file)
-                    self.build_single(file)
+                    self.build_single(file, project_name)
                     names.append(splitext(file)[0])
         
         project = ProjectCreator(root_path, app_dir)
         project.project_target = join(root_path,f"{project_name}-ios")
         project.load_xcode_project()
         project.update_bridging_header(names)
+        recipes_list = [join(root_path, 'wrapper_builds', n) for n in names]
+        # cmd = f"toolchain update {args.project_name}-ios --add-custom-recipe {' '.join(recipes_list)}"
+        # subprocess.run(cmd, shell=True)
 
 
 
@@ -97,68 +102,111 @@ class BuildHandler:
                         py_files.append(join(root,file))
         return py_files
 
+    def select_project(self, project: str):
+        project_path = join(root_path, f"{args.project_name}-ios")
+        DB_FILE = join(self.app_dir,"ksl_settings.json")
+        if exists(DB_FILE):
+            with open(DB_FILE, 'r') as f:
+                db_data = json.load(f)
+            db_data["current_project"] = [project, project_path]
+        else:
+            db_data = {
+                "current_project": [project, project_path]
+            }
+        with open(DB_FILE, 'w') as f:
+            json.dump(db_data, f)
+    
+    def get_project(self):
+        DB_FILE = join(self.app_dir,"ksl_settings.json")
+        if exists(DB_FILE):
+            with open(DB_FILE, 'r') as f:
+                db_data = json.load(f)
+                return db_data["current_project"]
+        return None
+
+
+
 if __name__ == '__main__':
     
-    # p = ArgumentParser()
-    # build_sub = p.add_subparsers()
-    # #build_sub.add_argument("operation", help="./wrapper_tool_cli build <filename.py>")
-    # #build_sub.add_argument("filename", help="wrapper_filename.py")
-    # checkout = build_sub.add_parser('build', aliases=['-b'])
-    # checkout.add_argument('filename')
+    p = ArgumentParser()
+    sub_parsers = p.add_subparsers(dest="cmd")
 
-    # args = p.parse_args()
+    build_args = sub_parsers.add_parser('select_project')
+    build_args.add_argument('project_name')
 
-    # t = args.operation
+    build_args = sub_parsers.add_parser('build')
+    build_args.add_argument('filename')
+    #build_args.add_argument('project_name')
 
-    # if t == "build":
-    #     print("build is used")
+    build_args = sub_parsers.add_parser('build_all')
+    #build_args.add_argument('project_name')
 
-    # elif t == "select-project":
-    #     print("selecting project")
+    create_args = sub_parsers.add_parser('create')
+    create_args.add_argument("project_name")
+    create_args.add_argument('python_source_folder')
 
-    args_size = len(sys.argv[1:])
-    menu = """
-    build       Build a wrapper file 
-    create        Create a new xcode project
-    """
+    create_args = sub_parsers.add_parser('install_extension')
+    create_args.add_argument('folder_path')
+    #create_args.add_argument("project_name")
+    
 
-    if args_size == 0:
-        print(menu)
-        exit(1)
 
-    args = sys.argv[2:]
-    t = sys.argv[1]
-    #t = args[0]
+    args = p.parse_args()
+
+    T = args.cmd
+    s = sub_parsers
 
     root_path = os.getcwd()
     app_dir = abspath(dirname(__file__))
     handler = BuildHandler(app_dir, root_path)
-    if t == "build":
-        if args_size -1 == 0:
-            print("""build <wrapper_name.py>    -   build my_file.py 
-        """)
+    current_project = handler.get_project()
+
+    if T == "build":
+        if not current_project:
+            print("No project selected, use \"select_project\" cmd to set it.")
             exit(1)
-        _file_ = args[0]
+        project = current_project[0]
+        print(f"Building {args.filename}")
+        _file_ = args.filename
         handler.build_single(
-           _file_,
+            _file_,
+            project
         )
         name = splitext(_file_)[0]
         project = ProjectCreator(root_path, app_dir)
-        project.project_target = join(root_path,f"{args[1]}-ios")
+        project.project_target = current_project[1]
         project.load_xcode_project()
         project.update_bridging_header([name])
-        cmd = f"toolchain update {args[1]}-ios --add-custom-recipe {join(root_path, 'wrapper_builds', name)}"
-        subprocess.run(cmd, shell=True)
-    
-    elif t == "build_all":
-        if args_size != 0:
-
-            handler.build_all(args[0])
-
-
-    elif t == "install_extension":
         
-        _dir_ = args[1]
+
+
+
+    elif T == "build_all":
+        if not current_project:
+            print("No project selected, use \"select_project\" cmd to set it.")
+            exit(1)
+        handler.build_all(current_project[0])
+
+
+
+
+
+    elif T == "create":
+        print("Creating project", args.project_name, args.python_source_folder)
+        project = ProjectCreator(root_path, app_dir)
+        project.create_project(args.project_name, args.python_source_folder)
+
+
+    elif T == "select_project":
+        #project = join(root_path, f"{args.project_name}-ios")
+        handler.select_project(args.project_name)
+
+
+    elif T == "install_extension":
+        if not current_project:
+            print("No project selected, use \"select_project\" cmd to set it.")
+            exit(1)
+        _dir_ = args.folder_path
         print("Installing Extension",_dir_)
         with open(join(_dir_,"setup.json")) as f:
             kw = json.load(f)
@@ -171,26 +219,18 @@ if __name__ == '__main__':
             filebase = os.path.basename(file)
             handler.build_single(filebase)
         
-        kw["project"] = args[0]
+        kw["project"] = args.project_name
         kw["path"] = join(_dir_, "swift_sources")
 
         handler.install_extensions(kw)
 
 
-    elif t == "create_pack":
-        _file_ = args[1]
-        _name_ = _file_.split(".")[0]
-        p_build = PythonCallBuilder(app_dir, root_path)
+    exit(1)
 
-    elif t == "create":
-        project = ProjectCreator(root_path, app_dir)
-        project.create_project(sys.argv[2], sys.argv[3])
+    # elif t == "create_with_extensions":
+    #     kw = {
 
-
-    elif t == "create_with_extensions":
-        kw = {
-
-        }
-        create_project_with_extensions()
+    #     }
+    #     create_project_with_extensions()
 
     
