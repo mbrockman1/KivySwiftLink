@@ -2131,7 +2131,7 @@ class PythonCallBuilder():
         #global cstruct_list
         self.cstruct_list = []
         
-        
+        site_manager_path = Path(self.app_dir).parent
         #print("build_py_files")
         #script = sys.argv[2]
         py3_compiler = "#cython: language_level=3\n"
@@ -2143,13 +2143,13 @@ class PythonCallBuilder():
         wrap_class = wrap_classes[0]
 
         self.module_title = module_title = file_title
-        site_manager_path = Path(self.app_dir).parent
+        
         self.dispatch_mode = wrap_class.dispatch_mode
         #print("new_mark",self.global_events)
         with open(join(site_manager_path,"%s.py" % module_title.lower()), "w") as f:
             f.write(self.parse_helper(test))
         pyfile.close()
-
+        SUPPORT_FILES = join(self.root_path,"project_support_files")
         BUILD_DIR = join(self.root_path,"wrapper_builds")
         MODULE_FOLDER = join(BUILD_DIR, module_title.lower())
         SRC_FOLDER = join(MODULE_FOLDER,"src")
@@ -2180,7 +2180,7 @@ class PythonCallBuilder():
             new_recipe = create_recipe(self.module_title)
             recipe.write(new_recipe)
 
-        shutil.copy2(join(self.root_path,"project_support_files","wrapper_typedefs.h"), SRC_FOLDER)
+        shutil.copy2(join(SUPPORT_FILES,"wrapper_typedefs.h"), SRC_FOLDER)
 
         return (pyx_script,objc_script)
 
