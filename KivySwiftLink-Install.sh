@@ -56,7 +56,7 @@ elif [ "$INPUT_STRING" = "w" ]; then
     cp ./KivySwiftLink/wrapper_tool_cli.sh ./ksl
     chmod +x wrapper_tool
 
-    cp ./KivySwiftLink/src/swift_types.py ./venv/lib/python3.8/site-packages/
+    cp ./KivySwiftLink/src/swift_types.py ./venv/lib/python3.9/site-packages/
     rm -R -f KivySwiftLink
     #chmod +x wrapper_tool
     
