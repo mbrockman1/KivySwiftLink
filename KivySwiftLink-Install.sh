@@ -39,7 +39,7 @@ elif [ "$INPUT_STRING" = "w" ]; then
     
     git clone https://github.com/psychowasp/KivySwiftLink
     
-    python3.8 -m venv venv
+    python3.9 -m venv venv
     . venv/bin/activate
     pip install cython
     pip install kivy
@@ -52,14 +52,8 @@ elif [ "$INPUT_STRING" = "w" ]; then
     
     pip install ./KivySwiftLink
 
-    #        rsync -av --delete --exclude '.git' /Users/macdaw/kivyios_swift/PythonSwiftLink/* ./PythonSwiftLink
-    
-    #cp ./KivySwiftLink/main.py ./wrapper_tool.py
-    #cp ./KivySwiftLink/wrapper_tool.sh ./wrapper_tool
-    
-    #cp ./PythonSwiftLink/cli_mode.py ./
-    
-    cp ./KivySwiftLink/wrapper_tool_cli.sh ./wrapper_tool
+    mv ./KivySwiftLink/python_support_files ./     
+    cp ./KivySwiftLink/wrapper_tool_cli.sh ./ksl
     chmod +x wrapper_tool
 
     cp ./KivySwiftLink/src/swift_types.py ./venv/lib/python3.8/site-packages/
