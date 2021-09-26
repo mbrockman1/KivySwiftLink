@@ -28,7 +28,7 @@ cd path-of-the-root
 copy / paste the following line:
 
  ```sh
-sh -c "$(curl -sSL https://raw.githubusercontent.com/psychowasp/PythonSwiftLink/main/build_files/swiftlink_tool.sh)"
+sh -c "$(curl -sSL https://raw.githubusercontent.com/psychowasp/KivySwiftLink/main/KivySwiftLink-Install.sh)"
  ```
 You should now be prompted with the following:
 
