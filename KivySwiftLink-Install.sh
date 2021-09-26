@@ -63,6 +63,7 @@ elif [ "$INPUT_STRING" = "w" ]; then
     mkdir wrapper_sources
     mkdir wrapper_builds
     mkdir wrapper_headers
+    toolchain build python
     toolchain build kivy
 
     echo
