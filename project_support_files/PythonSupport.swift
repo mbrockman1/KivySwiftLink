@@ -37,18 +37,18 @@ extension Data {
 
 //Python/C Types
 
-extension python_string {
+extension PythonString {
     func asString() -> String {
         return String(cString: self )
     }
 }
 
-extension python_bytes {
+extension PythonBytes {
 
 }
 
 
-extension python_data {
+extension PythonData {
     func asData(python_data length: Int) -> Data {
         return Data(UnsafeBufferPointer(start: self, count: length))
     }
@@ -56,7 +56,7 @@ extension python_data {
 
 
 
-extension json_data {
+extension PythonJsonData {
     func asDictionary(count: Int, options: JSONSerialization.ReadingOptions = .mutableContainers) -> [String:Any]! {
         let data = self.asData(count: count)
         do {
