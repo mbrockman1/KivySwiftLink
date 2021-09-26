@@ -8,9 +8,9 @@ import shutil
 import json
 from argparse import ArgumentParser
 from os.path import dirname, abspath, join, exists,splitext
-
 toolchain = "toolchain"
-
+ROOT_PATH = os.getcwd()
+APP_DIR = abspath(dirname(__file__))
 class BuildHandler:
     app_dir: str
     root_path: str
@@ -130,8 +130,8 @@ if __name__ == '__main__':
     t = sys.argv[1]
     #t = args[0]
 
-    root_path = abspath(dirname(__file__))
-    app_dir = join(root_path,"PythonSwiftLink")
+    root_path = ROOT_PATH
+    app_dir = APP_DIR
     handler = BuildHandler(app_dir, root_path)
     if t == "build":
         if args_size -1 == 0:
@@ -147,7 +147,8 @@ if __name__ == '__main__':
         project.project_target = join(root_path,f"{args[1]}-ios")
         project.load_xcode_project()
         project.update_bridging_header([name])
-        cmd = f"toolchain update {args[1]}-ios {name} --add-custom-recipe {join(root_path, 'wrapper_builds', name)}"
+        print("\nUpdating projects .a files\n\n")
+        cmd = f"toolchain update {args[1]}-ios --add-custom-recipe {join(root_path, 'wrapper_builds', name)}"
         subprocess.run(cmd, shell=True)
     
     elif t == "build_all":
