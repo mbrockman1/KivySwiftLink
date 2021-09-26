@@ -19,7 +19,7 @@ import random
 import string
 import platform 
 from typing import List
-
+from pathlib import Path
 from KivySwiftLink.def_types import types2dict
 
 from KivySwiftLink.create_recipe import create_recipe, create_setup_py
@@ -2143,7 +2143,7 @@ class PythonCallBuilder():
         wrap_class = wrap_classes[0]
 
         self.module_title = module_title = file_title
-        site_manager_path = join(root_path,"venv/lib/python3.8/site-packages")
+        site_manager_path = Path(self.app_dir).parent
         self.dispatch_mode = wrap_class.dispatch_mode
         #print("new_mark",self.global_events)
         with open(join(site_manager_path,"%s.py" % module_title.lower()), "w") as f:
@@ -2180,7 +2180,7 @@ class PythonCallBuilder():
             new_recipe = create_recipe(self.module_title)
             recipe.write(new_recipe)
 
-        shutil.copy2(join(self.app_dir,"wrapper_typedefs.h"), SRC_FOLDER)
+        shutil.copy2(join(self.root_path,"project_support_files","wrapper_typedefs.h"), SRC_FOLDER)
 
         return (pyx_script,objc_script)
 

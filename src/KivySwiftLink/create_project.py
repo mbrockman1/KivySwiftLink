@@ -24,6 +24,7 @@ class ProjectCreator:
         self.project_target = root_path
         self.bridge_header = None
     def create_project(self,title,path):
+        print(title, path)
         command = " ".join([toolchain, "create", title, path])  # the shell command
         # self.execute(command,0,False)
         subprocess.run(command, shell=True)
@@ -134,21 +135,22 @@ class ProjectCreator:
                 project.remove_group_by_name("Classes")
             except:
                 print("removing classes failed")
+            project_support_files = join(self.root_path,"project_support_files")
             classes = project.get_or_create_group("Classes")
             classes_list = set([child._get_comment() for child in classes.children])
-            with open(join(self.app_dir,"project_build_files","runMain.m"), "r") as f:
+            with open(join(project_support_files, "runMain.m"), "r") as f:
                 main_string = f.read()
             with open(join(self.project_target,"runMain.m"), "w") as f:
                 f.write(main_string.replace("{$project_path}",self.root_path))
             if not exists(join(self.project_target,"runMain.h")):
-                shutil.copy(join(self.app_dir,"project_build_files","runMain.h"), join(self.project_target,"runMain.h"))
+                shutil.copy(join(project_support_files,"runMain.h"), join(self.project_target,"runMain.h"))
             for item in ("runMain.h","runMain.m"):
                 if item not in classes_list and item != ".DS_Store":
                     project.add_file(join(self.project_target,item), parent=classes)
                     project_updated = True
 
                         
-            for (dirpath, dirnames, filenames) in os.walk(join(self.app_dir, "project_build_files")):
+            for (dirpath, dirnames, filenames) in os.walk(project_support_files):
                 for item in filenames:
                     if item not in sources_list and item != ".DS_Store" and item.lower().endswith(".swift"):
                         dst = join(self.project_target,item)
