@@ -2,15 +2,15 @@
 
  ## Installation
 
-Make sure you have **Python 3.8.2** installed since this tool only tagets python3.8 internal and kivy-ios runs on 3.8.2
+Make sure you have **Python 3.9.2** installed since this tool only tagets python3.8 internal and kivy-ios runs on 3.9.2
 
 so i recommend having the working python version in sync with the kivy-ios
 
-https://www.python.org/ftp/python/3.8.2/python-3.8.2-macosx10.9.pkg
+https://www.python.org/ftp/python/3.9.2/python-3.9.2-macosx10.9.pkg
 
 after installation make sure to run 
 
-/Applications/Python 3.8/Install Certificates.command
+/Applications/Python 3.9/Install Certificates.command
 
 else kivy-ios cant build anything.
 
