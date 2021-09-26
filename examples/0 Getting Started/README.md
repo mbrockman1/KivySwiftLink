@@ -4,11 +4,11 @@
 
 
 ```sh
-./wrapper_tool_cli create <project-name> <path-of-your-python-main.py-folder>
+./ksl create <project-name> <path-of-your-python-main.py-folder>
 ```
 make a folder inside the working folder and call it py_src. u can call it whatever u feel like and place it anywhere you want, but for the sake of this tutorial we just use an internal folder as source.
 ```sh
-./wrapper_tool_cli create kivytest_project ./py_src
+./ksl create kivytest_project py_src
 ```
 Same thing as with kivy toolchain, only this runs on top of the toolchain and will do some extra things, to make the xcode project more suitable for running swift side by side with kivy.
 
@@ -231,7 +231,7 @@ when returning to your project run the following:
 
 ```sh
 cd <path of kivy-ios root project folder>
-./wrapper_tool_cli <commands>
+./ksl <commands>
 ```
 
 [Implementing a wrapper into a kivy app class](https://github.com/psychowasp/PythonSwiftLink/tree/main/examples/1%20Implementing%20a%20wrapper%20into%20a%20kivy%20app%20class)
