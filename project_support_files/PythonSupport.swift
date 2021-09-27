@@ -17,12 +17,21 @@ func pointer2array<T>(data: UnsafePointer<T>,count: Int) -> [T] {
     return Array<T>(buffer)
 }
 
+
+
 extension Data {
     var bytes_array : [UInt8] {
         return [UInt8](self)
     }
     
-    var bytes : UnsafePointer<UInt8> {
+//    var bytes : UnsafePointer<UInt8> {
+//        self.withUnsafeBytes { (unsafeBytes) in
+//            let bytes = unsafeBytes.bindMemory(to: UInt8.self).baseAddress!
+//            return bytes
+//        }
+//    }
+    
+    var PythonData: PythonData {
         self.withUnsafeBytes { (unsafeBytes) in
             let bytes = unsafeBytes.bindMemory(to: UInt8.self).baseAddress!
             return bytes
@@ -31,6 +40,14 @@ extension Data {
 }
 
 
+extension Array {
+    func unsafePointer<T>() -> UnsafePointer<T> {
+        self.withUnsafeBytes { (unsafeBytes) in
+            let bytes = unsafeBytes.bindMemory(to: T.self).baseAddress!
+            return bytes
+        }
+    }
+}
 
 
 
@@ -49,7 +66,7 @@ extension PythonBytes {
 
 
 extension PythonData {
-    func asData(python_data length: Int) -> Data {
+    func asData(withLength length: Int) -> Data {
         return Data(UnsafeBufferPointer(start: self, count: length))
     }
 }
@@ -81,12 +98,18 @@ extension PythonJsonData {
 }
 
 
-func pythonJSONBytes(object: Any) -> UnsafePointer<UInt8>? {
+func pythonJSONBytes(object: Any) -> PythonData? {
     do {
-        let bytes = try JSONSerialization.data(withJSONObject: object, options: .fragmentsAllowed).bytes
+        let bytes = try JSONSerialization.data(withJSONObject: object, options: .fragmentsAllowed).PythonData
         return bytes
     } catch {
         print(error.localizedDescription)
     }
     return nil
 }
+
+
+
+
+
+
