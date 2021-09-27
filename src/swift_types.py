@@ -40,6 +40,7 @@ __all__ = [
     "callback",
     "call_class",
     "call_target",
+    "swift_func",
     "EventDispatcher"
     ]
 
@@ -51,4 +52,4 @@ def call_class(_: str): ...
 
 def call_target(_: str): ...
 
-
+def swift_func(): ...
