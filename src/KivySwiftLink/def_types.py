@@ -316,7 +316,7 @@ def types2dict(t: str, is_list=False, objc=False) -> dict:
             if is_list:
                 list_type = d[t]
                 #rtn[_type] = f"const {list_type}*{end_string}"
-                rtn[_type] = f"PythonList_{GetSwiftTypes(_type)}"
+                rtn[_type] = f"PythonList_{GetSwiftTypes(_type)} {end_string}"
             else:
                 rtn[_type] = d[t]
     if t == "send_arg":

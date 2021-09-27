@@ -101,11 +101,11 @@ cdef class {_class}(EventDispatcher):
 \tdef default():
 \t\tglobal {_class}_shared
 \t\tif {_class}_shared != None:
-\t\t\tprint(KivyEventsTest_shared)
+\t\t\tprint({_class}_shared)
 \t\t\treturn {_class}_shared
 # \t\telse:
 # \t\t\t{_class}_shared = {_class}(call)
-# \t\t\tprint(KivyEventsTest_shared)
+# \t\t\tprint({_class}_shared)
 # \t\t\treturn {_class}_shared
 \t\treturn None
 

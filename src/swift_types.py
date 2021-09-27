@@ -17,6 +17,7 @@ ushort = c_uint16
 uint16 = c_uint16
 data = c_uint8
 json = c_int8
+jsondata = c_uint8
 uint = c_uint
 double = c_double
 longdouble = c_longdouble
@@ -27,22 +28,28 @@ __all__ = [
     "longlong",
     "ulonglong",
     "uint8",
-    "short",
     "int16",
-    "ushort",
     "uint16",
     "data",
     "json",
+    "jsondata",
     "uint",
     ## other types
     "List",
     "Tuple",
     "callback",
+    "call_class",
+    "call_target",
+    "swift_func",
     "EventDispatcher"
     ]
 
-def callback(*args):
-    pass
+def EventDispatcher(_: list[str]): ...
 
-def EventDispatcher(events: dict):
-    pass
+def callback(): ...
+
+def call_class(_: str): ...
+
+def call_target(_: str): ...
+
+def swift_func(): ...
