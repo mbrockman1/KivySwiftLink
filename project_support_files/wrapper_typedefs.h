@@ -10,7 +10,10 @@ typedef const char* PythonBytes;
 //object
 typedef const void* PythonObject;
 
-//json_data
+//json
+typedef const char* PythonJsonString;
+
+//jsondata
 typedef const unsigned char* PythonJsonData;
 
 //list_int
