@@ -69,6 +69,7 @@ TYPEDEF_DICT = {
     "str": gen_typedef("const char*", "PythonString", True),
     "bytes": gen_typedef("const char*", "PythonBytes", True),
     "object": gen_typedef("const void*", "PythonObject", True),
+    "json": gen_typedef("const char*", "PythonJsonString", True),
     "jsondata": gen_typedef("const unsigned char*", "PythonJsonData", True),
 }
 CTYPEDEF_DICT = {
@@ -77,6 +78,7 @@ CTYPEDEF_DICT = {
     "str": gen_typedef("const char*", "PythonString", False),
     "bytes": gen_typedef("const char*", "PythonBytes", False),
     "object": gen_typedef("const void*", "PythonObject", False),
+    "json": gen_typedef("const char*", "PythonJsonString", False),
     "jsondata": gen_typedef("const unsigned char*", "PythonJsonData", False),
 }
 
@@ -124,7 +126,7 @@ def load_objc_types() -> dict:
 if __name__ == '__main__':
 
 
-    with open("./KivySwiftLink/wrapper_typedefs.h", "w") as f:
+    with open("./wrapper_typedefs.h", "w") as f:
         for key, val in load_objc_types().items():
             f.write(f"//{key}\n")
             f.write(f"{val}\n\n")

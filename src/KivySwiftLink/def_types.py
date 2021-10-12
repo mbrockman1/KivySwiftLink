@@ -40,8 +40,8 @@ def_types = [
     },
     {
         "type": "json",
-        "cython": "const char*",
-        "objc": "const char* _Nonnull",
+        "cython": "PythonJsonString",
+        "objc": "PythonJsonString _Nonnull",
         "python": "object",
         "size": 1,
         "send_arg": "json.dumps({arg}).encode('utf-8')",
@@ -62,11 +62,11 @@ def_types = [
     },
     {
         "type": "object",
-        "cython": "const void*",
-        "objc": "const void* _Nonnull",
+        "cython": "PythonObject",
+        "objc": "PythonObject _Nonnull",
         "python": "object",
         "size": 8,
-        "send_arg": "<const void*>{arg}",
+        "send_arg": "<PythonObject>{arg}",
         "call_arg": "<object>{arg}",
         "list_send_arg": None,
         "list_call_arg": "[<object>{arg}[x] for x in range({arg}_size)]"

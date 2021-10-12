@@ -9,7 +9,7 @@
 void export_orientation();
 void load_custom_builtin_importer();
 
-int main(int argc, char *argv[]) {
+int run_main(int argc, char *argv[]) {
     int ret = 0;
 
     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
