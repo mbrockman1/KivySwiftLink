@@ -77,6 +77,29 @@ class WrapModule: WrapModuleBase {
         }
     }
     
+    var m: String {
+            get {
+                let m_string = """
+                //#import <Foundation/Foundation.h>
+                #import "_\(filename).h"
+                //#import "wrapper_typedefs.h"
+                //insert enums / Structs
+                //######## cdef extern Callback Function Pointers: ########//
+                \(generateFunctionPointers(module: self, objc: true))
+
+                //######## cdef extern Callback Struct: ########//
+                \(generateStruct(module: self, objc: true))
+
+                //######## Send Functions Protocol: ########//
+                \(generateSendProtocol(module: self))
+                //######## Send Functions: ########//
+                \(generateSendFunctions(module: self, objc: true))
+                """
+                
+                return m_string
+            }
+        }
+    
     func build() {
         for _class in classes {
             _class.build()

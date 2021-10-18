@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		8C1B3522271CA3C40056C417 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 8C1B3521271CA3C40056C417 /* ArgumentParser */; };
+		8C7A8DA1271D8AA50030E4A7 /* CommandLineFunctions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */; };
 		8CC79EAA27183BCC0056BBFC /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79EA927183BCC0056BBFC /* main.swift */; };
 		8CC79EB327183BE30056BBFC /* PythonKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8CC79EB227183BE30056BBFC /* PythonKit */; };
 		8CC79ECD2719C4350056BBFC /* WrapClasses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79ECC2719C4350056BBFC /* WrapClasses.swift */; };
@@ -28,11 +29,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		8C7A8D9D271D67B50030E4A7 /* pythoncall_builder.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = pythoncall_builder.py; sourceTree = "<group>"; };
+		8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandLineFunctions.swift; sourceTree = "<group>"; };
 		8CC79EA627183BCC0056BBFC /* KivySwiftLink */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = KivySwiftLink; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CC79EA927183BCC0056BBFC /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
-		8CC79EB527183DEF0056BBFC /* KivySwiftLink2.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KivySwiftLink2.entitlements; sourceTree = "<group>"; };
-		8CC79EB827183E1E0056BBFC /* main.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = main.py; sourceTree = "<group>"; };
+		8CC79EB527183DEF0056BBFC /* KivySwiftLink.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KivySwiftLink.entitlements; sourceTree = "<group>"; };
 		8CC79ECC2719C4350056BBFC /* WrapClasses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapClasses.swift; sourceTree = "<group>"; };
 		8CC79ECF2719C84A0056BBFC /* Converters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Converters.swift; sourceTree = "<group>"; };
 		8CC79ED5271A33760056BBFC /* CodeLayouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeLayouts.swift; sourceTree = "<group>"; };
@@ -71,13 +71,12 @@
 		8CC79EA827183BCC0056BBFC /* KivySwiftLink */ = {
 			isa = PBXGroup;
 			children = (
-				8CC79EB527183DEF0056BBFC /* KivySwiftLink2.entitlements */,
+				8CC79EB527183DEF0056BBFC /* KivySwiftLink.entitlements */,
 				8CC79EA927183BCC0056BBFC /* main.swift */,
+				8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */,
 				8CC79ECC2719C4350056BBFC /* WrapClasses.swift */,
 				8CC79ED5271A33760056BBFC /* CodeLayouts.swift */,
 				8CC79ECF2719C84A0056BBFC /* Converters.swift */,
-				8C7A8D9D271D67B50030E4A7 /* pythoncall_builder.py */,
-				8CC79EB827183E1E0056BBFC /* main.py */,
 			);
 			path = KivySwiftLink;
 			sourceTree = "<group>";
@@ -156,6 +155,7 @@
 			files = (
 				8CC79ED6271A33760056BBFC /* CodeLayouts.swift in Sources */,
 				8CC79ECD2719C4350056BBFC /* WrapClasses.swift in Sources */,
+				8C7A8DA1271D8AA50030E4A7 /* CommandLineFunctions.swift in Sources */,
 				8CC79EAA27183BCC0056BBFC /* main.swift in Sources */,
 				8CC79ED02719C84A0056BBFC /* Converters.swift in Sources */,
 			);
