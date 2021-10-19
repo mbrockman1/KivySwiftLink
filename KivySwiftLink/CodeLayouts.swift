@@ -16,18 +16,20 @@ func generateCythonClass(_class: String, class_vars: String, dispatch_mode: Bool
     cdef class \(_class)(EventDispatcher) :
         \(class_vars)
         @staticmethod
-        def default(call: object):
+        def shared():
             global \(_class)_shared
             if \(_class)_shared != None:
                 return {\(_class)}_shared
-            else:
-                \(_class)_shared = \(_class)(call)
-                return \(_class)_shared
+            return None
 
         def __init__(self,object callback_class):
+            global \(_class)_shared
+            if \(_class)_shared == None:
+                \(_class)_shared = self
+            else:
+                return
             global \(_class)_voidptr
             \(_class)_voidptr = <const void*>callback_class
-            #print("{call_var} init:", (<object>{call_var}))
     """}
     
     return """
@@ -37,18 +39,21 @@ func generateCythonClass(_class: String, class_vars: String, dispatch_mode: Bool
     cdef class \(_class):
         \(class_vars)
         @staticmethod
-        def default(call: object):
+        def shared():
             global \(_class)_shared
             if \(_class)_shared != None:
                 return {\(_class)}_shared
-            else:
-                \(_class)_shared = \(_class)(call)
-                return \(_class)_shared
+            return None
 
         def __init__(self,object callback_class):
+            global \(_class)_shared
+            if \(_class)_shared == None:
+                \(_class)_shared = self
+            else:
+                return
             global \(_class)_voidptr
             \(_class)_voidptr = <const void*>callback_class
-            #print("{call_var} init:", (<object>{call_var}))
+            
     """
 }
 
@@ -85,6 +90,7 @@ func generateCallbackFunctions(module: WrapModule, objc: Bool, header: Bool) -> 
     for cls in module.classes {
         
         for function in cls.functions {
+            
             if function.is_callback {
                 if objc {
                     output.append("""
@@ -97,7 +103,7 @@ func generateCallbackFunctions(module: WrapModule, objc: Bool, header: Bool) -> 
             }
         }
     }
-    return output.joined(separator: "\n\t")
+    return output.joined(separator: "\n")
 }
 
 func generateFunctionPointers(module: WrapModule, objc: Bool) -> String {
@@ -106,20 +112,14 @@ func generateFunctionPointers(module: WrapModule, objc: Bool) -> String {
     var output: [String] = []
     
     for cls in module.classes {
-        for function in cls.pointer_compare_dict {
+        for key in cls.pointer_compare_dict.keys.sorted() {
+            let function = cls.pointer_compare_dict[key]!
             var key_value: String
             if objc {key_value = "objc_string"} else {key_value = "pyx_string"}
-            var pointer_string = "\(tdef) \("void") (*\(function.value["name"]!))(\(function.value[key_value]!))"
+            var pointer_string = "\(tdef) \("void") (*\(function["name"]!))(\(function[key_value]!))"
             if objc {pointer_string.append(";")}
             output.append(pointer_string)
         }
-//        for function in cls.functions {
-//            if function.is_callback {
-//                var pointer_string = "\(tdef) \("void") (*\(function.function_pointer))(\(function.export(objc: objc, header: false)))"
-//                if objc {pointer_string.append(";")}
-//                output.append(pointer_string)
-//            }
-//        }
     }
     if objc {
         return output.joined(separator: "\n")
@@ -130,7 +130,7 @@ func generateFunctionPointers(module: WrapModule, objc: Bool) -> String {
 
 
 
-func generateStruct(module: WrapModule, objc: Bool) -> String {
+func generateStruct(module: WrapModule, ending: String, objc: Bool) -> String {
     var output: [String] = []
     
     
@@ -147,7 +147,7 @@ func generateStruct(module: WrapModule, objc: Bool) -> String {
         if objc {
             output.append(
                 """
-                typedef struct \(cls.title)_Callback {
+                typedef struct \(cls.title)\(ending) {
                 \(struct_args.joined(separator: ";\n"));
                 } \(cls.title)_Callback;
                 """
@@ -155,7 +155,7 @@ func generateStruct(module: WrapModule, objc: Bool) -> String {
         } else {
             output.append(
             """
-            ctypedef struct \(cls.title)_Callback:
+            ctypedef struct \(cls.title)\(ending):
                 \(struct_args.joined(separator: "\n\t"))
             """
             )
@@ -188,13 +188,17 @@ func generateSendProtocol(module: WrapModule) -> String {
     return protocol_strings.joined(separator: "\n")
 }
 
+enum SendFunctionOptions {
+    case objc
+    case python
+}
 
 func generateSendFunctions(module: WrapModule, objc: Bool) -> String {
     var send_strings: [String] = []
     for cls in module.classes {
         
         for function in cls.functions {
-            if !function.is_callback {
+            if !function.is_callback && !function.swift_func {
                 var func_string = "\(pythonType2pyx(type: function.returns.type, objc: objc)) \(cls.title)_\(function.name)(\(function.export(objc: objc, header: false, use_names: true)))"
                 if objc { func_string.append(";") }
                 send_strings.append(func_string)
@@ -225,30 +229,129 @@ func generatePyxClassFunctions(module: WrapModule) -> String {
                     output.append(listFunctionLine(wrap_arg: arg))
                 }
                 output.append("\t\t" + generateFunctionCode(title: cls.title, function: function))
+                for arg in list_args {
+                    output.append("\t\tfree(\(arg.name)_array)")
+                }
+                output.append("")
             }
         }
     }
     return output.joined(separator: "\n")
 }
 
-func generateFunctionCode(title: String, function: WrapFunction) -> String {
-    var output: [String] = []
-    
-    output.append("\(title)_\(function.name)(\(function.send_args.joined(separator: ", ")))\n")
-    return output.joined(separator: "\n\t")
+enum functionCodeType {
+    case normal
+    case python
+    case cython
+    case send
+    case call
 }
 
+func generateFunctionCode(title: String, function: WrapFunction) -> String {
+    var output: [String] = []
+    if function.swift_func {
+        output.append("self._\(function.name)_(\(function.send_args.joined(separator: ", ")))")
+    } else {
+        output.append("\(title)_\(function.name)(\(function.send_args.joined(separator: ", ")))")
+    }
+    
+    return output.joined(separator: "\n\t")
+}
+func setCallPath(wraptitle: String, function: WrapFunction, options: [functionCodeType]) -> String {
+    
+    if call_class_is_arg(function: function) {
+        if let call_target = function.call_target {
+            return "(<object> \(function.call_class!)).\(call_target).\(function.name)"
+        }
+        return "(<object> \(function.call_class!)).\(function.name)"
+    }
+    
+    if call_target_is_arg(function: function) {
+        return "(<object> \(function.call_target!))"
+    }
+    
+    if let call_class = function.call_class {
+        if let call_target = function.call_target {
+            return "(<object> \(call_class)_voidptr).\(call_target).\(function.name)"
+        }
+        return "(<object> \(call_class)_voidptr).\(function.name)"
+    }
+    return "(<object> \(wraptitle)_voidptr).\(function.name)"
+}
 
 func functionGenerator(wraptitle: String, function: WrapFunction, objc: Bool, header: Bool) -> String {
     var output: String
     if function.is_callback {
+        
+        let func_args = function.export(objc: objc, header: header)
+        let return_type = pythonType2pyx(type: pythonType2pyx(type: function.returns.type, objc: objc), objc: objc)
+        let call_path = setCallPath(wraptitle: wraptitle, function: function, options: [])
         output = """
-        cdef \(pythonType2pyx(type: pythonType2pyx(type: function.returns.type, objc: objc), objc: objc) ) \(wraptitle)_\(function.name)(\(function.export(objc: objc, header: header)):
-            \t(<object> \(wraptitle)_voidptr).\(function.export(objc: objc, header: header))
+        cdef \( return_type ) \(wraptitle)_\(function.name)(\(func_args)):
+            \(call_path)(\(function.call_args.joined(separator: ", ")))
         """
     } else {
-        output = "\(pythonType2pyx(type: function.returns.type, objc: objc)) \(wraptitle)_\(function.name)(\(function.export(objc: objc, header: false, use_names: true)))"
+        output = "\(pythonType2pyx(type: function.returns.type, objc: objc)) \("abc"))(\(function.export(objc: objc, header: false, use_names: true)))"
         if objc { output.append(";") }
     }
     return output
+}
+
+func call_target_is_arg(function: WrapFunction) -> Bool {
+    let args = function.args.map{$0.name}
+    if let call_target = function.call_target {
+        if args.contains(call_target) {
+            return true
+        }
+    }
+    return false
+    
+}
+
+func call_class_is_arg(function: WrapFunction) -> Bool {
+    let args = function.args.map{$0.name}
+    if let call_class = function.call_class {
+        if args.contains(call_class) {
+            return true
+        }
+    }
+    return false
+}
+func generateTypeDefImports(imports: [String]) -> String {
+    let deftypes = get_typedef_types()
+    var output: [String] = []
+    for type in imports {
+        //print(type)
+        if deftypes.contains(type) {
+            output.append("\(type)")
+        }
+    }
+    return output.joined(separator: "\n\t")
+}
+
+enum CythonClassOptionTypes {
+    case init_callstruct
+    case event_dispatch
+}
+
+func extendCythonClass(cls: WrapClass, options: [CythonClassOptionTypes]) -> String {
+    
+    var output: [String] = []
+    
+    for t in options {
+        switch t {
+        case .init_callstruct:
+            let string = """
+                cdef PythonCoreMidiCallback callbacks = [
+                    \(cls.functions.filter{$0.is_callback}.map({"\t\(cls.title)_\($0.name)"}).joined(separator: ",\n\t\t"))
+                    ]
+                    set_PythonCoreMidi_Callback(callbacks)
+            """
+            output.append(string)
+        case .event_dispatch:
+            ""
+        }
+    }
+    
+    return output.joined(separator: "\n\t")
 }

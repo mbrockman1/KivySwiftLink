@@ -141,7 +141,7 @@ func BuildWrapperFile(root_path: String, site_path: String, py_name: String) {
         print(error.localizedDescription)
     }
 
-    toolchain(command: "clean", args: [py_name, "wrapper_builds/\(py_name)/"])
+    //toolchain(command: "clean", args: [py_name, "wrapper_builds/\(py_name)/"])
     //toolchain(command: "build", args: [py_name])
 }
 
@@ -162,12 +162,6 @@ class PythonASTconverter {
         self.filename = filename
         let sys = Python.import("sys")
         
-        let py_path = Bundle.main.resourceURL?.appendingPathComponent("Resources").path
-        
-        //let folderURL = resourceURL(to: "py_libs")
-        
-        print("path: ",site_path)
-        //Python.builtins.exec("")
         sys.path.append(site_path)
         //sys.path.append(py_path!)
         //sys.path.append(site_path + "KivySwiftLink")
@@ -179,7 +173,7 @@ class PythonASTconverter {
         let cur_dir = FileManager().currentDirectoryPath
         let wrap_file = try! String.init(contentsOfFile: cur_dir + "/wrapper_sources/" + filename + ".py")
         //let module = ast.parse(wrap_file)
-        let wrap_module_string = WrapClass.json_export(wrap_file)
+        let wrap_module_string = WrapClass.json_export(filename ,wrap_file)
         let data = String(wrap_module_string)?.data(using: .utf8)
         let decoder = JSONDecoder()
         let wrap_module = try! decoder.decode(WrapModule.self, from: data!)

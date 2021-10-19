@@ -95,8 +95,10 @@ let PYCALL_TYPES = [
     "object": "PythonObject",
     "data": "PythonData",
     "bytes": "PythonBytes",
-    "str": ""
+    "jsondata": "PythonJsonData",
+    "str": "PythonString"
 ]
+
 
 
 let SWIFT_TYPES = [
@@ -122,9 +124,39 @@ let SWIFT_TYPES = [
     "float32": "Float",
     "object": "PythonObject",
     "data": "PythonData",
+    "jsondata": "PythonJsonData",
+    "json": "PythonJsonString",
     "bytes": "PythonBytes",
-    
+    "str": "PythonString",
+    "bool": "Bool"
 ]
+
+
+let TYPEDEF_BASETYPES = [
+    "PythonObject",
+    "PythonData",
+    "PythonJsonData",
+    "PythonBytes",
+    "PythonString"
+]
+
+func get_typedef_types() -> [String]  {
+    var types = TYPEDEF_BASETYPES
+    
+    for type in PythonType.allCases {
+        switch type {
+        case .list, .void:
+            ""
+        default:
+            types.append(convertPythonListType(type: type.rawValue))
+        }
+        
+    }
+    
+    
+    return types
+}
+
 
 func pythonType2pyx(type: String, objc: Bool = false, header: Bool = false) -> String {
     var export: String

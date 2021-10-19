@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		8C1B3522271CA3C40056C417 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 8C1B3521271CA3C40056C417 /* ArgumentParser */; };
 		8C7A8DA1271D8AA50030E4A7 /* CommandLineFunctions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */; };
+		8C7A8DAF271DC9F80030E4A7 /* SwiftyJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 8C7A8DAE271DC9F80030E4A7 /* SwiftyJSON */; };
 		8CC79EAA27183BCC0056BBFC /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79EA927183BCC0056BBFC /* main.swift */; };
 		8CC79EB327183BE30056BBFC /* PythonKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8CC79EB227183BE30056BBFC /* PythonKit */; };
 		8CC79ECD2719C4350056BBFC /* WrapClasses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79ECC2719C4350056BBFC /* WrapClasses.swift */; };
@@ -43,6 +44,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8C7A8DAF271DC9F80030E4A7 /* SwiftyJSON in Frameworks */,
 				8C1B3522271CA3C40056C417 /* ArgumentParser in Frameworks */,
 				8CC79EB327183BE30056BBFC /* PythonKit in Frameworks */,
 			);
@@ -107,6 +109,7 @@
 			packageProductDependencies = (
 				8CC79EB227183BE30056BBFC /* PythonKit */,
 				8C1B3521271CA3C40056C417 /* ArgumentParser */,
+				8C7A8DAE271DC9F80030E4A7 /* SwiftyJSON */,
 			);
 			productName = KivySwiftLink2;
 			productReference = 8CC79EA627183BCC0056BBFC /* KivySwiftLink */;
@@ -138,6 +141,7 @@
 			packageReferences = (
 				8CC79EB127183BE30056BBFC /* XCRemoteSwiftPackageReference "PythonKit" */,
 				8C1B3520271CA3C40056C417 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
+				8C7A8DAD271DC9F80030E4A7 /* XCRemoteSwiftPackageReference "SwiftyJSON" */,
 			);
 			productRefGroup = 8CC79EA727183BCC0056BBFC /* Products */;
 			projectDirPath = "";
@@ -355,6 +359,14 @@
 				minimumVersion = 1.0.1;
 			};
 		};
+		8C7A8DAD271DC9F80030E4A7 /* XCRemoteSwiftPackageReference "SwiftyJSON" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SwiftyJSON/SwiftyJSON";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.1;
+			};
+		};
 		8CC79EB127183BE30056BBFC /* XCRemoteSwiftPackageReference "PythonKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pvieito/PythonKit";
@@ -370,6 +382,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8C1B3520271CA3C40056C417 /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
 			productName = ArgumentParser;
+		};
+		8C7A8DAE271DC9F80030E4A7 /* SwiftyJSON */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8C7A8DAD271DC9F80030E4A7 /* XCRemoteSwiftPackageReference "SwiftyJSON" */;
+			productName = SwiftyJSON;
 		};
 		8CC79EB227183BE30056BBFC /* PythonKit */ = {
 			isa = XCSwiftPackageProductDependency;
