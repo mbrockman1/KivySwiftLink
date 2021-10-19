@@ -3,7 +3,6 @@ What is KivySwiftLink ?
 
 
 
-
  ## Installation
 
 Make sure you have **Python 3.9.2** installed since this tool only tagets python3.8 internal and kivy-ios runs on 3.9.2
@@ -33,27 +32,15 @@ cd path-of-the-root
 ksl setup
  ```
 
-some text
-
-
-
- ```sh
-
- ```
-
-Now the script will do the following for you
-
+and it will do the following for you
 
 1. create a new **virtual environment** called **venv** inside the working folder 
 2. Installs all the necessary python librarys inside the new **venv**: 
    - **Cython** and **Kivy-ios** for the toolchain
 
-3. Copy the python gui app file to the root of your new build folder
-4. Copy a SH file and makes it executable, since this is the file the "Wrapper Tool" will be executed with.
-5. Now the script will run kivy toolchain and build python/kivy.
-6. Like the official kivy-ios statement says: **Don't grab a coffee, just do diner.** Compiling all the libraries for the first time, 2x over (remember, 2 archs, x86_64, arm64) will take time.
-7. ..................... and now script should be done...
-
+3. Now the script will run kivy toolchain and build python/kivy.
+4. Like the official kivy-ios statement says: **Don't grab a coffee, just do diner.** Compiling all the libraries for the first time, 2x over (remember, 2 archs, x86_64, arm64) will take time.
+5. ..................... and now script should be done...
 
 ### [Create a new project](https://github.com/psychowasp/KivySwiftLink/tree/main/examples/0%20Getting%20Started ) 
 
