@@ -17,71 +17,100 @@ class WrapModuleBase: Codable {
 class WrapModule: WrapModuleBase {
     
     var dispatchEnabled = false
-    var usedTypes: [String] = []
+
+    var usedTypes: [WrapArg] = []
+    
+    let working_dir = FileManager().currentDirectoryPath
     
     required init(from decoder: Decoder) throws {
         try super.init(from: decoder)
         build()
     }
     var pyx: String {
+        
         var imports = """
         #cython: language_level=3
         import json
+        from typing import List
         from libc.stdlib cimport malloc, free
         """
         if dispatchEnabled {
             imports.append("\nfrom kivy._event cimport EventDispatcher")
         }
-        
-        let cls = classes[0]
-        
-        let pyx_string = """
-        \(imports)
+        let type_imports = """
         cdef extern from "wrapper_typedefs.h":
-            \(generateTypeDefImports(imports: usedTypes))
-        
-        cdef extern from "_\(filename).h":
-            ######## cdef extern Callback Function Pointers: ########
-            \(generateFunctionPointers(module: self, objc: false))
-
-            ######## cdef extern Callback Struct: ########
-            \(generateStruct(module: self,ending: "Callback", objc: false))
-
-            ######## cdef extern Send Functions: ########
-            void set_\(cls.title)_Callback(\(cls.title)Callback callback)
-            \(generateSendFunctions(module: self, objc: false))
-
-        ######## Callbacks Functions: ########
-        \(generateCallbackFunctions(module: self, objc: false, header: false))
-
-        ######## Cython Class: ########
-        \(generateCythonClass(_class: cls.title, class_vars: "", dispatch_mode: cls.dispatch_mode))
-            ######## Cython Class Extensions: ########
-            \(extendCythonClass(cls: cls, options: [.init_callstruct]))
-            ######## Class Functions: ########
-        \(generatePyxClassFunctions(module: self)  )
+        \t\(generateTypeDefImports(imports: usedTypes))
         """
-        return pyx_string
+        var pyx_strings = [imports,type_imports]
+        for cls in classes {
+            var class_vars: [String] = []
+            var class_ext_options: [CythonClassOptionTypes] = [.init_callstruct]
+            var EnumStrings: String = ""
+            var swift_funcs_struct = ""
+            if dispatchEnabled {
+                let dis_dec = cls.decorators.filter({$0.type=="EventDispatch"})[0]
+                let events = (dis_dec.dict[0]["events"] as! [String]).map({"\"\($0)\""})
+                class_vars.append("""
+                \tevents = [\(events.joined(separator: ", "))]
+
+                """)
+                class_ext_options.append(.event_dispatch)
+                EnumStrings = generateEnums(cls: cls, options: [.cython,.dispatch_events])
+            }
+            if cls.has_swift_functions {
+                class_ext_options.append(.swift_functions)
+                class_vars.append("\t" + cls.functions.filter{$0.swift_func}.map{"cdef \($0.function_pointer) _\($0.name)_"}.joined(separator: "\n\t") + newLine)
+                swift_funcs_struct = generateStruct(module: self, options: [.swift_functions])
+            }
+            
+            let pyx_string = """
+            cdef extern from "_\(filename).h":
+                ######## cdef extern Callback Function Pointers: ########
+                \(generateFunctionPointers(module: self, objc: false))
+
+                ######## cdef extern Callback Struct: ########
+                \(generateStruct(module: self, options: [.callbacks]))
+                \(swift_funcs_struct)
+                ######## cdef extern Send Functions: ########
+                void set_\(cls.title)_Callback(\(cls.title)Callbacks callback)
+                \(generateSendFunctions(module: self, objc: false))
+                \(if: cls.dispatch_mode, generateEnums(cls: cls, options: [.cython,.dispatch_events]))
+            ######## Callbacks Functions: ########
+            \(generateCallbackFunctions(module: self, options: []))
+
+            ######## Cython Class: ########
+            \(generateCythonClass(_class: cls.title, class_vars: class_vars.joined(separator: newLine), dispatch_mode: cls.dispatch_mode))
+
+                ######## Cython Class Extensions: ########
+                \(extendCythonClass(cls: cls, options: class_ext_options))
+                ######## Class Functions: ########
+            \(generatePyxClassFunctions(module: self)  )
+            """
+            pyx_strings.append(pyx_string)
+        }
+        return pyx_strings.joined(separator: newLine).replacingOccurrences(of: "    ", with: "\t")
         
     }
     
     var h: String {
+        let cls = self.classes[0]
         let h_string = """
         #import <Foundation/Foundation.h>
         #import "wrapper_typedefs.h"
         //insert enums / Structs
+        \(if: cls.dispatch_mode,generateEnums(cls: cls, options: [.dispatch_events, .objc]))
         //######## cdef extern Callback Function Pointers: ########//
         \(generateFunctionPointers(module: self, objc: true))
-
+        
         //######## cdef extern Callback Struct: ########//
-        \(generateStruct(module: self,ending: "Callback", objc: true))
-
+        \(generateStruct(module: self, options: [.objc, .callbacks]))
+        \(if: cls.has_swift_functions, generateStruct(module: self, options: [.swift_functions, .objc]) )
         //######## Send Functions Protocol: ########//
         \(generateSendProtocol(module: self))
+        \(generateHandlerFuncs(cls: cls, options: [.objc_h, .init_delegate, .callback]))
         //######## Send Functions: ########//
         \(generateSendFunctions(module: self, objc: true))
         """
-        
         return h_string
     }
     
@@ -90,17 +119,7 @@ class WrapModule: WrapModuleBase {
         //#import <Foundation/Foundation.h>
         #import "_\(filename).h"
         //#import "wrapper_typedefs.h"
-        //insert enums / Structs
-        //######## cdef extern Callback Function Pointers: ########//
-        \(generateFunctionPointers(module: self, objc: true))
-
-        //######## cdef extern Callback Struct: ########//
-        \(generateStruct(module: self, ending: "Callback", objc: true))
-
-        //######## Send Functions Protocol: ########//
-        \(generateSendProtocol(module: self))
-        //######## Send Functions: ########//
-        \(generateSendFunctions(module: self, objc: true))
+        \(generateHandlerFuncs(cls: self.classes[0], options: [.objc_m, .init_delegate, .callback]))
         """
         
         return m_string
@@ -117,14 +136,22 @@ class WrapModule: WrapModuleBase {
     }
     
     func find_used_arg_types() {
+        let test_types = ["object","json","jsondata","data","str", "bytes"]
         for cls in classes {
             for function in cls.functions {
-                if !usedTypes.contains(function.returns.pyx_type) {
-                    usedTypes.append(function.returns.pyx_type)
-                                    }
+                let returns = function.returns
+                if !usedTypes.contains(where: {$0.type == returns.type}) {
+                    if returns.is_list || returns.is_data || returns.is_json || test_types.contains(returns.type) {
+                        usedTypes.append(returns)
+                    }
+                        
+                }
+                                    
                 for arg in function.args {
-                    if !usedTypes.contains(arg.pyx_type) {
-                        usedTypes.append(arg.pyx_type)
+                    if !usedTypes.contains(where: {$0.type == arg.type}) {
+                        if arg.is_list || arg.is_data || arg.is_json || test_types.contains(arg.type){
+                            usedTypes.append(arg)
+                        }
                     }
                 }
             }
@@ -154,10 +181,15 @@ class WrapClass: WrapClassBase {
     
     required init(from decoder: Decoder) throws {
         try super.init(from: decoder)
-        
+        handleDecorators()
+        let callback_count = functions.filter{$0.is_callback}.count
+        let sends_count = functions.filter{!$0.is_callback && !$0.swift_func}.count
+        if callback_count > 0 {
+            //let func_init_string = try! JSON(extendedGraphemeClusterLiteral: "").rawData()
+            //let set_callback_function = WrapFunction()
+        }
     }
     func build() {
-        handleDecorators()
         generateFunctionCompares()
         doFunctionCompares()
     }
@@ -165,6 +197,8 @@ class WrapClass: WrapClassBase {
     func handleDecorators() {
         let decs = decorators.map({$0.type})
         if decs.contains("EventDispatch") {self.dispatch_mode = true}
+        for function in self.functions {if function.swift_func {self.has_swift_functions = true; break}}
+        
     }
     
     func generateFunctionCompares(){
@@ -179,9 +213,9 @@ class WrapClass: WrapClassBase {
                         let compare_count = pointer_compare_strings.count
                         pointer_compare_dict[compare_string] = [
                             "name": "\(title)_ptr\(compare_count)",
-                            "pyx_string": function.export(objc: false, header: false, use_names: false),
-                            "objc_string": function.export(objc: true, header: false),
-                            "returns": pythonType2pyx(type: function.returns.type, objc: false)
+                            "pyx_string": function.export(options: []),
+                            "objc_string": function.export(options: [.objc]),
+                            "returns": pythonType2pyx(type: function.returns.type, options: [])
                             ]
                     }
                 }
@@ -217,7 +251,32 @@ class WrapFunction: WrapFunctionBase {
     var function_pointer = ""
     var wrap_class: WrapClass!
     
+    func get_callArg(name: String) -> WrapArg! {
+        for arg in args {
+            if arg.name == name {
+                return arg
+            }
+        }
+        return nil
+    }
+    
     var call_args: [String] {
+        var call_class = ""
+        var call_target = ""
+        if self.call_class != nil {call_class = self.call_class}
+        if self.call_target != nil {call_target = self.call_target}
+        let _args = args.filter{arg -> Bool in
+            arg.name != call_target && arg.name != call_class
+        }
+        return _args.map {
+            if !$0.is_counter {
+                return convertPythonCallArg(type: $0.type, name: $0.objc_name, is_list_data: $0.is_list)
+                }
+            return ""
+        }.filter({$0 != ""})
+    }
+    
+    var call_args_cython: [String] {
         var call_class = ""
         var call_target = ""
         if self.call_class != nil {call_class = self.call_class}
@@ -235,10 +294,10 @@ class WrapFunction: WrapFunctionBase {
     
     var send_args: [String] {
         args.map {
-            if !$0.is_counter {
-                return convertPythonSendArg(type: $0.type, name: $0.name, is_list_data: $0.is_list)
-                }
-            return ""
+            //if !$0.is_counter {
+            var send_options: [PythonSendArgTypes] = []
+            if $0.is_list {send_options.append(.list)}
+            return convertPythonSendArg(type: $0.type, name: $0.name, options: send_options)
         }.filter({$0 != ""})
     }
     
@@ -246,13 +305,15 @@ class WrapFunction: WrapFunctionBase {
         try super.init(from: decoder)
     }
     
-    func export(objc: Bool, header: Bool, use_names: Bool = false, py_mode: Bool = false)  -> String {
-        
-        if objc {
+
+    
+    
+    func export(options: [PythonTypeConvertOptions])  -> String {
+        if options.contains(.objc) {
             let func_args = args.map({ arg in
-                arg.export(objc: objc, header: header, use_names: use_names, py_mode: py_mode)!
+                arg.export(options: options)!
             })
-            if header {
+            if options.contains(.header) {
                 return func_args.joined(separator: " ")
             } else {
                 return func_args.joined(separator: ", ")
@@ -260,7 +321,7 @@ class WrapFunction: WrapFunctionBase {
             
         }
         var _args: [WrapArg]
-        if py_mode {
+        if options.contains(.py_mode) {
             _args = args.filter({!$0.is_counter})
         } else {
             _args = args
@@ -269,9 +330,10 @@ class WrapFunction: WrapFunctionBase {
 //            arg.name != call_target && arg.name != call_class
 //        }
         let func_args = _args.map({ arg in
-            return arg.export(objc: objc, header: header, use_names: use_names, py_mode: py_mode)!
+            
+            return arg.export(options: options)!
         })
-        if header {
+        if options.contains(.header) {
             return func_args.joined(separator: " ")
         } else {
             return func_args.joined(separator: ", ")
@@ -302,7 +364,7 @@ class WrapArgBase: Codable {
     
 }
 
-class WrapArg: WrapArgBase {
+class WrapArg: WrapArgBase, Equatable {
     
     
     required init(from decoder: Decoder) throws {
@@ -326,54 +388,73 @@ class WrapArg: WrapArgBase {
         set_types()
     }
     
-    
+    static func ==(lhs: WrapArg , rhs: WrapArg) -> Bool {
+        return lhs.type == lhs.type
+    }
     
     func set_types() {
         pyx_name = name
-        pyx_type = convertPythonType(type: type, is_list: is_list!, objc: false, header: false)
+        var pyx_type_options: [PythonTypeConvertOptions] = []
+        let objc_type_options: [PythonTypeConvertOptions] = [.objc]
+        if is_list! {
+            pyx_type_options.append(.is_list)
+        }
+        pyx_type = convertPythonType(type: type, options: pyx_type_options)
         objc_name = "arg\(idx)"
-        objc_type = convertPythonType(type: type, objc: true, header: false)
+        objc_type = convertPythonType(type: type, options: objc_type_options)
         size = TYPE_SIZES[type]
         
     }
     
 
     
-    func export(objc: Bool, header: Bool, use_names: Bool = false, py_mode: Bool = false) -> String! {
+    func export(options: [PythonTypeConvertOptions]) -> String! {
         var _name: String
-        if use_names {
+        if options.contains(.use_names) {
             _name = name
         } else {
             _name = objc_name!
         }
-        if objc {
-            if header {
+        if options.contains(.objc) {
+            if options.contains(.header) {
                 var header_string = ""
                 switch idx {
                 case 0:
-                    header_string.append(":(\(convertPythonType(type: type, is_list: is_list, objc: objc, header: header) ))\(_name)")
+                    header_string.append(":(\(convertPythonType(type: type, options: options) ))\(_name)")
                 default:
-                    header_string.append("\(name):(\(convertPythonType(type: type, is_list: is_list, objc: objc, header: header) ))\(_name)")
+                    header_string.append("\(name):(\(convertPythonType(type: type, options: options) ))\(_name)")
                 }
                 //let func_string = "\(convertPythonType(type: type, is_list: is_list, objc: objc, header: header)) \(objc_name!)"
                 return header_string
             } else {
-                let func_string = "\(convertPythonType(type: type, is_list: is_list, objc: objc, header: header)) \(_name)"
+                let func_string = "\(convertPythonType(type: type, options: options)) \(_name)"
                 return func_string
             }
         }
-        if py_mode {
-            if is_list {return "\(name): List[\(type)]"}
-            return "\(name): \(type)"
+        if options.contains(.py_mode) {
+            if is_list {return "\(name): List[\(PurePythonTypeConverter(type: type))]"}
+            return "\(name): \(PurePythonTypeConverter(type: type))"
         }
-        
-        let func_string = "\(convertPythonType(type: type, is_list: is_list)) \(_name)"
+        var arg_options = options
+        if self.is_list {
+            arg_options.append(.is_list)
+        }
+        let func_string = "\(convertPythonType(type: type, options: arg_options)) \(_name)"
+        //let func_string = "\(convertPythonType(type: PurePythonTypeConverter(type: type), options: options)) \(_name)"
         return func_string
     }
 }
 
 
-class WrapClassDecorator: Codable {
+class WrapClassDecoratorBase: Codable {
     let type: String
     let args: [String]
+}
+
+class WrapClassDecorator: WrapClassDecoratorBase {
+    var dict: [[String:Any]] = []
+    required init(from decoder: Decoder) throws {
+        try super.init(from: decoder)
+        dict.append(contentsOf: args.map({JSON(parseJSON: $0).dictionaryObject!}))
+    }
 }

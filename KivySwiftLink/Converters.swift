@@ -6,6 +6,11 @@
 //
 
 import Foundation
+let tab = "\t"
+let tabNewLine = "\t\n"
+let newLine = "\n"
+let newLineTab = "\n\t"
+let newLineTabTab = "\n\t\t"
 
 enum PythonType: String, CaseIterable {
     case int
@@ -36,6 +41,7 @@ enum PythonType: String, CaseIterable {
     case object
     case bool
     case void
+    case None
 }
 
 
@@ -99,8 +105,6 @@ let PYCALL_TYPES = [
     "str": "PythonString"
 ]
 
-
-
 let SWIFT_TYPES = [
     "PythonCallback": "PythonCallback",
     "int": "Int",
@@ -131,16 +135,46 @@ let SWIFT_TYPES = [
     "bool": "Bool"
 ]
 
-
-let TYPEDEF_BASETYPES = [
-    "PythonObject",
-    "PythonData",
-    "PythonJsonData",
-    "PythonBytes",
-    "PythonString"
+let MALLOC_TYPES = [
+    "PythonCallback": "PythonCallback",
+    "int": "int",
+    "long": "long",
+    "ulong": "unsigned ",
+    "uint": "UInt",
+    "int32": "Int32",
+    "uint32": "UInt32",
+    "int8": "Int8",
+    "char": "Int8",
+    "short": "Int16",
+    "uint8": "UInt8",
+    "uchar": "UInt8",
+    "ushort": "UInt16",
+    "int16": "Int16",
+    "uint16": "UInt16",
+    "longlong": "Int64",
+    "ulonglong": "UInt64",
+    "float": "Double",
+    "double": "Double",
+    "float32": "Float",
+    "object": "PythonObject",
+    "data": "PythonData",
+    "jsondata": "PythonJsonData",
+    "json": "PythonJsonString",
+    "bytes": "PythonBytes",
+    "str": "PythonString",
+    "bool": "Bool"
 ]
 
-func get_typedef_types() -> [String]  {
+
+let TYPEDEF_BASETYPES: [String:String] = [:]
+    //"const void*":"PythonObject",
+    //"const unsigned char*":"PythonData",
+    //"const unsigned char*":"PythonJsonData",
+    //"const char*":"PythonBytes",
+    //"const char*":"PythonString"
+//]
+
+func get_typedef_types() -> [String: String]  {
     var types = TYPEDEF_BASETYPES
     
     for type in PythonType.allCases {
@@ -148,7 +182,8 @@ func get_typedef_types() -> [String]  {
         case .list, .void:
             ""
         default:
-            types.append(convertPythonListType(type: type.rawValue))
+            //types.append((type.rawValue,convertPythonListType(type: type.rawValue)))
+            types[type.rawValue] = convertPythonListType(type: type.rawValue, options: [.c_type])
         }
         
     }
@@ -157,8 +192,45 @@ func get_typedef_types() -> [String]  {
     return types
 }
 
+enum PythonTypeConvertOptions {
+    case objc
+    case header
+    case c_type
+    case is_list
+    case py_mode
+    case use_names
+}
 
-func pythonType2pyx(type: String, objc: Bool = false, header: Bool = false) -> String {
+func PurePythonTypeConverter(type: String) -> String{
+    
+    switch PythonType(rawValue: type) {
+    case .int, .int16, .short, .int32, .long, .longlong, .uint, .uint8, .uint16, .ushort, .uint32, .ulong, .ulonglong:
+        return "int"
+    case .float, .float32, .double:
+        return "float"
+        
+    case .bytes, .char, .data:
+        return "bytes"
+        
+    case .str:
+        return "str"
+    
+    case .json, .jsondata, .object:
+        return "object"
+    
+    case .void:
+        return "None"
+    default:
+        print("type missing:",type)
+        return "ERROR_TYPE"
+    }
+}
+
+func pythonType2pyx(type: String, options: [PythonTypeConvertOptions]) -> String {
+    var objc = false
+    var c_types = false
+    if options.contains(.objc) {objc = true}
+    if options.contains(.c_type) {c_types = true}
     var export: String
     var nonnull = false
     switch PythonType(rawValue: type) {
@@ -180,7 +252,7 @@ func pythonType2pyx(type: String, objc: Bool = false, header: Bool = false) -> S
         if objc {
             export = "int"
         } else {
-            export = type
+            export = "int"
         }
         
     case .uint32:
@@ -203,24 +275,49 @@ func pythonType2pyx(type: String, objc: Bool = false, header: Bool = false) -> S
         export = "float"
     //plain python types
     case .object:
-        export = "PythonObject"
+        if c_types {
+            export = "const void*"
+        } else {
+            export = "PythonObject"
+        }
+        
         nonnull = true
     case .str:
-        export = "PythonString"
+        if c_types {
+            export = "const char*"
+        } else {
+            export = "PythonString"
+        }
         nonnull = true
     case .bytes:
-        export = "PythonBytes"
+        if c_types {
+            export = "const char*"
+        } else {
+            export = "PythonBytes"
+        }
         nonnull = true
         
     //special types
     case .data:
-        export = "PythonData"
+        if c_types {
+            export = "const unsigned char*"
+        } else {
+            export = "PythonData"
+        }
         nonnull = true
     case .json:
-        export = "PythonJsonString"
+        if c_types {
+            export = "const char*"
+        } else {
+            export = "PythonJsonString"
+        }
         nonnull = true
     case .jsondata:
-        export = "PythonJsonData"
+        if c_types {
+            export = "const unsigned char*"
+        } else {
+            export = "PythonJsonData"
+        }
         nonnull = true
     case .void:
         export = "void"
@@ -229,7 +326,7 @@ func pythonType2pyx(type: String, objc: Bool = false, header: Bool = false) -> S
         fatalError()
     }
     if objc {
-        if header {
+        if options.contains(.header) {
             if nonnull {
                 return "\(export) _Nonnull"
             }
@@ -247,14 +344,14 @@ func pythonType2pyx(type: String, objc: Bool = false, header: Bool = false) -> S
     
 }
 
-func convertPythonType(type: String, is_list: Bool = false, objc: Bool = false, header: Bool = false) -> String {
-    if is_list {
-        return convertPythonListType(type: type, objc: objc, header: header)
+func convertPythonType(type: String, options: [PythonTypeConvertOptions]) -> String {
+    if options.contains(.is_list) {
+        return convertPythonListType(type: type, options: options)
     }
-    return pythonType2pyx(type: type, objc: objc, header: header)
+    return pythonType2pyx(type: type, options: options)
 }
 
-func convertPythonListType(type: String, objc: Bool = false, header: Bool = false) -> String {
+func convertPythonListType(type: String, options: [PythonTypeConvertOptions]) -> String {
     return "PythonList_\(SWIFT_TYPES[type]!)"
 }
 
@@ -267,7 +364,8 @@ func convertPythonCallArg(type: String, name: String, is_list_data: Bool = false
         return "\(name).decode('utf-8')"
     case .data:
         if is_list_data {return "\(name)[:\(name)_size]"}
-        return "<bytes>\(name)[0:\(name)_size]"
+        //return "<bytes>\(name)[0:\(name)_size]"
+        return "\(name)[:\(name)_size]"
     case .json:
         return "json.loads(\(name))"
     case .jsondata:
@@ -281,26 +379,42 @@ func convertPythonCallArg(type: String, name: String, is_list_data: Bool = false
     }
 }
 
+enum PythonSendArgTypes {
+    case list
+    case data
+}
 
-
-func convertPythonSendArg(type: String, name: String, is_list_data: Bool = false) -> String {
-    
+func convertPythonSendArg(type: String, name: String, options: [PythonSendArgTypes]) -> String {
+    let list = options.contains(.list)
     switch PythonType(rawValue: type) {
     case .str:
-        if is_list_data {return "\(name)_array, \(name)_size"}
-        return "\(name).encode('utf-8')"
+        if list {return "\(name)_array, \(name)_size"}
+        return "\(name).encode()"
     case .data:
-        if is_list_data {return "\(name)_array, \(name)_size"}
-        return "<bytes>\(name)[0:\(name)_size]"
+        if list {return "\(name)_array, \(name)_size"}
+        //return "<bytes>\(name)[0:\(name)_size]"
+        return name
+        //return "\(name), \(name)_size"
     case .json:
         return "json.dumps(\(name)).encode('utf-8')"
     case .jsondata:
-        return "json.dumps(\(name)).encode('utf-8')"
+        return "j_\(name)"
     case .object:
-        if is_list_data {return "\(name)_array, \(name)_size"}
+        if list {return "\(name)_array, \(name)_size"}
         return "<PythonObject>\(name)"
     default:
-        if is_list_data {return "\(name)_array, \(name)_size"}
+        if list {return "\(name)_array, \(name)_size"}
         return name
+    }
+}
+
+
+
+
+
+extension String.StringInterpolation {
+    mutating func appendInterpolation(if condition: @autoclosure () -> Bool, _ literal: StringLiteralType) {
+        guard condition() else { return }
+        appendLiteral(literal)
     }
 }

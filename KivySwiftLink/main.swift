@@ -39,7 +39,6 @@ extension KivySwiftLink {
                     copyItem(from: "./KivySwiftLink", to: "/usr/local/bin/ksl")
                 }
             }
-            //InitWorkingFolder()
         }
     }
     

@@ -71,6 +71,23 @@ func toolchain(command: String, args: [String]) -> Int32 {
 }
 
 @discardableResult
+func toolchain_venv(command: String, args: [String]) -> Int32 {
+    print("toolchain_venv running")
+    //var targs: [String] = ["-c","source venv/bin/activate", "&&", "python --version"]
+    let targs = ["-c", """
+    source venv/bin/activate
+    toolchain \(command) \(args.joined(separator: " "))
+    """]
+    //targs.append(contentsOf: args)
+    let task = Process()
+    task.launchPath = "/bin/sh"
+    task.arguments = targs
+    task.launch()
+    task.waitUntilExit()
+    return task.terminationStatus
+}
+
+@discardableResult
 func pip_install(arg: String) -> Int32 {
     let task = Process()
     task.launchPath = "venv/bin/pip"
@@ -107,9 +124,15 @@ func InitWorkingFolder() {
     createFolder(name: "wrapper_sources")
     createFolder(name: "wrapper_builds")
     createFolder(name: "wrapper_headers")
-    
-    //toolchain(command: "build", args: ["python"])
-    //toolchain(command: "build", args: ["kivy"])
+    let fileman = FileManager()
+    do {
+        try fileman.removeItem(atPath: "KivySwiftLink")
+        try fileman.removeItem(atPath: "KivySwiftSupportFiles")
+    } catch {
+        print("cant delete folders")
+    }
+    toolchain(command: "build", args: ["python"])
+    toolchain(command: "build", args: ["kivy"])
     print("Done")
 
 }
@@ -123,26 +146,48 @@ func getDocumentsDirectory() -> URL {
 
 
 func BuildWrapperFile(root_path: String, site_path: String, py_name: String) {
-    
-    
+    let file_man = FileManager()
+    let cur_dir = URL(fileURLWithPath: file_man.currentDirectoryPath)
+    let py_file = cur_dir.appendingPathComponent("wrapper_sources").appendingPathComponent("\(py_name).py")
+    if !file_man.fileExists(atPath: py_file.path) {
+        print("no wrapper file named: \(py_name).py")
+        return
+    }
+    let wrapper_builds_path = cur_dir.appendingPathComponent("wrapper_builds", isDirectory: true)
+    let recipe_dir = wrapper_builds_path.appendingPathComponent(py_name, isDirectory: true)
+    let src_path = recipe_dir.appendingPathComponent("src", isDirectory: true)
+    if !file_man.fileExists(atPath: src_path.path){
+        try! file_man.createDirectory(atPath: src_path.path, withIntermediateDirectories: true, attributes: [:])
+    }
+    print(src_path)
     let py_ast = PythonASTconverter(filename: py_name, site_path: site_path)
     let wrap_module = py_ast.generateModule()
-    let export_dir = getDocumentsDirectory().appendingPathComponent("ksl_exports")
-    let pyxfile = export_dir.appendingPathComponent("\(py_name).pyx")
-    let h_file = export_dir.appendingPathComponent("_\(py_name).h")
-    let m_file = export_dir.appendingPathComponent("_\(py_name).m")
-    
+    //let export_dir = getDocumentsDirectory().appendingPathComponent("ksl_exports")
+    let pyxfile = src_path.appendingPathComponent("\(py_name).pyx")
+    let h_file = src_path.appendingPathComponent("_\(py_name).h")
+    let m_file = src_path.appendingPathComponent("_\(py_name).m")
+    let setup_file = src_path.appendingPathComponent("setup.py")
+    let recipe_file = recipe_dir.appendingPathComponent("__init__.py")
+    print(pyxfile)
     do {
         try wrap_module.pyx.write(to: pyxfile, atomically: true, encoding: .utf8)
         try wrap_module.h.write(to: h_file, atomically: true, encoding: .utf8)
         try wrap_module.m.write(to: m_file, atomically: true, encoding: .utf8)
+        try createSetupPy(title: py_name).write(to: setup_file, atomically: true, encoding: .utf8)
+        try createRecipe(title: py_name).write(to: recipe_file, atomically: true, encoding: .utf8)
     } catch {
         // failed to write file – bad permissions, bad filename, missing permissions, or more likely it can't be converted to the encoding
         print(error.localizedDescription)
     }
+    let wrapper_typedefs = cur_dir.appendingPathComponent("project_support_files/wrapper_typedefs.h")
+    let typedefs_dst = src_path.appendingPathComponent("wrapper_typedefs.h")
+    if !file_man.fileExists(atPath: typedefs_dst.path){
+        copyItem(from: wrapper_typedefs.path, to: typedefs_dst.path)
+    }
+    
 
-    //toolchain(command: "clean", args: [py_name, "wrapper_builds/\(py_name)/"])
-    //toolchain(command: "build", args: [py_name])
+    toolchain(command: "clean", args: [py_name, "wrapper_builds/\(py_name)/"])
+    toolchain_venv(command: "build", args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
 }
 
 
@@ -155,7 +200,7 @@ class PythonASTconverter {
     
     let filename: String
     
-    let WrapClass: PythonObject
+    let pyWrapClass: PythonObject
     let pbuilder: PythonObject
     
     init(filename: String, site_path: String) {
@@ -166,14 +211,14 @@ class PythonASTconverter {
         //sys.path.append(py_path!)
         //sys.path.append(site_path + "KivySwiftLink")
         pbuilder = Python.import("pythoncall_builder")
-        WrapClass = pbuilder.WrapClass2
+        pyWrapClass = pbuilder.PyWrapClass
     }
     
     func generateModule() -> WrapModule {
         let cur_dir = FileManager().currentDirectoryPath
         let wrap_file = try! String.init(contentsOfFile: cur_dir + "/wrapper_sources/" + filename + ".py")
         //let module = ast.parse(wrap_file)
-        let wrap_module_string = WrapClass.json_export(filename ,wrap_file)
+        let wrap_module_string = pyWrapClass.json_export(filename ,wrap_file)
         let data = String(wrap_module_string)?.data(using: .utf8)
         let decoder = JSONDecoder()
         let wrap_module = try! decoder.decode(WrapModule.self, from: data!)
