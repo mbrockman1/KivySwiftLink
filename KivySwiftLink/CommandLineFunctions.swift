@@ -8,6 +8,11 @@
 import Foundation
 
 
+
+enum PyTypes: PythonObject {
+    case str
+}
+
 import PythonKit
 
 extension Process {
@@ -32,9 +37,9 @@ func createFolder(name: String) {
 }
 
 
-func copyItem(from: String, to: String) {
+func copyItem(from: String, to: String, force: Bool=false) {
     let fileman = FileManager()
-    if fileman.fileExists(atPath: to) {
+    if fileman.fileExists(atPath: to) && !force{
         print("file already exist do you wish to overwrite it ?")
         if let input_string = readLine() {
             let input = input_string.trimmingCharacters(in: .whitespaces)
@@ -49,6 +54,9 @@ func copyItem(from: String, to: String) {
         }
     } else {
         do {
+            if force {
+                try fileman.removeItem(atPath: to)
+            }
             try fileman.copyItem(atPath: from, toPath: to)
         } catch let error {
             print(error.localizedDescription)
@@ -57,6 +65,12 @@ func copyItem(from: String, to: String) {
     
 }
 
+enum ToolchainCommands: String {
+    case create
+    case xcode
+    case clean
+    case build
+}
 
 @discardableResult
 func toolchain(command: String, args: [String]) -> Int32 {
@@ -70,9 +84,13 @@ func toolchain(command: String, args: [String]) -> Int32 {
     return task.terminationStatus
 }
 
+func _toolchain(command: ToolchainCommands, args: [String]) {
+    toolchain_venv(command: command.rawValue, args: args)
+}
+
 @discardableResult
 func toolchain_venv(command: String, args: [String]) -> Int32 {
-    print("toolchain_venv running")
+    //print("toolchain_venv running")
     //var targs: [String] = ["-c","source venv/bin/activate", "&&", "python --version"]
     let targs = ["-c", """
     source venv/bin/activate
@@ -82,8 +100,49 @@ func toolchain_venv(command: String, args: [String]) -> Int32 {
     let task = Process()
     task.launchPath = "/bin/sh"
     task.arguments = targs
+    task.standardOutput = nil
+    //task.terminationHandler = terminationHandler
+    
+    let outputPipe = Pipe()
+    //task.standardOutput = outputPipe
+    //task.standardError = outputPipe
+    let outputHandle = outputPipe.fileHandleForReading
+    outputHandle.waitForDataInBackgroundAndNotify()
+    var start_write = false
+    var output = ""
+    let debug = false
+    
+    outputHandle.readabilityHandler = { pipe in
+        
+        guard let currentOutput = String(data: pipe.availableData, encoding: .utf8) else {
+            print("Error decoding data: \(pipe.availableData)")
+            return
+        }
+        if currentOutput.contains("Error compiling Cython file:" ) {
+            print(currentOutput)
+            start_write = true
+        }
+        
+        if currentOutput.contains("  STDERR:") {return}
+        guard !currentOutput.isEmpty else {
+            return
+        }
+        
+        if start_write {output = output + currentOutput}
+        
+            
+            if debug {
+                DispatchQueue.main.async {
+                    print(currentOutput)
+                }
+            }
+    }
+    //let pipe = Pipe()
+    //task.standardOutput = pipe
+    //print(pipe.fileHandleForReading)
     task.launch()
     task.waitUntilExit()
+    print(output)
     return task.terminationStatus
 }
 
@@ -110,29 +169,37 @@ func create_venv() -> Int32 {
 
 func InitWorkingFolder() {
     
-    try! Process().clone(repo: "https://github.com/psychowasp/KivySwiftLink.git", path: "KivySwiftLink")
+    //try! Process().clone(repo: "https://github.com/psychowasp/KivySwiftLink.git", path: "KivySwiftLinkPack")
     try! Process().clone(repo: "https://github.com/psychowasp/KivySwiftSupportFiles.git", path: "KivySwiftSupportFiles")
+    //try! Process().clone(repo: "https://github.com/meow464/kivy-ios.git", path: "kivy-ios-modded")
+    
     create_venv()
-    for pip in ["cython", "kivy", "git+https://github.com/meow464/kivy-ios.git@custom_recipes", "astor"] {
+    //pip_install(arg: "git+\(toolchain_py_url)")
+    //https://github.com/kivy/kivy-ios
+    //https://github.com/meow464/kivy-ios.git@custom_recipes
+    //return
+    for pip in ["wheel","cython", "kivy","git+https://github.com/garrik/mod-pbxproj@develop" ,"git+https://github.com/kivy/kivy-ios.git", "astor"] {
         pip_install(arg: pip)
     }
+    //copyItem(from: "KivySwiftSupportFiles/toolchain.py", to: "venv/lib/python3.9/site-packages/kivy_ios/toolchain.py", force: true)
     
-    copyItem(from: "KivySwiftLink/src/swift_types.py", to: "venv/lib/python3.9/site-packages/swift_types.py")
+    copyItem(from: "KivySwiftSupportFiles/swift_types.py", to: "venv/lib/python3.9/site-packages/swift_types.py")
 
     copyItem(from: "KivySwiftSupportFiles/project_support_files", to: "project_support_files")
     copyItem(from: "KivySwiftSupportFiles/pythoncall_builder.py", to: "venv/lib/python3.9/site-packages/pythoncall_builder.py")
     createFolder(name: "wrapper_sources")
     createFolder(name: "wrapper_builds")
     createFolder(name: "wrapper_headers")
+    copyItem(from: "KivySwiftSupportFiles/project_support_files/wrapper_typedefs.h", to: "wrapper_headers/wrapper_typedefs.h")
     let fileman = FileManager()
     do {
-        try fileman.removeItem(atPath: "KivySwiftLink")
+        //try fileman.removeItem(atPath: "KivySwiftLink")
         try fileman.removeItem(atPath: "KivySwiftSupportFiles")
     } catch {
         print("cant delete folders")
     }
-    toolchain(command: "build", args: ["python"])
-    toolchain(command: "build", args: ["kivy"])
+    _toolchain(command: .build, args: ["python3", "kivy"])
+    //toolchain(command: "build", args: ["kivy"])
     print("Done")
 
 }
@@ -168,7 +235,6 @@ func BuildWrapperFile(root_path: String, site_path: String, py_name: String) {
     let m_file = src_path.appendingPathComponent("_\(py_name).m")
     let setup_file = src_path.appendingPathComponent("setup.py")
     let recipe_file = recipe_dir.appendingPathComponent("__init__.py")
-    print(pyxfile)
     do {
         try wrap_module.pyx.write(to: pyxfile, atomically: true, encoding: .utf8)
         try wrap_module.h.write(to: h_file, atomically: true, encoding: .utf8)
@@ -184,14 +250,30 @@ func BuildWrapperFile(root_path: String, site_path: String, py_name: String) {
     if !file_man.fileExists(atPath: typedefs_dst.path){
         copyItem(from: wrapper_typedefs.path, to: typedefs_dst.path)
     }
-    
 
-    toolchain(command: "clean", args: [py_name, "wrapper_builds/\(py_name)/"])
-    toolchain_venv(command: "build", args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
+    _toolchain(command: .clean, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
+    _toolchain(command: .build, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
+    update_project()
+}
+
+func update_project() {
+    let p_dict = get_project()!
+    let project = ProjectManager(title: p_dict["project_name"] as! String, site_path: site_path)
+    project.update_frameworks_lib_a()
+    
 }
 
 
-
+func get_project() -> [String:Any]! {
+    if let project_dict = JsonStorage().current_project() {
+        //let project = ProjectManager(title: project_name, site_path: site_path)
+        //exit(1)
+        return project_dict
+    }
+    
+    //exit(1)
+    return nil
+}
 func resourceURL(to path: String) -> URL? {
     return URL(string: path, relativeTo: Bundle.main.resourceURL)
 }
@@ -225,7 +307,5 @@ class PythonASTconverter {
         return wrap_module
     }
     
-    
-    
-    
+
 }

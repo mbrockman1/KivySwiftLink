@@ -10,11 +10,14 @@
 		8C1B3522271CA3C40056C417 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 8C1B3521271CA3C40056C417 /* ArgumentParser */; };
 		8C7A8DA1271D8AA50030E4A7 /* CommandLineFunctions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */; };
 		8C7A8DAF271DC9F80030E4A7 /* SwiftyJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 8C7A8DAE271DC9F80030E4A7 /* SwiftyJSON */; };
+		8C7A8DD6272334C70030E4A7 /* ProjectManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7A8DD5272334C70030E4A7 /* ProjectManager.swift */; };
+		8C7A8E052724D3100030E4A7 /* TestSuite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7A8E042724D3100030E4A7 /* TestSuite.swift */; };
 		8CC79EAA27183BCC0056BBFC /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79EA927183BCC0056BBFC /* main.swift */; };
 		8CC79EB327183BE30056BBFC /* PythonKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8CC79EB227183BE30056BBFC /* PythonKit */; };
 		8CC79ECD2719C4350056BBFC /* WrapClasses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79ECC2719C4350056BBFC /* WrapClasses.swift */; };
 		8CC79ED02719C84A0056BBFC /* Converters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79ECF2719C84A0056BBFC /* Converters.swift */; };
 		8CC79ED6271A33760056BBFC /* CodeLayouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79ED5271A33760056BBFC /* CodeLayouts.swift */; };
+		8CE0C493272622E400C0D6D8 /* PythonHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE0C492272622E400C0D6D8 /* PythonHandler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -31,12 +34,15 @@
 
 /* Begin PBXFileReference section */
 		8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandLineFunctions.swift; sourceTree = "<group>"; };
+		8C7A8DD5272334C70030E4A7 /* ProjectManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectManager.swift; sourceTree = "<group>"; };
+		8C7A8E042724D3100030E4A7 /* TestSuite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSuite.swift; sourceTree = "<group>"; };
 		8CC79EA627183BCC0056BBFC /* KivySwiftLink */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = KivySwiftLink; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CC79EA927183BCC0056BBFC /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		8CC79EB527183DEF0056BBFC /* KivySwiftLink.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KivySwiftLink.entitlements; sourceTree = "<group>"; };
 		8CC79ECC2719C4350056BBFC /* WrapClasses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapClasses.swift; sourceTree = "<group>"; };
 		8CC79ECF2719C84A0056BBFC /* Converters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Converters.swift; sourceTree = "<group>"; };
 		8CC79ED5271A33760056BBFC /* CodeLayouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeLayouts.swift; sourceTree = "<group>"; };
+		8CE0C492272622E400C0D6D8 /* PythonHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PythonHandler.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,9 +82,12 @@
 				8CC79EB527183DEF0056BBFC /* KivySwiftLink.entitlements */,
 				8CC79EA927183BCC0056BBFC /* main.swift */,
 				8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */,
+				8CE0C492272622E400C0D6D8 /* PythonHandler.swift */,
 				8CC79ECC2719C4350056BBFC /* WrapClasses.swift */,
 				8CC79ED5271A33760056BBFC /* CodeLayouts.swift */,
 				8CC79ECF2719C84A0056BBFC /* Converters.swift */,
+				8C7A8E042724D3100030E4A7 /* TestSuite.swift */,
+				8C7A8DD5272334C70030E4A7 /* ProjectManager.swift */,
 			);
 			path = KivySwiftLink;
 			sourceTree = "<group>";
@@ -160,7 +169,10 @@
 				8CC79ED6271A33760056BBFC /* CodeLayouts.swift in Sources */,
 				8CC79ECD2719C4350056BBFC /* WrapClasses.swift in Sources */,
 				8C7A8DA1271D8AA50030E4A7 /* CommandLineFunctions.swift in Sources */,
+				8C7A8E052724D3100030E4A7 /* TestSuite.swift in Sources */,
+				8C7A8DD6272334C70030E4A7 /* ProjectManager.swift in Sources */,
 				8CC79EAA27183BCC0056BBFC /* main.swift in Sources */,
+				8CE0C493272622E400C0D6D8 /* PythonHandler.swift in Sources */,
 				8CC79ED02719C84A0056BBFC /* Converters.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

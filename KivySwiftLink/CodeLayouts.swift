@@ -133,8 +133,9 @@ func generateEnums(cls: WrapClass, options: [EnumGeneratorOptions]) -> String {
 func listFunctionLine(wrap_arg: WrapArg) -> String {
     let arg = wrap_arg.name
     let arg_type = convertPythonType(type: wrap_arg.type, options: [])
+    if let size = wrap_arg.size {} else {print(wrap_arg.type)}
     let type_size = wrap_arg.size!
-    let decode = ""
+    let decode = "\(if: wrap_arg.type == "object", "<PythonObject>")"
     return """
             cdef int \(arg)_size = len(\(arg))
             cdef \(arg_type)* \(arg)_array = <\(arg_type)*> malloc(\(arg)_size  * \(type_size))
@@ -183,10 +184,13 @@ func generateCallbackFunctions(module: WrapModule, options: [PythonTypeConvertOp
             
             if function.is_callback {
                 if options.contains(.objc) {
-                    output.append("""
-                    \(pythonType2pyx(type: function.returns.type, options: options)) \(cls.title)_\(function.name)(\(function.export(options: options));
-                    """)
+                    output.append(functionGenerator(wraptitle: cls.title, function: function, options: options))
+//                    output.append("""
+//                    //\(pythonType2pyx(type: function.returns.type, options: options)) \(cls.title)_\(function.name)(\(function.export(options: options));
+//                    """)
                 } else {
+                    var send_options = options
+                    //send_options.append(.header)
                     output.append(functionGenerator(wraptitle: cls.title, function: function, options: options))
                 }
                 
@@ -271,7 +275,7 @@ func generateStruct(module: WrapModule, options: [StructTypeOptions]) -> String 
             )
         }
     }
-    return output.joined(separator: newLine)
+    return output.joined(separator: newLineTab)
 }
 
 
@@ -315,7 +319,8 @@ func generateSendFunctions(module: WrapModule, objc: Bool) -> String {
         
         for function in cls.functions {
             if !function.is_callback && !function.swift_func {
-                var func_string = "\(pythonType2pyx(type: function.returns.type, options: return_options)) \(cls.title)_\(function.name)(\(function.export(options: send_options)))"
+                let return_type = "\(pythonType2pyx(type: function.returns.type, options: return_options))"
+                var func_string = "\(return_type) \(cls.title)_\(function.name)(\(function.export(options: send_options)))"
                 if objc { func_string.append(";") }
                 send_strings.append(func_string)
             }
@@ -378,7 +383,12 @@ func generateFunctionCode(title: String, function: WrapFunction) -> String {
     if function.swift_func {
         output.append("self._\(function.name)_(\(function.send_args.joined(separator: ", ")))")
     } else {
-        output.append("\(title)_\(function.name)(\(function.send_args.joined(separator: ", ")))")
+        if function.is_callback {
+            output.append("\(title)_\(function.name)(\(function.send_args.joined(separator: ", ")))")
+        } else {
+            output.append("\(title)_\(function.name)(\(function.send_args_py.joined(separator: ", ")))")
+        }
+        
     }
     
     return output.joined(separator: "\n\t")
@@ -395,7 +405,7 @@ func setCallPath(wraptitle: String, function: WrapFunction, options: [functionCo
     }
     
     if call_target_is_arg(function: function) {
-        return "(<object> \(function.call_target!))"
+        return "(<object> \(function.get_callArg(name: function.call_target)!.objc_name!))"
     }
     
     if let call_class = function.call_class {
@@ -410,12 +420,16 @@ func setCallPath(wraptitle: String, function: WrapFunction, options: [functionCo
 func functionGenerator(wraptitle: String, function: WrapFunction, options: [PythonTypeConvertOptions]) -> String {
     var output: String
     let objc = options.contains(.objc)
+    //print("functionGenerator", wraptitle, function.name, options)
     if function.is_callback {
         var call_args: [String]
-        if options.contains(.header) {call_args = function.call_args} else {call_args = function.call_args}
+        if options.contains(.header) {call_args = function.call_args(cython_callback: true )} else {call_args = function.call_args(cython_callback: false)}
         let func_args = function.export(options: options)
-        let return_type = pythonType2pyx(type: pythonType2pyx(type: function.returns.type, options: options), options: options)
         let call_path = setCallPath(wraptitle: wraptitle, function: function, options: [.cython])
+        let return_type = pythonType2pyx(type: function.returns.type, options: options)
+
+        //let return_type = pythonType2pyx(type: pythonType2pyx(type: function.returns.type, options: options), options: options)
+        //print("call_args", call_args)
         output = """
         cdef \( return_type ) \(wraptitle)_\(function.name)(\(func_args)):
         \t\(call_path)(\(call_args.joined(separator: ", ")))
@@ -449,13 +463,15 @@ func call_class_is_arg(function: WrapFunction) -> Bool {
 }
 func generateTypeDefImports(imports: [WrapArg]) -> String {
     //let deftypes = get_typedef_types()
-    var output: [String] = []
+    var output: [String] = ["cdef extern from \"wrapper_typedefs.h\":"]
+    if imports.count == 0 {return ""}
+    
     for arg in imports {
         let list = arg.is_list!
         let dtype = pythonType2pyx(type: arg.type, options: [.c_type])
-        output.append("ctypedef \(if: list, "const ")\(dtype)\(if: list, "*") \(arg.pyx_type!)")
+        output.append("\t"+"ctypedef \(if: list, "const ")\(dtype)\(if: list, "*") \(arg.pyx_type!)")
     }
-    return output.joined(separator: "\n\t")
+    return output.joined(separator: "\n")
 }
 
 enum handlerFunctionCodeType {

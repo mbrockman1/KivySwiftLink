@@ -38,6 +38,7 @@ enum PythonType: String, CaseIterable {
     case json
     case jsondata
     case list
+    case tuple
     case object
     case bool
     case void
@@ -74,6 +75,10 @@ let TYPE_SIZES: [String:Int] = [
     "object": MemoryLayout<UnsafeRawPointer>.size,
     "data": MemoryLayout<CUnsignedChar>.size,
     "bytes": MemoryLayout<CChar>.size,
+    "jsondata": MemoryLayout<CUnsignedChar>.size,
+    "json": MemoryLayout<CChar>.size,
+    "bool": MemoryLayout<CBool>.size,
+    "str": MemoryLayout<CChar>.size,
     
 ]
 
@@ -204,7 +209,7 @@ enum PythonTypeConvertOptions {
 func PurePythonTypeConverter(type: String) -> String{
     
     switch PythonType(rawValue: type) {
-    case .int, .int16, .short, .int32, .long, .longlong, .uint, .uint8, .uint16, .ushort, .uint32, .ulong, .ulonglong:
+    case .int, .int16, .int8, .short, .int32, .long, .longlong, .uint, .uint8, .uint16, .ushort, .uint32, .ulong, .ulonglong:
         return "int"
     case .float, .float32, .double:
         return "float"
@@ -220,10 +225,27 @@ func PurePythonTypeConverter(type: String) -> String{
     
     case .void:
         return "None"
+    case .bool:
+        return "bool"
+    case .tuple:
+        return "tuple"
     default:
         print("type missing:",type)
         return "ERROR_TYPE"
     }
+}
+
+func export_tuple(arg: WrapArg, options: [PythonTypeConvertOptions]) -> String {
+    let py_mode = options.contains(.py_mode)
+    let objc_mode = options.contains(.objc)
+    let c_mode = options.contains(.c_type)
+    
+    if arg.is_tuple == true {
+        if py_mode {
+            return "tuple[\(arg.tuple_types!.map{PurePythonTypeConverter(type: $0.type)})]"
+        }
+    }
+    return "TUPLE_ERROR_TYPE"
 }
 
 func pythonType2pyx(type: String, options: [PythonTypeConvertOptions]) -> String {
@@ -247,7 +269,11 @@ func pythonType2pyx(type: String, options: [PythonTypeConvertOptions]) -> String
         
     case .ulong, .uint:
         export = "unsigned long"
-        
+    
+    case .longlong:
+        export = "longlong"
+    case .ulonglong:
+        export = "unsigned longlong"
     case .int32:
         if objc {
             export = "int"
@@ -321,9 +347,18 @@ func pythonType2pyx(type: String, options: [PythonTypeConvertOptions]) -> String
         nonnull = true
     case .void:
         export = "void"
+    case .tuple:
+        export = "tuple"
     default:
-        print("\(type) is not supported")
-        fatalError()
+        print("<\(type)> is not a supported type or is not defined")
+        print("""
+            use "TypeVar" to define new types - the wrapper_file's global space
+
+            more info about it here:
+                https://docs.python.org/3/library/typing.html
+
+            """)
+        exit(1)
     }
     if objc {
         if options.contains(.header) {
@@ -356,25 +391,29 @@ func convertPythonListType(type: String, options: [PythonTypeConvertOptions]) ->
 }
 
 
-func convertPythonCallArg(type: String, name: String, is_list_data: Bool = false) -> String {
+func convertPythonCallArg(arg: WrapArg) -> String {
+    let type = arg.type
+    let is_list_data = arg.is_list!
+    let name = arg.objc_name!
+    let size_arg_name = "arg\(arg.idx + 1)"
     
     switch PythonType(rawValue: type) {
     case .str:
-        if is_list_data {return "[\(name)[x].decode('utf8') for x in range(\(name)_size)]"}
+        if is_list_data {return "[\(name)[x].decode('utf8') for x in range(\(size_arg_name))]"}
         return "\(name).decode('utf-8')"
     case .data:
-        if is_list_data {return "\(name)[:\(name)_size]"}
+        if is_list_data {return "\(name)[:\(size_arg_name)]"}
         //return "<bytes>\(name)[0:\(name)_size]"
-        return "\(name)[:\(name)_size]"
+        return "\(name)[:\(size_arg_name)]"
     case .json:
         return "json.loads(\(name))"
     case .jsondata:
-        return "json.loads(\(name)[:\(name)_size])"
+        return "json.loads(\(name)[:\(size_arg_name)])"
     case .object:
-        if is_list_data {return "[<object>\(name)[x] for x in range(\(name)_size)]"}
+        if is_list_data {return "[<object>\(name)[x] for x in range(\(size_arg_name))]"}
         return "<object>\(name)"
     default:
-        if is_list_data {return "[\(name)[x].decode('utf8') for x in range(\(name)_size)]"}
+        if is_list_data {return "[\(name)[x].decode('utf8') for x in range(\(size_arg_name))]"}
         return name
     }
 }
@@ -383,15 +422,16 @@ enum PythonSendArgTypes {
     case list
     case data
 }
-
+//if list {return "\(name)_array, \(name)_size"}
+//if list {return "\(name)_array"}
 func convertPythonSendArg(type: String, name: String, options: [PythonSendArgTypes]) -> String {
     let list = options.contains(.list)
     switch PythonType(rawValue: type) {
     case .str:
-        if list {return "\(name)_array, \(name)_size"}
+        if list {return "\(name)_array"}
         return "\(name).encode()"
     case .data:
-        if list {return "\(name)_array, \(name)_size"}
+        if list {return "\(name)_array"}
         //return "<bytes>\(name)[0:\(name)_size]"
         return name
         //return "\(name), \(name)_size"
@@ -400,10 +440,10 @@ func convertPythonSendArg(type: String, name: String, options: [PythonSendArgTyp
     case .jsondata:
         return "j_\(name)"
     case .object:
-        if list {return "\(name)_array, \(name)_size"}
+        if list {return "\(name)_array"}
         return "<PythonObject>\(name)"
     default:
-        if list {return "\(name)_array, \(name)_size"}
+        if list {return "\(name)_array"}
         return name
     }
 }

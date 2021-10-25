@@ -19,7 +19,7 @@ class WrapModule: WrapModuleBase {
     var dispatchEnabled = false
 
     var usedTypes: [WrapArg] = []
-    
+    var usedListTypes: [WrapArg] = []
     let working_dir = FileManager().currentDirectoryPath
     
     required init(from decoder: Decoder) throws {
@@ -38,8 +38,7 @@ class WrapModule: WrapModuleBase {
             imports.append("\nfrom kivy._event cimport EventDispatcher")
         }
         let type_imports = """
-        cdef extern from "wrapper_typedefs.h":
-        \t\(generateTypeDefImports(imports: usedTypes))
+        \(generateTypeDefImports(imports: usedTypes))
         """
         var pyx_strings = [imports,type_imports]
         for cls in classes {
@@ -76,7 +75,7 @@ class WrapModule: WrapModuleBase {
                 \(generateSendFunctions(module: self, objc: false))
                 \(if: cls.dispatch_mode, generateEnums(cls: cls, options: [.cython,.dispatch_events]))
             ######## Callbacks Functions: ########
-            \(generateCallbackFunctions(module: self, options: []))
+            \(generateCallbackFunctions(module: self, options: [.header]))
 
             ######## Cython Class: ########
             \(generateCythonClass(_class: cls.title, class_vars: class_vars.joined(separator: newLine), dispatch_mode: cls.dispatch_mode))
@@ -140,7 +139,7 @@ class WrapModule: WrapModuleBase {
         for cls in classes {
             for function in cls.functions {
                 let returns = function.returns
-                if !usedTypes.contains(where: {$0.type == returns.type}) {
+                if !usedTypes.contains(where: {$0.type == returns.type && ($0.is_list == returns.is_list)}) {
                     if returns.is_list || returns.is_data || returns.is_json || test_types.contains(returns.type) {
                         usedTypes.append(returns)
                     }
@@ -148,7 +147,9 @@ class WrapModule: WrapModuleBase {
                 }
                                     
                 for arg in function.args {
-                    if !usedTypes.contains(where: {$0.type == arg.type}) {
+                    
+                    
+                    if !usedTypes.contains(where: {$0.type == arg.type && ($0.is_list == arg.is_list)}) {
                         if arg.is_list || arg.is_data || arg.is_json || test_types.contains(arg.type){
                             usedTypes.append(arg)
                         }
@@ -260,17 +261,19 @@ class WrapFunction: WrapFunctionBase {
         return nil
     }
     
-    var call_args: [String] {
+    func call_args(cython_callback: Bool = false) -> [String] {
         var call_class = ""
         var call_target = ""
+        //print("call_args:")
         if self.call_class != nil {call_class = self.call_class}
         if self.call_target != nil {call_target = self.call_target}
         let _args = args.filter{arg -> Bool in
             arg.name != call_target && arg.name != call_class
         }
         return _args.map {
-            if !$0.is_counter {
-                return convertPythonCallArg(type: $0.type, name: $0.objc_name, is_list_data: $0.is_list)
+            //print($0.name,$0.is_counter!, cython_callback)
+            if !$0.is_counter!   {
+                return convertPythonCallArg(arg: $0)
                 }
             return ""
         }.filter({$0 != ""})
@@ -285,8 +288,8 @@ class WrapFunction: WrapFunctionBase {
             arg.name != call_target && arg.name != call_class
         }
         return _args.map {
-            if !$0.is_counter {
-                return convertPythonCallArg(type: $0.type, name: $0.name, is_list_data: $0.is_list)
+            if !$0.is_counter! {
+                return convertPythonCallArg(arg: $0)
                 }
             return ""
         }.filter({$0 != ""})
@@ -294,7 +297,20 @@ class WrapFunction: WrapFunctionBase {
     
     var send_args: [String] {
         args.map {
+//        args.filter{$0.is_counter!}.map {
             //if !$0.is_counter {
+            //var name: String
+            var send_options: [PythonSendArgTypes] = []
+            if $0.is_list {send_options.append(.list)}
+            return convertPythonSendArg(type: $0.type, name: $0.name, options: send_options)
+        }.filter({$0 != ""})
+    }
+    
+    var send_args_py: [String] {
+        args.map {
+        //args.filter{!$0.is_counter!}.map {
+            //if !$0.is_counter {
+            //var name: String
             var send_options: [PythonSendArgTypes] = []
             if $0.is_list {send_options.append(.list)}
             return convertPythonSendArg(type: $0.type, name: $0.name, options: send_options)
@@ -309,6 +325,7 @@ class WrapFunction: WrapFunctionBase {
     
     
     func export(options: [PythonTypeConvertOptions])  -> String {
+        //print("export", options)
         if options.contains(.objc) {
             let func_args = args.map({ arg in
                 arg.export(options: options)!
@@ -333,11 +350,12 @@ class WrapFunction: WrapFunctionBase {
             
             return arg.export(options: options)!
         })
-        if options.contains(.header) {
-            return func_args.joined(separator: " ")
-        } else {
-            return func_args.joined(separator: ", ")
-        }
+        return func_args.joined(separator: ", ")
+//        if options.contains(.header) {
+//            return func_args.joined(separator: " ")
+//        } else {
+//            return func_args.joined(separator: ", ")
+//        }
         
     }
     
@@ -362,6 +380,9 @@ class WrapArgBase: Codable {
     
     var size: Int!
     
+    
+    var is_tuple: Bool!
+    var tuple_types: [WrapArg]!
 }
 
 class WrapArg: WrapArgBase, Equatable {
@@ -384,6 +405,9 @@ class WrapArg: WrapArgBase, Equatable {
         }
         if is_return == nil {
             is_return = false
+        }
+        if is_tuple == nil {
+            is_tuple = false
         }
         set_types()
     }
