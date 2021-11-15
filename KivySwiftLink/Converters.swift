@@ -350,6 +350,9 @@ func pythonType2pyx(type: String, options: [PythonTypeConvertOptions]) -> String
     case .tuple:
         export = "tuple"
     default:
+        if type.contains("SwiftFuncs") {
+            return type
+        }
         print("<\(type)> is not a supported type or is not defined")
         print("""
             use "TypeVar" to define new types - the wrapper_file's global space
@@ -387,6 +390,9 @@ func convertPythonType(type: String, options: [PythonTypeConvertOptions]) -> Str
 }
 
 func convertPythonListType(type: String, options: [PythonTypeConvertOptions]) -> String {
+    if options.contains(.objc) {
+        return "PythonList_\(SWIFT_TYPES[type]!) _Nonnull"
+    }
     return "PythonList_\(SWIFT_TYPES[type]!)"
 }
 
@@ -456,5 +462,10 @@ extension String.StringInterpolation {
     mutating func appendInterpolation(if condition: @autoclosure () -> Bool, _ literal: StringLiteralType) {
         guard condition() else { return }
         appendLiteral(literal)
+    }
+    
+    mutating func appendInterpolation(if condition: @autoclosure () -> Bool) {
+        guard condition() else { return }
+        appendLiteral("")
     }
 }

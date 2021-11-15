@@ -29,16 +29,22 @@ struct KivySwiftLink: ParsableCommand {
 extension KivySwiftLink {
     
     struct Install: ParsableCommand {
-        
+        @Option(name: .shortAndLong, help: "overwrite ksl if it already exist")
+        var forced: Bool?
         
         func run() {
-            print("Do you wish to copy KivySwiftLink as ksl to /usr/local/bin/")
-            if let str = readLine() {
-                if str == "y" {
-                    print("copied file to /usr/local/bin/ksl")
-                    copyItem(from: "./KivySwiftLink", to: "/usr/local/bin/ksl")
+            if let forced = self.forced {
+                copyItem(from: "./KivySwiftLink", to: "/usr/local/bin/ksl",force: forced)
+            } else {
+                print("Do you wish to copy KivySwiftLink as ksl to /usr/local/bin/")
+                if let str = readLine() {
+                    if str == "y" {
+                        print("copied file to /usr/local/bin/ksl")
+                        copyItem(from: "./KivySwiftLink", to: "/usr/local/bin/ksl")
+                    }
                 }
             }
+            
         }
     }
     
@@ -57,11 +63,40 @@ extension KivySwiftLink {
         @Argument() var filename: String
         
         func run() {
-            print("building \(filename).py")
             
-            BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: filename)
+            if JsonStorage().current_project() != nil {
+                print("building \(filename).py")
+                BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: filename)
+                update_project(files: [filename])
+                print("Done")
+            } else {
+                print("No Project Selected - use 'ksl select-project <project name (no -ios)>'")
+            }
+            
         }
     }
+    
+    struct BuildAll: ParsableCommand {
+            
+            func run() {
+                if JsonStorage().current_project() != nil {
+                    let file_man = FileManager()
+                    let wrapper_sources = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources")
+                    print("building all")
+                    let files = try! file_man.contentsOfDirectory(atPath: wrapper_sources.path).map{$0.replacingOccurrences(of: ".py", with: "")}
+                    for file in files {
+                        print(file)
+                        BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: file )
+                    }
+                    if files.count != 0 {
+                        update_project(files: files)
+                    }
+                }
+                
+                
+            }
+        }
+    
     struct SelectProject: ParsableCommand {
             
             @Argument() var project_name: String
@@ -101,19 +136,7 @@ extension KivySwiftLink {
         }
     }
     
-    struct BuildAll: ParsableCommand {
-        
-        func run() {
-            let file_man = FileManager()
-            let wrapper_sources = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources")
-            print("building all")
-            for file in try! file_man.contentsOfDirectory(atPath: wrapper_sources.path) {
-                print(file)
-                BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: file.replacingOccurrences(of: ".py", with: "")  )
-            }
-            
-        }
-    }
+    
     
     struct RunTest: ParsableCommand {
         

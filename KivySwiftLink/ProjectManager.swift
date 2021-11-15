@@ -5,7 +5,7 @@ import PythonKit
 
 
 class JsonStorage {
-    private var data: JSON = [:]
+    private var data: JSON!
     
     init() {
         load()
@@ -28,15 +28,18 @@ class JsonStorage {
     
     
     func current_project() -> [String : Any]! {
-        let result = data
-        if let project = result.dictionaryObject {
-            return project
+        if let result = data {
+            if let project = result.dictionaryObject {
+                return project
+            }
         }
+        
         return nil
     }
     
     func set_project(name: String){
         let path = URL(fileURLWithPath: root_path, isDirectory: true).appendingPathComponent("\(name)-ios", isDirectory: true)
+        if data == nil {data = [:]}
         data["project_name"].string = name
         data["project_path"].string = path.path
         
@@ -165,9 +168,12 @@ class ProjectManager {
         //let wrap_start = header_strings.firstIndex(where: {$0.contains("//#Wrappers Start")})!
         let wrap_end = header_strings.firstIndex(where: {$0.contains("//#Wrappers End")})!
         for key in keys {
-            if let _ = header_strings.firstIndex(where: {$0.contains("//#Wrappers Start")} ) {
-                header_strings.insert("#import \"\(key).h\"", at: wrap_end)
+            if !header_strings.contains("#import \"\(key).h\"") {
+                if let _ = header_strings.firstIndex(where: {$0.contains("//#Wrappers Start")} ) {
+                    header_strings.insert("#import \"\(key).h\"", at: wrap_end)
+                }
             }
+            
         }
         let bridge_export = header_strings.joined(separator: "\n")
         try! bridge_export.write(to: bridge_header, atomically: true, encoding: .utf8)

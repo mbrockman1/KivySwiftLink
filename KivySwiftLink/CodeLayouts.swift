@@ -4,7 +4,7 @@
 //
 //  Created by MusicMaker on 16/10/2021.
 //
-
+import SwiftyJSON
 import Foundation
 func generateCythonClass(_class: String, class_vars: String, dispatch_mode: Bool) -> String {
     if dispatch_mode {
@@ -81,7 +81,7 @@ func extendCythonClass(cls: WrapClass, options: [CythonClassOptionTypes]) -> Str
             
             output.append("")
         case .swift_functions:
-            let func_string = cls.functions.filter{$0.swift_func}.map{"self._\($0.name)_ = func_struct.\($0.name)"}.joined(separator: "\n\t\t")
+            let func_string = cls.functions.filter{$0.swift_func && !$0.is_callback}.map{"self._\($0.name)_ = func_struct.\($0.name)"}.joined(separator: "\n\t\t")
             output.append("""
             cdef set_swift_functions(self, \(cls.title)SwiftFuncs func_struct ):
                     \(func_string)
@@ -197,16 +197,27 @@ func generateCallbackFunctions(module: WrapModule, options: [PythonTypeConvertOp
             }
         }
     }
-    return output.joined(separator: newLine)
+    return output.joined(separator: newLine + newLine)
 }
 
-func generateFunctionPointers(module: WrapModule, objc: Bool) -> String {
+enum FunctionPointersOptions {
+    case exclude_swift_func
+    case exclude_callback
+    case excluded_callbacks
+    case excluded_callbacks_only
+}
+
+func generateFunctionPointers(module: WrapModule, objc: Bool, options: [FunctionPointersOptions]) -> String {
     var tdef = ""
     if objc { tdef = "typedef" } else { tdef = "ctypedef"}
     var output: [String] = []
+    
+    var excluded_state = "false"
+    if options.contains(.excluded_callbacks) {excluded_state = "true"}
+    
     for cls in module.classes {
-        for key in cls.pointer_compare_dict.keys.sorted() {
-            let function = cls.pointer_compare_dict[key]!
+        for (_,function) in cls.pointer_compare_dict.sorted(by: { $0.1["name"]! < $1.1["name"]! }).filter({$0.1["excluded_callbacks"] != excluded_state}) {
+            //let function = cls.pointer_compare_dict[key]!
             var key_value: String
             if objc {key_value = "objc_string"} else {key_value = "pyx_string"}
             var pointer_string = "\(tdef) \("void") (*\(function["name"]!))(\(function[key_value]!))"
@@ -237,19 +248,20 @@ func generateStruct(module: WrapModule, options: [StructTypeOptions]) -> String 
     let swift_mode = options.contains(.swift_functions)
     let callback_mode = options.contains(.callbacks)
     if swift_mode {ending = "SwiftFuncs"} else if callback_mode {ending = "Callbacks"}
+    
     for cls in module.classes {
         var struct_args: [String] = []
         for function in cls.functions {
             if callback_mode {
                 if function.is_callback {
-                    let arg = "\t\(function.function_pointer) \(function.name)"
+                    let arg = "\t\(function.function_pointer)\(if: objc, " _Nonnull") \(function.name)"
                     struct_args.append(arg)
                 }
             }
             
             else if swift_mode {
-                if function.swift_func {
-                    let arg = "\t\(function.function_pointer) \(function.name)"
+                if function.swift_func && !function.is_callback {
+                    let arg = "\t\(function.function_pointer)\(if: objc, " _Nonnull") \(function.name)"
                     struct_args.append(arg)
                 }
             }
@@ -275,7 +287,7 @@ func generateStruct(module: WrapModule, options: [StructTypeOptions]) -> String 
             )
         }
     }
-    return output.joined(separator: newLineTab)
+    return output.joined(separator: newLineTab) + newLine
 }
 
 
@@ -289,8 +301,8 @@ func generateSendProtocol(module: WrapModule) -> String {
             }
         }
         let protocol_string = """
-        @protocol \(cls.title)_Delegate
-        - (void)set_\(cls.title)_Callback:(\(cls.title)Callbacks)callback;
+        @protocol \(cls.title)_Delegate 
+        - (void)set_\(cls.title)_Callback:(struct \(cls.title)Callbacks)callback;
         \(cls_protocols.joined(separator: newLine))
         @end
 
@@ -333,6 +345,9 @@ func generateSendFunctions(module: WrapModule, objc: Bool) -> String {
     }
     
 }
+
+
+
 
 func generatePyxClassFunctions(module: WrapModule) -> String {
     var output: [String] = []
@@ -394,6 +409,11 @@ func generateFunctionCode(title: String, function: WrapFunction) -> String {
     return output.joined(separator: "\n\t")
 }
 func setCallPath(wraptitle: String, function: WrapFunction, options: [functionCodeType]) -> String {
+    if function.swift_func {
+        return "\(wraptitle)_shared.\(function.name)"
+    }
+    
+    
     
     if call_class_is_arg(function: function) {
         if let call_target = function.call_target {
@@ -431,7 +451,7 @@ func functionGenerator(wraptitle: String, function: WrapFunction, options: [Pyth
         //let return_type = pythonType2pyx(type: pythonType2pyx(type: function.returns.type, options: options), options: options)
         //print("call_args", call_args)
         output = """
-        cdef \( return_type ) \(wraptitle)_\(function.name)(\(func_args)):
+        cdef \( return_type ) \(wraptitle)_\(function.name)(\(func_args)) with gil:
         \t\(call_path)(\(call_args.joined(separator: ", ")))
         """
     } else {
@@ -471,6 +491,9 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
         let dtype = pythonType2pyx(type: arg.type, options: [.c_type])
         output.append("\t"+"ctypedef \(if: list, "const ")\(dtype)\(if: list, "*") \(arg.pyx_type!)")
     }
+    
+    
+    
     return output.joined(separator: "\n")
 }
 
@@ -495,7 +518,7 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
             case .callback:
                 output.append("")
             default:
-                output.append("void set_\(cls.title)_Callback(\(cls.title)Callbacks callback);")
+                output.append("void set_\(cls.title)_Callback(struct \(cls.title)Callbacks callback);")
             }
         }
     }
@@ -506,18 +529,29 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
                 output.append("""
                 void Init\(cls.title)_Delegate(id<\(cls.title)_Delegate> _Nonnull callback) {
                     \(cls.title.lowercased()) = callback;
-                    NSLog(@"setting \(cls.title) delegate %@",\(cls.title.lowercased()));
+                                        NSLog(@"setting \(cls.title) delegate %@",\(cls.title.lowercased()));
                 }
                 """)
             case .callback:
                 output.append("""
-                void set_\(cls.title)_Callback(\(cls.title)Callbacks callback) {
-                    [\(cls.title.lowercased()) set_\(cls.title)Callback:callback];
+                void set_\(cls.title)_Callback(struct \(cls.title)Callbacks callback) {
+                    NSLog(@"setting callback %@",\(cls.title.lowercased()));
+                    [\(cls.title.lowercased()) set_\(cls.title)_Callback:callback];
                 }
                 """)
             case .send:
-                ""
-                //generateSendFunctions(module: <#T##WrapModule#>, objc: <#T##Bool#>)
+                //output.append("\(generateSendFunctions(module: self , objc: true))")
+                
+                for function in cls.functions.filter({!$0.is_callback && !$0.swift_func}) {
+                    let has_args = function.args.count != 0
+                    output.append("""
+                    \(function.returns.objc_type!) \(cls.title)_\(function.name)(\(function.export(options: [.use_names]))) {
+                        [\(cls.title.lowercased()) \(function.name)\(if: has_args, ": ")\(function.args.map{$0.name}.joined(separator: ": "))];
+                    }
+                    """)
+                }
+                
+                
             default:
                 ""
             }
@@ -527,7 +561,12 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
 }
 
 
-
+func createSetSwiftFunctions(cls: WrapClass) {
+    var json = JSON()
+    var function: JSON = [
+        "name": "set_SwiftFunctions"
+    ]
+}
 
 func createRecipe(title: String) -> String{
     """

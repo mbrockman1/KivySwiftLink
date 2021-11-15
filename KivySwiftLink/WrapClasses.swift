@@ -58,25 +58,29 @@ class WrapModule: WrapModuleBase {
             }
             if cls.has_swift_functions {
                 class_ext_options.append(.swift_functions)
-                class_vars.append("\t" + cls.functions.filter{$0.swift_func}.map{"cdef \($0.function_pointer) _\($0.name)_"}.joined(separator: "\n\t") + newLine)
+                class_vars.append("\t" + cls.functions.filter{$0.swift_func && !$0.is_callback}.map{"cdef \($0.function_pointer) _\($0.name)_"}.joined(separator: "\n\t") + newLine)
                 swift_funcs_struct = generateStruct(module: self, options: [.swift_functions])
+                swift_funcs_struct.append("\n\t\(generateFunctionPointers(module: self, objc: false, options: [.excluded_callbacks_only]))")
             }
             
             let pyx_string = """
             cdef extern from "_\(filename).h":
                 ######## cdef extern Callback Function Pointers: ########
-                \(generateFunctionPointers(module: self, objc: false))
+                \(generateFunctionPointers(module: self, objc: false, options: [.excluded_callbacks]))
 
                 ######## cdef extern Callback Struct: ########
-                \(generateStruct(module: self, options: [.callbacks]))
                 \(swift_funcs_struct)
+                
+                \(generateStruct(module: self, options: [.callbacks]))
+                
                 ######## cdef extern Send Functions: ########
                 void set_\(cls.title)_Callback(\(cls.title)Callbacks callback)
                 \(generateSendFunctions(module: self, objc: false))
+                
                 \(if: cls.dispatch_mode, generateEnums(cls: cls, options: [.cython,.dispatch_events]))
             ######## Callbacks Functions: ########
             \(generateCallbackFunctions(module: self, options: [.header]))
-
+            
             ######## Cython Class: ########
             \(generateCythonClass(_class: cls.title, class_vars: class_vars.joined(separator: newLine), dispatch_mode: cls.dispatch_mode))
 
@@ -92,35 +96,43 @@ class WrapModule: WrapModuleBase {
     }
     
     var h: String {
-        let cls = self.classes[0]
-        let h_string = """
+        //let cls = self.classes[0]
+        var h_string = """
         #import <Foundation/Foundation.h>
         #import "wrapper_typedefs.h"
-        //insert enums / Structs
-        \(if: cls.dispatch_mode,generateEnums(cls: cls, options: [.dispatch_events, .objc]))
-        //######## cdef extern Callback Function Pointers: ########//
-        \(generateFunctionPointers(module: self, objc: true))
-        
-        //######## cdef extern Callback Struct: ########//
-        \(generateStruct(module: self, options: [.objc, .callbacks]))
-        \(if: cls.has_swift_functions, generateStruct(module: self, options: [.swift_functions, .objc]) )
-        //######## Send Functions Protocol: ########//
-        \(generateSendProtocol(module: self))
-        \(generateHandlerFuncs(cls: cls, options: [.objc_h, .init_delegate, .callback]))
-        //######## Send Functions: ########//
-        \(generateSendFunctions(module: self, objc: true))
+
         """
+        for cls in self.classes{
+            h_string.append( """
+            //insert enums / Structs
+            \(if: cls.dispatch_mode,generateEnums(cls: cls, options: [.dispatch_events, .objc]))
+            //######## cdef extern Callback Function Pointers: ########//
+            \(generateFunctionPointers(module: self, objc: true, options: [.excluded_callbacks]))
+            
+            //######## cdef extern Callback Struct: ########//
+            \(if: cls.has_swift_functions, generateStruct(module: self, options: [.swift_functions, .objc]) )
+            \(if: cls.has_swift_functions, generateFunctionPointers(module: self, objc: true, options: [.excluded_callbacks_only]) )
+            \(generateStruct(module: self, options: [.objc, .callbacks]))
+            
+            //######## Send Functions Protocol: ########//
+            \(generateSendProtocol(module: self))
+            \(generateHandlerFuncs(cls: cls, options: [.objc_h, .init_delegate, .callback]))
+            //######## Send Functions: ########//
+            \(generateSendFunctions(module: self, objc: true))
+            """)
+        }
+        
         return h_string
     }
     
     var m: String {
-        let m_string = """
-        //#import <Foundation/Foundation.h>
+        var m_string = """
         #import "_\(filename).h"
-        //#import "wrapper_typedefs.h"
-        \(generateHandlerFuncs(cls: self.classes[0], options: [.objc_m, .init_delegate, .callback]))
-        """
         
+        """
+        for cls in self.classes {
+            m_string.append("\(generateHandlerFuncs(cls: cls, options: [.objc_m, .init_delegate, .callback, .send]))")
+        }
         return m_string
         }
     
@@ -130,13 +142,17 @@ class WrapModule: WrapModuleBase {
             if _class.dispatch_mode {
                 dispatchEnabled = true
             }
+            
+            
         }
         find_used_arg_types()
     }
     
     func find_used_arg_types() {
         let test_types = ["object","json","jsondata","data","str", "bytes"]
+        
         for cls in classes {
+            var has_swift_functions = false
             for function in cls.functions {
                 let returns = function.returns
                 if !usedTypes.contains(where: {$0.type == returns.type && ($0.is_list == returns.is_list)}) {
@@ -155,7 +171,11 @@ class WrapModule: WrapModuleBase {
                         }
                     }
                 }
-            }
+                if function.swift_func {has_swift_functions = true}
+            } //function loop end
+            
+           
+            
         }
     }
     
@@ -191,6 +211,36 @@ class WrapClass: WrapClassBase {
         }
     }
     func build() {
+        print("build",self,has_swift_functions)
+        if has_swift_functions {
+            var set_swift_function: JSON = [
+                "name":"set_swift_functions",
+                "args": [
+                    [
+                        "name":"func_struct",
+                        "type":"PythonCoreMidiSwiftFuncs",
+                        "idx": 0
+                        
+                    ]
+                ],
+                "swift_func": true,
+                "is_callback": true,
+                "returns": [
+                    "name": "void",
+                    "type": "void",
+                    "idx": 0,
+                    "is_return": true
+                ]
+            ]
+            
+            let decoder = JSONDecoder()
+            let wrap_set_swiftfunction = try! decoder.decode(WrapFunction.self, from: set_swift_function.rawData())
+            self.functions.append(wrap_set_swiftfunction)
+        }
+        
+        
+        
+        
         generateFunctionCompares()
         doFunctionCompares()
     }
@@ -216,7 +266,8 @@ class WrapClass: WrapClassBase {
                             "name": "\(title)_ptr\(compare_count)",
                             "pyx_string": function.export(options: []),
                             "objc_string": function.export(options: [.objc]),
-                            "returns": pythonType2pyx(type: function.returns.type, options: [])
+                            "returns": pythonType2pyx(type: function.returns.type, options: []),
+                            "excluded_callbacks": "\(function.swift_func && function.is_callback)"
                             ]
                     }
                 }
@@ -433,20 +484,23 @@ class WrapArg: WrapArgBase, Equatable {
 
     
     func export(options: [PythonTypeConvertOptions]) -> String! {
+        var options = options
         var _name: String
         if options.contains(.use_names) {
             _name = name
         } else {
             _name = objc_name!
         }
+        
         if options.contains(.objc) {
+            if self.is_list {options.append(.is_list)}
             if options.contains(.header) {
                 var header_string = ""
                 switch idx {
                 case 0:
-                    header_string.append(":(\(convertPythonType(type: type, options: options) ))\(_name)")
+                    header_string.append(":(\(convertPythonType(type: type, options: options) ))\(name)")
                 default:
-                    header_string.append("\(name):(\(convertPythonType(type: type, options: options) ))\(_name)")
+                    header_string.append("\(name):(\(convertPythonType(type: type, options: options) ))\(name)")
                 }
                 //let func_string = "\(convertPythonType(type: type, is_list: is_list, objc: objc, header: header)) \(objc_name!)"
                 return header_string
