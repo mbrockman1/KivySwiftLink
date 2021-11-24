@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		8C1B3522271CA3C40056C417 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 8C1B3521271CA3C40056C417 /* ArgumentParser */; };
+		8C392504274EA93A004DDE8C /* PythonDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C392503274EA93A004DDE8C /* PythonDownloader.swift */; };
 		8C7A8DA1271D8AA50030E4A7 /* CommandLineFunctions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */; };
 		8C7A8DAF271DC9F80030E4A7 /* SwiftyJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 8C7A8DAE271DC9F80030E4A7 /* SwiftyJSON */; };
 		8C7A8DD6272334C70030E4A7 /* ProjectManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7A8DD5272334C70030E4A7 /* ProjectManager.swift */; };
@@ -34,6 +35,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8C392503274EA93A004DDE8C /* PythonDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PythonDownloader.swift; sourceTree = "<group>"; };
 		8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandLineFunctions.swift; sourceTree = "<group>"; };
 		8C7A8DD5272334C70030E4A7 /* ProjectManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectManager.swift; sourceTree = "<group>"; };
 		8C7A8E042724D3100030E4A7 /* TestSuite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSuite.swift; sourceTree = "<group>"; };
@@ -85,6 +87,7 @@
 				8CC79EA927183BCC0056BBFC /* main.swift */,
 				8CC79ECC2719C4350056BBFC /* WrapClasses.swift */,
 				8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */,
+				8C392503274EA93A004DDE8C /* PythonDownloader.swift */,
 				8CE0C5072726ED9700C0D6D8 /* WrapperHandler.swift */,
 				8CE0C492272622E400C0D6D8 /* PythonHandler.swift */,
 				8CC79ED5271A33760056BBFC /* CodeLayouts.swift */,
@@ -175,6 +178,7 @@
 				8C7A8DA1271D8AA50030E4A7 /* CommandLineFunctions.swift in Sources */,
 				8C7A8E052724D3100030E4A7 /* TestSuite.swift in Sources */,
 				8C7A8DD6272334C70030E4A7 /* ProjectManager.swift in Sources */,
+				8C392504274EA93A004DDE8C /* PythonDownloader.swift in Sources */,
 				8CC79EAA27183BCC0056BBFC /* main.swift in Sources */,
 				8CE0C493272622E400C0D6D8 /* PythonHandler.swift in Sources */,
 				8CC79ED02719C84A0056BBFC /* Converters.swift in Sources */,

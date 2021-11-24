@@ -66,6 +66,12 @@ extension KivySwiftLink {
             
             if JsonStorage().current_project() != nil {
                 print("building \(filename).py")
+                let file_man = FileManager()
+                let file_url = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources").appendingPathComponent("\(filename).py")
+                guard file_man.fileExists(atPath: file_url.path) else {
+                    print("\(file_url.path) dont exist")
+                    return
+                }
                 BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: filename)
                 update_project(files: [filename])
                 print("Done")

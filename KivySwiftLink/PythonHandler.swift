@@ -28,7 +28,17 @@ func show_buildins() {
     print(isinstance("",_: str))
 }
 
-
+func checkPythonVersion() -> Bool {
+    let fileman = FileManager()
+    let python39_exist = fileman.fileExists(atPath: "/usr/local/bin/python3.9")
+    print("python39_exist",python39_exist)
+    if !python39_exist {return false}
+    let sys = Python.import("sys")
+    let vinfo = sys.version_info
+    let version = [vinfo.major, vinfo.minor, vinfo.micro]
+    print(version,version == [3,9,2])
+    return version == [3,9,2]
+}
 
 
 class PythonASTconverter {

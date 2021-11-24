@@ -7,7 +7,7 @@
 
 import Foundation
 
-
+import AppKit
 
 enum PyTypes: PythonObject {
     case str
@@ -89,6 +89,50 @@ func toolchain(command: String, args: [String]) -> Int32 {
 
 func _toolchain(command: ToolchainCommands, args: [String]) {
     toolchain_venv(command: command.rawValue, args: args)
+}
+
+func downloadPython() {
+    let url = URL(string: "https://www.python.org/ftp/python/3.9.2/python-3.9.2-macosx10.9.pkg")
+    print("\nPython 3.9.2 not found, downloading <python-3.9.2-macosx10.9.pkg>")
+    FileDownloader.loadFileSync(url: url!) { (path, error) in
+        
+        print("\nPython 3.9.2 downloaded to : \(path!)")
+        
+        showInFinder(url: URL(fileURLWithPath: path!))
+        print("\nrun <python-3.9.2-macosx10.9.pkg> in the finder window")
+            //readLine()
+        print("run \"/Applications/Python 3.9/Install Certificates.command\"\n")
+        }
+        
+        
+        
+    
+}
+func showInFinder(url: URL?) {
+    guard let url = url else { return }
+    
+    if url.hasDirectoryPath {
+        NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: url.path)
+    }
+    else {
+        showInFinderAndSelectLastComponent(of: url)
+    }
+}
+
+fileprivate func showInFinderAndSelectLastComponent(of url: URL) {
+    NSWorkspace.shared.activateFileViewerSelecting([url])
+}
+
+@discardableResult
+func pkg_install(path: String) -> Int32 {
+
+    let task = Process()
+    task.launchPath = "/usr/sbin/installer"
+    task.arguments = ["-pkg","-file", path]
+    task.launch()
+    task.waitUntilExit()
+    return task.terminationStatus
+    
 }
 
 @discardableResult
@@ -175,6 +219,10 @@ func create_venv() -> Int32 {
 
 
 func InitWorkingFolder() {
+    if checkPythonVersion() {
+        downloadPython()
+        return
+    }
     
     //try! Process().clone(repo: "https://github.com/psychowasp/KivySwiftLink.git", path: "KivySwiftLinkPack")
     try! Process().clone(repo: "https://github.com/psychowasp/KivySwiftSupportFiles.git", path: "KivySwiftSupportFiles")

@@ -204,7 +204,7 @@ class WrapClass: WrapClassBase {
         try super.init(from: decoder)
         handleDecorators()
         let callback_count = functions.filter{$0.is_callback}.count
-        let sends_count = functions.filter{!$0.is_callback && !$0.swift_func}.count
+        //let sends_count = functions.filter{!$0.is_callback && !$0.swift_func}.count
         if callback_count > 0 {
             //let func_init_string = try! JSON(extendedGraphemeClusterLiteral: "").rawData()
             //let set_callback_function = WrapFunction()
@@ -213,7 +213,7 @@ class WrapClass: WrapClassBase {
     func build() {
         print("build",self,has_swift_functions)
         if has_swift_functions {
-            var set_swift_function: JSON = [
+            let set_swift_function: JSON = [
                 "name":"set_swift_functions",
                 "args": [
                     [
@@ -500,7 +500,8 @@ class WrapArg: WrapArgBase, Equatable {
                 case 0:
                     header_string.append(":(\(convertPythonType(type: type, options: options) ))\(name)")
                 default:
-                    header_string.append("\(name):(\(convertPythonType(type: type, options: options) ))\(name)")
+                    //header_string.append("\(name):(\(convertPythonType(type: type, options: options) ))\(name)")
+                    header_string.append(":(\(convertPythonType(type: type, options: options) ))\(name)")
                 }
                 //let func_string = "\(convertPythonType(type: type, is_list: is_list, objc: objc, header: header)) \(objc_name!)"
                 return header_string

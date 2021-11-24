@@ -330,7 +330,7 @@ func pythonType2pyx(type: String, options: [PythonTypeConvertOptions]) -> String
         } else {
             export = "PythonData"
         }
-        nonnull = true
+        //nonnull = true
     case .json:
         if c_types {
             export = "const char*"
@@ -344,7 +344,7 @@ func pythonType2pyx(type: String, options: [PythonTypeConvertOptions]) -> String
         } else {
             export = "PythonJsonData"
         }
-        nonnull = true
+        //nonnull = true
     case .void:
         export = "void"
     case .tuple:
@@ -391,36 +391,64 @@ func convertPythonType(type: String, options: [PythonTypeConvertOptions]) -> Str
 
 func convertPythonListType(type: String, options: [PythonTypeConvertOptions]) -> String {
     if options.contains(.objc) {
-        return "PythonList_\(SWIFT_TYPES[type]!) _Nonnull"
+//        return "PythonList_\(SWIFT_TYPES[type]!) _Nonnull"
+        return "PythonList_\(SWIFT_TYPES[type]!)"
     }
     return "PythonList_\(SWIFT_TYPES[type]!)"
 }
 
 
 func convertPythonCallArg(arg: WrapArg) -> String {
+    let is_return = arg.is_return
     let type = arg.type
     let is_list_data = arg.is_list!
     let name = arg.objc_name!
-    let size_arg_name = "arg\(arg.idx + 1)"
+    //let size_arg_name = "arg\(arg.idx + 1)"
+    let size_arg_name = "arg\(arg.idx).size"
     
     switch PythonType(rawValue: type) {
     case .str:
-        if is_list_data {return "[\(name)[x].decode('utf8') for x in range(\(size_arg_name))]"}
+        if is_list_data {return "[\(name).ptr[x].decode('utf8') for x in range(\(size_arg_name))]"}
         return "\(name).decode('utf-8')"
     case .data:
-        if is_list_data {return "\(name)[:\(size_arg_name)]"}
+        if is_list_data {return "\(name).ptr[:\(size_arg_name)]"}
         //return "<bytes>\(name)[0:\(name)_size]"
         return "\(name)[:\(size_arg_name)]"
     case .json:
         return "json.loads(\(name))"
     case .jsondata:
-        return "json.loads(\(name)[:\(size_arg_name)])"
+        return "json.loads(\(name).ptr[:\(size_arg_name)])"
     case .object:
-        if is_list_data {return "[<object>\(name)[x] for x in range(\(size_arg_name))]"}
+        if is_list_data {return "[<object>\(name).ptr[x] for x in range(\(size_arg_name))]"}
         return "<object>\(name)"
     default:
-        if is_list_data {return "[\(name)[x].decode('utf8') for x in range(\(size_arg_name))]"}
+        if is_list_data {return "[\(name).ptr[x].decode('utf8') for x in range(\(size_arg_name))]"}
         return name
+    }
+}
+
+func convertReturnSend(f: WrapFunction, rname: String, code: String) -> String {
+    let returns = f.returns
+    let rtype = f.returns.type
+    
+    switch PythonType(rawValue: rtype) {
+    case .str:
+        if returns.is_list {
+            return "[rtn_val.ptr[x].decode() for x in range(rtn_val.size)]"
+        }
+        return "\(code).decode()"
+    case .data:
+        if returns.is_list {
+            return "[rtn_val.ptr[x].decode() for x in range(rtn_val.size)]"
+        }
+        return "rtn_val.ptr[:rtn_val.size]"
+    case .jsondata:
+        return "json.loads(rtn_val.ptr[:rtn_val.size])"
+    default:
+        if returns.is_list {
+            return "[rtn_val.ptr[x] for x in range(rtn_val.size)]"
+        }
+        return code
     }
 }
 
@@ -434,10 +462,10 @@ func convertPythonSendArg(type: String, name: String, options: [PythonSendArgTyp
     let list = options.contains(.list)
     switch PythonType(rawValue: type) {
     case .str:
-        if list {return "\(name)_array"}
+        if list {return "\(name)_struct"}
         return "\(name).encode()"
     case .data:
-        if list {return "\(name)_array"}
+        if list {return "\(name)_struct"}
         //return "<bytes>\(name)[0:\(name)_size]"
         return name
         //return "\(name), \(name)_size"
@@ -446,10 +474,10 @@ func convertPythonSendArg(type: String, name: String, options: [PythonSendArgTyp
     case .jsondata:
         return "j_\(name)"
     case .object:
-        if list {return "\(name)_array"}
+        if list {return "\(name)_struct"}
         return "<PythonObject>\(name)"
     default:
-        if list {return "\(name)_array"}
+        if list {return "\(name)_struct"}
         return name
     }
 }
@@ -467,5 +495,9 @@ extension String.StringInterpolation {
     mutating func appendInterpolation(if condition: @autoclosure () -> Bool) {
         guard condition() else { return }
         appendLiteral("")
+    }
+    
+    mutating func appendInterpolation(if condition: @autoclosure () -> Bool, _ literal: StringLiteralType,_ else_literal: StringLiteralType) {
+        if condition() { appendLiteral(literal) } else { appendLiteral(else_literal) }
     }
 }
