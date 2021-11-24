@@ -1,0 +1,419 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 52;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		8C1B3522271CA3C40056C417 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 8C1B3521271CA3C40056C417 /* ArgumentParser */; };
+		8C392504274EA93A004DDE8C /* PythonDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C392503274EA93A004DDE8C /* PythonDownloader.swift */; };
+		8C7A8DA1271D8AA50030E4A7 /* CommandLineFunctions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */; };
+		8C7A8DAF271DC9F80030E4A7 /* SwiftyJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 8C7A8DAE271DC9F80030E4A7 /* SwiftyJSON */; };
+		8C7A8DD6272334C70030E4A7 /* ProjectManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7A8DD5272334C70030E4A7 /* ProjectManager.swift */; };
+		8C7A8E052724D3100030E4A7 /* TestSuite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7A8E042724D3100030E4A7 /* TestSuite.swift */; };
+		8CC79EAA27183BCC0056BBFC /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79EA927183BCC0056BBFC /* main.swift */; };
+		8CC79EB327183BE30056BBFC /* PythonKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8CC79EB227183BE30056BBFC /* PythonKit */; };
+		8CC79ECD2719C4350056BBFC /* WrapClasses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79ECC2719C4350056BBFC /* WrapClasses.swift */; };
+		8CC79ED02719C84A0056BBFC /* Converters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79ECF2719C84A0056BBFC /* Converters.swift */; };
+		8CC79ED6271A33760056BBFC /* CodeLayouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79ED5271A33760056BBFC /* CodeLayouts.swift */; };
+		8CE0C493272622E400C0D6D8 /* PythonHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE0C492272622E400C0D6D8 /* PythonHandler.swift */; };
+		8CE0C5082726ED9700C0D6D8 /* WrapperHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE0C5072726ED9700C0D6D8 /* WrapperHandler.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8CC79EA427183BCC0056BBFC /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		8C392503274EA93A004DDE8C /* PythonDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PythonDownloader.swift; sourceTree = "<group>"; };
+		8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandLineFunctions.swift; sourceTree = "<group>"; };
+		8C7A8DD5272334C70030E4A7 /* ProjectManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectManager.swift; sourceTree = "<group>"; };
+		8C7A8E042724D3100030E4A7 /* TestSuite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSuite.swift; sourceTree = "<group>"; };
+		8CC79EA627183BCC0056BBFC /* KivySwiftLink */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = KivySwiftLink; sourceTree = BUILT_PRODUCTS_DIR; };
+		8CC79EA927183BCC0056BBFC /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		8CC79EB527183DEF0056BBFC /* KivySwiftLink.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KivySwiftLink.entitlements; sourceTree = "<group>"; };
+		8CC79ECC2719C4350056BBFC /* WrapClasses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapClasses.swift; sourceTree = "<group>"; };
+		8CC79ECF2719C84A0056BBFC /* Converters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Converters.swift; sourceTree = "<group>"; };
+		8CC79ED5271A33760056BBFC /* CodeLayouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeLayouts.swift; sourceTree = "<group>"; };
+		8CE0C492272622E400C0D6D8 /* PythonHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PythonHandler.swift; sourceTree = "<group>"; };
+		8CE0C5072726ED9700C0D6D8 /* WrapperHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapperHandler.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8CC79EA327183BCC0056BBFC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8C7A8DAF271DC9F80030E4A7 /* SwiftyJSON in Frameworks */,
+				8C1B3522271CA3C40056C417 /* ArgumentParser in Frameworks */,
+				8CC79EB327183BE30056BBFC /* PythonKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		8CC79E9D27183BCC0056BBFC = {
+			isa = PBXGroup;
+			children = (
+				8CC79EA827183BCC0056BBFC /* KivySwiftLink */,
+				8CC79EA727183BCC0056BBFC /* Products */,
+				8CEC0079271B54E3004CB857 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		8CC79EA727183BCC0056BBFC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8CC79EA627183BCC0056BBFC /* KivySwiftLink */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8CC79EA827183BCC0056BBFC /* KivySwiftLink */ = {
+			isa = PBXGroup;
+			children = (
+				8CC79EB527183DEF0056BBFC /* KivySwiftLink.entitlements */,
+				8CC79EA927183BCC0056BBFC /* main.swift */,
+				8CC79ECC2719C4350056BBFC /* WrapClasses.swift */,
+				8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */,
+				8C392503274EA93A004DDE8C /* PythonDownloader.swift */,
+				8CE0C5072726ED9700C0D6D8 /* WrapperHandler.swift */,
+				8CE0C492272622E400C0D6D8 /* PythonHandler.swift */,
+				8CC79ED5271A33760056BBFC /* CodeLayouts.swift */,
+				8CC79ECF2719C84A0056BBFC /* Converters.swift */,
+				8C7A8DD5272334C70030E4A7 /* ProjectManager.swift */,
+				8C7A8E042724D3100030E4A7 /* TestSuite.swift */,
+			);
+			path = KivySwiftLink;
+			sourceTree = "<group>";
+		};
+		8CEC0079271B54E3004CB857 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8CC79EA527183BCC0056BBFC /* KivySwiftLink */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8CC79EAD27183BCC0056BBFC /* Build configuration list for PBXNativeTarget "KivySwiftLink" */;
+			buildPhases = (
+				8CC79EA227183BCC0056BBFC /* Sources */,
+				8CC79EA327183BCC0056BBFC /* Frameworks */,
+				8CC79EA427183BCC0056BBFC /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KivySwiftLink;
+			packageProductDependencies = (
+				8CC79EB227183BE30056BBFC /* PythonKit */,
+				8C1B3521271CA3C40056C417 /* ArgumentParser */,
+				8C7A8DAE271DC9F80030E4A7 /* SwiftyJSON */,
+			);
+			productName = KivySwiftLink2;
+			productReference = 8CC79EA627183BCC0056BBFC /* KivySwiftLink */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8CC79E9E27183BCC0056BBFC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1240;
+				LastUpgradeCheck = 1240;
+				TargetAttributes = {
+					8CC79EA527183BCC0056BBFC = {
+						CreatedOnToolsVersion = 12.4;
+					};
+				};
+			};
+			buildConfigurationList = 8CC79EA127183BCC0056BBFC /* Build configuration list for PBXProject "KivySwiftLink" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 8CC79E9D27183BCC0056BBFC;
+			packageReferences = (
+				8CC79EB127183BE30056BBFC /* XCRemoteSwiftPackageReference "PythonKit" */,
+				8C1B3520271CA3C40056C417 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
+				8C7A8DAD271DC9F80030E4A7 /* XCRemoteSwiftPackageReference "SwiftyJSON" */,
+			);
+			productRefGroup = 8CC79EA727183BCC0056BBFC /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8CC79EA527183BCC0056BBFC /* KivySwiftLink */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8CC79EA227183BCC0056BBFC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8CC79ED6271A33760056BBFC /* CodeLayouts.swift in Sources */,
+				8CE0C5082726ED9700C0D6D8 /* WrapperHandler.swift in Sources */,
+				8CC79ECD2719C4350056BBFC /* WrapClasses.swift in Sources */,
+				8C7A8DA1271D8AA50030E4A7 /* CommandLineFunctions.swift in Sources */,
+				8C7A8E052724D3100030E4A7 /* TestSuite.swift in Sources */,
+				8C7A8DD6272334C70030E4A7 /* ProjectManager.swift in Sources */,
+				8C392504274EA93A004DDE8C /* PythonDownloader.swift in Sources */,
+				8CC79EAA27183BCC0056BBFC /* main.swift in Sources */,
+				8CE0C493272622E400C0D6D8 /* PythonHandler.swift in Sources */,
+				8CC79ED02719C84A0056BBFC /* Converters.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		8CC79EAB27183BCC0056BBFC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		8CC79EAC27183BCC0056BBFC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		8CC79EAE27183BCC0056BBFC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = KivySwiftLink/KivySwiftLink.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_HARDENED_RUNTIME = YES;
+				HEADER_SEARCH_PATHS = (
+					/Users/musicmaker/xcode,
+					"/Users/musicmaker/Downloads/Python-3.9-macOS-support.b5/Python/Headers",
+					"/Users/musicmaker/Downloads/Python-3.9-macOS-support.b5/OpenSSL/Headers",
+					"/Users/musicmaker/Downloads/Python-3.9-macOS-support.b5/BZip2/Headers",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		8CC79EAF27183BCC0056BBFC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = KivySwiftLink/KivySwiftLink.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_HARDENED_RUNTIME = YES;
+				HEADER_SEARCH_PATHS = (
+					/Users/musicmaker/xcode,
+					"/Users/musicmaker/Downloads/Python-3.9-macOS-support.b5/Python/Headers",
+					"/Users/musicmaker/Downloads/Python-3.9-macOS-support.b5/OpenSSL/Headers",
+					"/Users/musicmaker/Downloads/Python-3.9-macOS-support.b5/BZip2/Headers",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		8CC79EA127183BCC0056BBFC /* Build configuration list for PBXProject "KivySwiftLink" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8CC79EAB27183BCC0056BBFC /* Debug */,
+				8CC79EAC27183BCC0056BBFC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8CC79EAD27183BCC0056BBFC /* Build configuration list for PBXNativeTarget "KivySwiftLink" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8CC79EAE27183BCC0056BBFC /* Debug */,
+				8CC79EAF27183BCC0056BBFC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8C1B3520271CA3C40056C417 /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-argument-parser";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.1;
+			};
+		};
+		8C7A8DAD271DC9F80030E4A7 /* XCRemoteSwiftPackageReference "SwiftyJSON" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SwiftyJSON/SwiftyJSON";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.1;
+			};
+		};
+		8CC79EB127183BE30056BBFC /* XCRemoteSwiftPackageReference "PythonKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pvieito/PythonKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8C1B3521271CA3C40056C417 /* ArgumentParser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8C1B3520271CA3C40056C417 /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
+			productName = ArgumentParser;
+		};
+		8C7A8DAE271DC9F80030E4A7 /* SwiftyJSON */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8C7A8DAD271DC9F80030E4A7 /* XCRemoteSwiftPackageReference "SwiftyJSON" */;
+			productName = SwiftyJSON;
+		};
+		8CC79EB227183BE30056BBFC /* PythonKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8CC79EB127183BE30056BBFC /* XCRemoteSwiftPackageReference "PythonKit" */;
+			productName = PythonKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 8CC79E9E27183BCC0056BBFC /* Project object */;
+}
