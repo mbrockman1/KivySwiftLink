@@ -219,7 +219,7 @@ func create_venv() -> Int32 {
 
 
 func InitWorkingFolder() {
-    if checkPythonVersion() {
+    if !checkPythonVersion() {
         downloadPython()
         return
     }
