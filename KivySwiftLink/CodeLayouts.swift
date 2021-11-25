@@ -299,7 +299,7 @@ func generateSendProtocol(module: WrapModule) -> String {
         for function in cls.functions {
             if !function.is_callback && !function.swift_func {
                 //cls_protocols.append("- (\(pythonType2pyx(type: function.returns.type, options: [.objc])))\(function.name)\(function.export(options: [.objc, .header]));")
-                cls_protocols.append("- (\(function.returns.pyx_type!))\(function.name)\(function.export(options: [.objc, .header]));")
+                cls_protocols.append("- (\(function.returns.objc_type!))\(function.name)\(function.export(options: [.objc, .header]));")
 
             }
         }
@@ -527,24 +527,51 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
     //let deftypes = get_typedef_types()
     var output: [String] = ["cdef extern from \"wrapper_typedefs.h\":"]
     if imports.count == 0 {return ""}
-    
-    for arg in imports {
+    var imps = imports
+    imps.sort {
+        !$0.is_list && $1.is_list
+    }
+    for arg in imps {
         let list = arg.is_list!
         let data = arg.is_data!
         let jsondata = arg.type == "jsondata"
-        print("generateTypeDefImports",arg.type, list, data)
+        
+        //print("generateTypeDefImports",arg.type, list, data)
         let dtype = pythonType2pyx(type: arg.type, options: [.c_type])
         //
         if list || data || jsondata {
-            let struct_string = """
-                ctypedef struct \(arg.pyx_type!):
-                    \(if: list, "const ")\(dtype)\(if: list, "*") ptr
-                    long size;
+            if list && (data || jsondata) {
+                output.append("""
+                    ctypedef struct \(arg.pyx_type!):
+                        const \(convertPythonType(type: arg.type, options: [.objc]))\(if: list, "*") ptr
+                        long size;
+                
+                """)
+            } else {
+                
+                if arg.is_list && ["object","str"].contains(arg.type) {
+                    output.append("""
+                        ctypedef struct \(arg.pyx_type!):
+                            const \(convertPythonType(type: arg.type, options: [])) * ptr
+                            long size;
+                    
+                    """)
+                } else {
+                    // Normal types / lists with normal types
+                    //\(if: list, "const ")\(dtype)\(if: list, "*") ptr
+                    output.append("""
+                        ctypedef struct \(arg.pyx_type!):
+                            \(if: list, "const ")\(dtype)\(if: list, " *") ptr
+                            long size;
+                    
+                    """)
+                }
+                
+            }
             
-            """
-            output.append(struct_string)
+            
         } else {
-            output.append("\t"+"ctypedef \(dtype) \(arg.pyx_type!)")
+            output.append("\t"+"ctypedef \(dtype) \(arg.pyx_type!)\n")
         }
         
         
@@ -568,6 +595,7 @@ enum handlerFunctionCodeType {
 
 func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) -> String {
     var output: [String] = [""]
+    let objc_m = options.contains(.objc_m)
     if options.contains(.objc_h) {
         for option in options {
             switch option {
@@ -602,8 +630,9 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
                 
                 for function in cls.functions.filter({!$0.is_callback && !$0.swift_func}) {
                     let has_args = function.args.count != 0
+                    let return_type = "\(if: objc_m, function.returns.objc_type!, function.returns.pyx_type!)"
                     output.append("""
-                    \(function.returns.pyx_type!) \(cls.title)_\(function.name)(\(function.export(options: [.use_names]))) {
+                    \(return_type) \(cls.title)_\(function.name)(\(function.export(options: [.use_names]))) {
                         \(if: function.returns.name != "void", "return ")[\(cls.title.lowercased()) \(function.name)\(if: has_args, ": ")\(function.args.map{$0.name}.joined(separator: ": "))];
                     }
                     """)

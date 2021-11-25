@@ -439,11 +439,19 @@ func convertReturnSend(f: WrapFunction, rname: String, code: String) -> String {
         return "\(code).decode()"
     case .data:
         if returns.is_list {
-            return "[rtn_val.ptr[x].decode() for x in range(rtn_val.size)]"
+            return "[rtn_val.ptr[x].ptr[:rtn_val.ptr[x].size] for x in range(rtn_val.size)]"
         }
         return "rtn_val.ptr[:rtn_val.size]"
     case .jsondata:
+        if returns.is_list {
+            return "[json.loads(rtn_val.ptr[x].ptr[:rtn_val.ptr[x].size]) for x in range(rtn_val.size)]"
+        }
         return "json.loads(rtn_val.ptr[:rtn_val.size])"
+    case .object:
+        if returns.is_list {
+            return "[(<object>rtn_val.ptr[x]) for x in range(rtn_val.size)]"
+        }
+        return "<object>\(code)"
     default:
         if returns.is_list {
             return "[rtn_val.ptr[x] for x in range(rtn_val.size)]"

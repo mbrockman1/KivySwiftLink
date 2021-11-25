@@ -148,6 +148,19 @@ class WrapModule: WrapModuleBase {
         find_used_arg_types()
     }
     
+    func add_missing_arg_type(type:String) -> WrapArg {
+        let is_data = ["data","jsondata"].contains(type)
+        let json_arg: JSON = [
+            "name":type,
+            "type":type,
+            "idx": 0,
+            "is_data": is_data
+        ]
+        
+        let decoder = JSONDecoder()
+        return try! decoder.decode(WrapArg.self, from: json_arg.rawData())
+    }
+    
     func find_used_arg_types() {
         let test_types = ["object","json","jsondata","data","str", "bytes"]
         
@@ -155,9 +168,20 @@ class WrapModule: WrapModuleBase {
             var has_swift_functions = false
             for function in cls.functions {
                 let returns = function.returns
+                if (returns.is_list || returns.is_data) && !["object","void"].contains(returns.type) {
+                    fatalError("\n\t\(if: returns.is_list,"list[\(returns.type)]",returns.type) as return type is not supported atm")
+                }
                 if !usedTypes.contains(where: {$0.type == returns.type && ($0.is_list == returns.is_list)}) {
+                    //check for supported return list
+                    
+                    
                     if returns.is_list || returns.is_data || returns.is_json || test_types.contains(returns.type) {
+                        
                         usedTypes.append(returns)
+                        if !usedTypes.contains(where: {$0.type == returns.type && !$0.is_list}) {
+                            //print("list type not found", returns.type)
+                            usedTypes.append(add_missing_arg_type(type: returns.type))
+                        }
                     }
                         
                 }
@@ -211,7 +235,7 @@ class WrapClass: WrapClassBase {
         }
     }
     func build() {
-        print("build",self,has_swift_functions)
+        //print("build",self,has_swift_functions)
         if has_swift_functions {
             let set_swift_function: JSON = [
                 "name":"set_swift_functions",
@@ -470,9 +494,10 @@ class WrapArg: WrapArgBase, Equatable {
     func set_types() {
         pyx_name = name
         var pyx_type_options: [PythonTypeConvertOptions] = []
-        let objc_type_options: [PythonTypeConvertOptions] = [.objc]
+        var objc_type_options: [PythonTypeConvertOptions] = [.objc]
         if is_list! {
             pyx_type_options.append(.is_list)
+            objc_type_options.append(.is_list)
         }
         pyx_type = convertPythonType(type: type, options: pyx_type_options)
         objc_name = "arg\(idx)"

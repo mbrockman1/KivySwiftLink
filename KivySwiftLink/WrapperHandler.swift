@@ -45,9 +45,9 @@ func BuildWrapperFile(root_path: String, site_path: String, py_name: String) {
     let typedefs_dst = src_path.appendingPathComponent("wrapper_typedefs.h")
     let wrapper_header = wrapper_headers_path.appendingPathComponent("\(wrap_module.filename).h")
     
-    if !file_man.fileExists(atPath: typedefs_dst.path){
-        copyItem(from: wrapper_typedefs.path, to: typedefs_dst.path)
-    }
+    //if !file_man.fileExists(atPath: typedefs_dst.path){
+        copyItem(from: wrapper_typedefs.path, to: typedefs_dst.path, force: true)
+    //}
 
     _toolchain(command: .clean, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
     _toolchain(command: .build, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
