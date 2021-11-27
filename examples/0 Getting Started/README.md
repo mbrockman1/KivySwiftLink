@@ -58,7 +58,7 @@ and run the following command:
 ksl build <wrapper_file> <created-project-name>
 ```
 ```shell
-ksl build kivytest.py kivytest_project
+ksl build kivytest kivytest_project
 ```
 and open your xcode project.
 
