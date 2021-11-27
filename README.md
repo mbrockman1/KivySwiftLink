@@ -2,12 +2,32 @@
 What is KivySwiftLink ?
 
 
+## -- Installation --
 
- ## Installation
+Download a release.
+Open a terminal and goto the folder you downloaded KivySwiftLink to.
 
-Make sure you have **Python 3.9.2** installed since this tool only tagets python3.8 internal and kivy-ios runs on 3.9.2
+Then run:
+```sh
+./KivySwiftLink install
+```
+it will ask you if you want to copy the file as **ksl** to **/usr/local/bin/**
 
-so i recommend having the working python version in sync with the kivy-ios
+so from now on you just have to run KivySwiftLink like this:
+```sh
+ksl <commands>
+```
+same install command is used when downloading newer releases and updating it.
+
+
+
+
+
+## -- Setup a working folder --
+
+Make sure you have **Python 3.9.2** installed since this tool only works with a python3.9 installed 
+kivy-ios runs on 3.9.2, so i recommend having the working python version in sync with the kivy-ios
+
 
 https://www.python.org/ftp/python/3.9.2/python-3.9.2-macosx10.9.pkg
 
@@ -15,7 +35,8 @@ after installation make sure to run
 
 /Applications/Python 3.9/Install Certificates.command
 
-else kivy-ios cant build anything.
+else kivy-ios cant build anything, also KivySwiftLink wont run the setup process, without being able to detect a python 3.9.
+Else it will ask you to download the same Python from the link above.
 
 Like normal kivy-ios make sure to do the **Prerequisites** part of the standard kivy-ios [tutorial](https://kivy.org/doc/stable/guide/packaging-ios.html)  
 
