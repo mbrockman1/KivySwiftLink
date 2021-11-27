@@ -4,11 +4,11 @@
 
 
 ```sh
-./ksl create <project-name> <path-of-your-python-main.py-folder>
+ksl create <project-name> <path-of-your-python-main.py-folder>
 ```
 make a folder inside the working folder and call it py_src. u can call it whatever u feel like and place it anywhere you want, but for the sake of this tutorial we just use an internal folder as source.
 ```sh
-./ksl create kivytest_project py_src
+ksl create kivytest_project py_src
 ```
 Same thing as with kivy toolchain, only this runs on top of the toolchain and will do some extra things, to make the xcode project more suitable for running swift side by side with kivy.
 
@@ -17,7 +17,7 @@ Same thing as with kivy toolchain, only this runs on top of the toolchain and wi
 ## Writing first Python wrapper file:
 
 next goto "wrapper_sources" and create a new python file.
-in this case lets call it "kivytest.py"
+in this case lets call it "kivytest.pyi"
 
 and paste the following code:
 
@@ -47,10 +47,10 @@ class KivyTest:
 and run the following command:
 
 ```shell
-./ksl build <wrapper_file> <created-project-name>
+ksl build <wrapper_file> <created-project-name>
 ```
 ```shell
-./ksl build kivytest.py kivytest_project
+ksl build kivytest kivytest_project
 ```
 and open your xcode project.
 
