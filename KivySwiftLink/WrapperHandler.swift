@@ -11,9 +11,10 @@ import Foundation
 func BuildWrapperFile(root_path: String, site_path: String, py_name: String) {
     let file_man = FileManager()
     let cur_dir = URL(fileURLWithPath: file_man.currentDirectoryPath)
-    let py_file = cur_dir.appendingPathComponent("wrapper_sources").appendingPathComponent("\(py_name).py")
+    let site_manager = cur_dir.appendingPathComponent("venv/lib/python3.9/site-packages", isDirectory: true)
+    let py_file = cur_dir.appendingPathComponent("wrapper_sources").appendingPathComponent("\(py_name).pyi")
     if !file_man.fileExists(atPath: py_file.path) {
-        print("no wrapper file named: \(py_name).py")
+        print("no wrapper file named: \(py_name).pyi")
         return
     }
     let wrapper_builds_path = cur_dir.appendingPathComponent("wrapper_builds", isDirectory: true)
@@ -35,6 +36,7 @@ func BuildWrapperFile(root_path: String, site_path: String, py_name: String) {
         try wrap_module.pyx.write(to: pyxfile, atomically: true, encoding: .utf8)
         try wrap_module.h.write(to: h_file, atomically: true, encoding: .utf8)
         try wrap_module.m.write(to: m_file, atomically: true, encoding: .utf8)
+        try py_ast.generatePYI(code: String(contentsOf: py_file)).write(to: site_manager.appendingPathComponent("\(py_name).pyi"), atomically: true, encoding: .utf8)
         try createSetupPy(title: py_name).write(to: setup_file, atomically: true, encoding: .utf8)
         try createRecipe(title: py_name).write(to: recipe_file, atomically: true, encoding: .utf8)
     } catch {
