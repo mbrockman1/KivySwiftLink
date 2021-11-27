@@ -19,12 +19,6 @@ ksl <commands>
 ```
 same install command is used when downloading newer releases and updating it.
 
-
-
-
-
-## -- Setup a working folder --
-
 Make sure you have **Python 3.9.2** installed since this tool only works with a python3.9 installed 
 kivy-ios runs on 3.9.2, so i recommend having the working python version in sync with the kivy-ios
 
@@ -40,15 +34,17 @@ Else it will ask you to download the same Python from the link above.
 
 Like normal kivy-ios make sure to do the **Prerequisites** part of the standard kivy-ios [tutorial](https://kivy.org/doc/stable/guide/packaging-ios.html)  
 
-Open Terminal
+## -- Setup a working folder --
 
-and goto to the root of where you want your new kivy build folder
+create a Empty folder that will be the new "Working Folder"
+same way as normal Kivy-iOS.
 
-
+in terminal
+`cd` to the new empty folder
 ```sh
-cd path-of-the-root
+cd path-of-the-folder
 ```
-
+and run:
  ```sh
 ksl setup
  ```
