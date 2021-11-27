@@ -494,7 +494,7 @@ func functionGenerator(wraptitle: String, function: WrapFunction, options: [Pyth
         
         output = """
         cdef \( return_type ) \(wraptitle)_\(function.name)(\(func_args)) with gil:
-        \t\(call_path)(\(call_args.joined(separator: ", ")))
+            \(call_path)(\(call_args.joined(separator: ", ")))
         """
     } else {
         output = "\(pythonType2pyx(type: function.returns.type, options: options)) \("abc"))(\(function.export(options: options)))"
@@ -536,7 +536,7 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
         let data = arg.is_data!
         let jsondata = arg.type == "jsondata"
         
-        //print("generateTypeDefImports",arg.type, list, data)
+        print("generateTypeDefImports",arg.type, list, data)
         let dtype = pythonType2pyx(type: arg.type, options: [.c_type])
         //
         if list || data || jsondata {

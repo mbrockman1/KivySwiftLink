@@ -218,6 +218,9 @@ class WrapClassBase: Codable {
     
     
 }
+
+
+//WrapClass
 class WrapClass: WrapClassBase {
     var pointer_compare_strings: [String] = []
     var pointer_compare_dict: [String:[String:String]] = [:]

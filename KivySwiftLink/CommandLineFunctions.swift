@@ -36,14 +36,17 @@ func createFolder(name: String) {
     }
 }
 
+let ANSWERS = ["y","yes"]
 
 func copyItem(from: String, to: String, force: Bool=false) {
     let fileman = FileManager()
     if fileman.fileExists(atPath: to) && !force{
-        print("file already exist do you wish to overwrite it ?")
-        if let input_string = readLine() {
+        print("<\(to)> already exist do you wish to overwrite it ?")
+        print("enter y or yes: ", separator: "", terminator: " ")
+        if let input_string = readLine()?.lowercased() {
             let input = input_string.trimmingCharacters(in: .whitespaces)
-            if input == "y" {
+            
+            if ANSWERS.contains(input) {
                 do {
                     try fileman.removeItem(atPath: to)
                     try fileman.copyItem(atPath: from, toPath: to)
@@ -93,19 +96,24 @@ func _toolchain(command: ToolchainCommands, args: [String]) {
 
 func downloadPython() {
     let url = URL(string: "https://www.python.org/ftp/python/3.9.2/python-3.9.2-macosx10.9.pkg")
-    print("\nPython 3.9.2 not found, downloading <python-3.9.2-macosx10.9.pkg>")
-    FileDownloader.loadFileSync(url: url!) { (path, error) in
-        
-        print("\nPython 3.9.2 downloaded to : \(path!)")
-        
-        showInFinder(url: URL(fileURLWithPath: path!))
-        print("\nrun <python-3.9.2-macosx10.9.pkg> in the finder window")
-            //readLine()
-        print("run \"/Applications/Python 3.9/Install Certificates.command\"\n")
+    print("""
+        Python 3.9 not found, do you wish for KivySwiftLink to download <python-3.9.2-macosx10.9.pkg>
+        from \(url!) ?
+    """)
+    print("enter y or yes:", separator: "", terminator: " ")
+    if let input = readLine()?.lowercased() {
+        if ANSWERS.contains(input) {
+            FileDownloader.loadFileSync(url: url!) { (path, error) in
+                
+                print("\nPython 3.9.2 downloaded to : \(path!)")
+                
+                showInFinder(url: URL(fileURLWithPath: path!))
+                print("\nrun <python-3.9.2-macosx10.9.pkg> in the finder window")
+                    //readLine()
+                print("run \"/Applications/Python 3.9/Install Certificates.command\"\n")
+                }
         }
-        
-        
-        
+    } 
     
 }
 func showInFinder(url: URL?) {
@@ -246,6 +254,7 @@ func InitWorkingFolder() {
     createFolder(name: "wrapper_builds")
     createFolder(name: "wrapper_headers")
     copyItem(from: "KivySwiftSupportFiles/project_support_files/wrapper_typedefs.h", to: "wrapper_headers/wrapper_typedefs.h")
+    copyItem(from: "KivySwiftSupportFiles/swift_types.py", to: "venv/lib/python3.9/site-packages/swift_types.py")
     let fileman = FileManager()
     do {
         //try fileman.removeItem(atPath: "KivySwiftLink")
@@ -255,7 +264,7 @@ func InitWorkingFolder() {
     }
     _toolchain(command: .build, args: ["python3", "kivy"])
     //toolchain(command: "build", args: ["kivy"])
-    print("Done")
+    print("Setup done")
 
 }
 

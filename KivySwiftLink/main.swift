@@ -65,9 +65,9 @@ extension KivySwiftLink {
         func run() {
             
             if JsonStorage().current_project() != nil {
-                print("building \(filename).py")
+                print("building \(filename).pyi")
                 let file_man = FileManager()
-                let file_url = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources").appendingPathComponent("\(filename).py")
+                let file_url = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources").appendingPathComponent("\(filename).pyi")
                 guard file_man.fileExists(atPath: file_url.path) else {
                     print("\(file_url.path) dont exist")
                     return

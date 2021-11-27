@@ -413,7 +413,7 @@ func convertPythonCallArg(arg: WrapArg) -> String {
     case .data:
         if is_list_data {return "\(name).ptr[:\(size_arg_name)]"}
         //return "<bytes>\(name)[0:\(name)_size]"
-        return "\(name)[:\(size_arg_name)]"
+        return "\(name).ptr[:\(size_arg_name)]"
     case .json:
         return "json.loads(\(name))"
     case .jsondata:
