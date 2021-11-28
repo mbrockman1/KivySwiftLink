@@ -4,20 +4,28 @@
 
 
 ```sh
-./ksl create <project-name> <path-of-your-python-main.py-folder>
+ksl create <project-name> <path-of-your-python-main.py-folder>
 ```
 make a folder inside the working folder and call it py_src. u can call it whatever u feel like and place it anywhere you want, but for the sake of this tutorial we just use an internal folder as source.
 ```sh
-./ksl create kivytest_project py_src
+ksl create kivytest_project py_src
 ```
 Same thing as with kivy toolchain, only this runs on top of the toolchain and will do some extra things, to make the xcode project more suitable for running swift side by side with kivy.
+
+next select the project in `ksl` so it knows what project to update, after each time you are building.
+```sh
+ksl select-project <name of ios folder without the -ios>
+```
+```sh
+ksl select-project kivytest_project
+```
 
 
 
 ## Writing first Python wrapper file:
 
 next goto "wrapper_sources" and create a new python file.
-in this case lets call it "kivytest.py"
+in this case lets call it "kivytest.pyi"
 
 and paste the following code:
 
@@ -28,7 +36,7 @@ class KivyTest:
 
     # array/list of int
     @callback
-    def get_swift_array(l: List[int]):
+    def get_swift_array(l: list[int]):
         pass
 
     @callback
@@ -37,7 +45,7 @@ class KivyTest:
 
 
     # array/list of int
-    def send_python_list(l: List[int]):
+    def send_python_list(l: list[int]):
         pass
 
     def send_python_string(s: str):
@@ -47,10 +55,10 @@ class KivyTest:
 and run the following command:
 
 ```shell
-./ksl build <wrapper_file> <created-project-name>
+ksl build <wrapper_file> <created-project-name>
 ```
 ```shell
-./ksl build kivytest.py kivytest_project
+ksl build kivytest kivytest_project
 ```
 and open your xcode project.
 
@@ -231,7 +239,7 @@ when returning to your project run the following:
 
 ```sh
 cd <path of kivy-ios root project folder>
-./ksl <commands>
+ksl <commands>
 ```
 
 [Implementing a wrapper into a kivy app class](https://github.com/psychowasp/PythonSwiftLink/tree/main/examples/1%20Implementing%20a%20wrapper%20into%20a%20kivy%20app%20class)
@@ -256,12 +264,12 @@ cd <path of kivy-ios root project folder>
 
 | Python        | Objective-C          | Swift                                            |
 | ------------- | -------------------- | ------------------------------------------------ |
-| List[int]     | const long*          | PythonList_Int ( can be converted to "Array")    |
-| List[int32]   | const int*           | PythonList_Int32 ( can be converted to "Array")  |
-| List[uint]    | const unsigned long* | PythonList_UInt ( can be converted to "Array")   |
-| List[uint32]  | const unsigned int*  | PythonList_UInt32 ( can be converted to "Array") |
-| List[float]   | const double*        | PythonList_Double ( can be converted to "Array") |
-| List[double]  | const double*        | PythonList_Double ( can be converted to "Array") |
-| List[float32] | const float*         | PythonList_Float ( can be converted to "Array")  |
+| list[int]     | const long*          | PythonList_Int ( can be converted to "Array")    |
+| list[int32]   | const int*           | PythonList_Int32 ( can be converted to "Array")  |
+| list[uint]    | const unsigned long* | PythonList_UInt ( can be converted to "Array")   |
+| list[uint32]  | const unsigned int*  | PythonList_UInt32 ( can be converted to "Array") |
+| list[float]   | const double*        | PythonList_Double ( can be converted to "Array") |
+| list[double]  | const double*        | PythonList_Double ( can be converted to "Array") |
+| list[float32] | const float*         | PythonList_Float ( can be converted to "Array")  |
 
 # [Implementing a wrapper into a kivy app class](https://github.com/psychowasp/PythonSwiftLink/tree/main/examples/1%20Implementing%20a%20wrapper%20into%20a%20kivy%20app%20class)
