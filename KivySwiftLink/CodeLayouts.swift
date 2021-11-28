@@ -632,7 +632,7 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
                     let has_args = function.args.count != 0
                     let return_type = "\(if: objc_m, function.returns.objc_type!, function.returns.pyx_type!)"
                     output.append("""
-                    \(return_type) \(cls.title)_\(function.name)(\(function.export(options: [.use_names]))) {
+                    \(return_type) \(cls.title)_\(function.name)(\(function.export(options: [.use_names, .objc]))) {
                         \(if: function.returns.name != "void", "return ")[\(cls.title.lowercased()) \(function.name)\(if: has_args, ": ")\(function.args.map{$0.name}.joined(separator: ": "))];
                     }
                     """)
