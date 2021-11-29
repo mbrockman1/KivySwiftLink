@@ -9,6 +9,7 @@ Open a terminal and goto the folder you downloaded KivySwiftLink to.
 
 Then run:
 ```sh
+chmod +x KivySwiftLink
 ./KivySwiftLink install
 ```
 it will ask you if you want to copy the file as **ksl** to **/usr/local/bin/**
