@@ -62,3 +62,6 @@ and it will do the following for you
 
 ### [Create a new project](https://github.com/psychowasp/KivySwiftLink/tree/main/examples/0%20Getting%20Started ) 
 
+
+[Discord Server](https://discord.gg/yD3dXqBtdK)
+
