@@ -9,6 +9,7 @@ Open a terminal and goto the folder you downloaded KivySwiftLink to.
 
 Then run:
 ```sh
+chmod +x KivySwiftLink
 ./KivySwiftLink install
 ```
 it will ask you if you want to copy the file as **ksl** to **/usr/local/bin/**
@@ -60,4 +61,7 @@ and it will do the following for you
 5. ..................... and now script should be done...
 
 ### [Create a new project](https://github.com/psychowasp/KivySwiftLink/tree/main/examples/0%20Getting%20Started ) 
+
+
+[Discord Server](https://discord.gg/yD3dXqBtdK)
 
