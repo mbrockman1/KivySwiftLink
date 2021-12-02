@@ -11,7 +11,7 @@ import SwiftyJSON
 
 
 private let photo_output = AVCapturePhotoOutput()
-
+private let photoPixelFormatType = kCVPixelFormatType_32BGRA
 class PythonCamaeraControl: NSObject {
     
     private let captureSession = AVCaptureSession()
@@ -28,10 +28,11 @@ class PythonCamaeraControl: NSObject {
     private var videoConnection: AVCaptureConnection!
     private var inputCameras_back: [AVCaptureDevice] = []
     //private var audioConnection: AVCaptureConnection!
+    private var camStreamRunning = false
     
     
     private var available_video_presets: JSON {
-        let presets: [AVCaptureSession.Preset] = [.cif352x288, .iFrame960x540, .hd1280x720, .hd1920x1080, .hd4K3840x2160]
+        let presets: [AVCaptureSession.Preset] = [.cif352x288, .iFrame960x540, .hd1280x720, .hd1920x1080, .hd4K3840x2160, .photo]
         let strings = presets.map {$0.rawValue}
         let myDict = strings.reduce(into: [String: String]()) {
             let key = $1.replacingOccurrences(of: "AVCaptureSessionPreset", with: "").replacingOccurrences(of: "iFrame", with: "")
@@ -62,6 +63,7 @@ class PythonCamaeraControl: NSObject {
             return
         }
         captureSession.startRunning()
+        camStreamRunning = true
     }
     
     private func stopCapture(){
@@ -69,6 +71,7 @@ class PythonCamaeraControl: NSObject {
             print("already stopped")
             return
         }
+        camStreamRunning = false
         captureSession.stopRunning()
     }
     
@@ -90,14 +93,17 @@ class PythonCamaeraControl: NSObject {
                 if captureSession.canAddInput(currentInputDevice) {
                     captureSession.addInput(currentInputDevice)
                 }
-                if photoSession.canAddInput(currentInputDevice) {
-                    photoSession.addInput(currentInputDevice)
-                }
                 
             } catch let error {
                 print("Failed to set input device with error: \(error)")
             }
         }
+        photo_output.isHighResolutionCaptureEnabled = true
+        photoSession.sessionPreset = .photo
+        captureSession.sessionPreset = .photo
+//        if photoSession.canAddInput(currentInputDevice) {
+//            photoSession.addInput(currentInputDevice)
+//        }
         
         do {
             let videoDataOutput = AVCaptureVideoDataOutput()
@@ -112,17 +118,18 @@ class PythonCamaeraControl: NSObject {
                 fatalError()
             }
             captureSession.addOutput(videoDataOutput)
-            //photoSession.addOutput(photoOutput)
+            
+            captureSession.addOutput(photo_output)
 //            guard captureSession.canAddOutput(photoOutput) else {fatalError()}
             
             videoConnection = videoDataOutput.connection(with: .video)
+            //videoConnection.videoOrientation = .landscapeLeft
         }
     }
     
     func capturePhoto() {
 
-        let settings = AVCapturePhotoSettings()
-        
+        let settings = AVCapturePhotoSettings(format: [kCVPixelBufferPixelFormatTypeKey as String : photoPixelFormatType] )
         let previewPixelType = settings.availablePreviewPhotoPixelFormatTypes.first!
         let previewFormat = [kCVPixelBufferPixelFormatTypeKey as String: previewPixelType,
                                kCVPixelBufferWidthKey as String: 160,
@@ -138,22 +145,23 @@ extension PythonCamaeraControl: AVCaptureVideoDataOutputSampleBufferDelegate, AV
     
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         //print("captureOutput",output)
-        
-        
-        if let imageBuffer = sampleBuffer.imageBuffer {
-            let (data,data_size,width,height) = imageBuffer.TextureData()
-            
-            DispatchQueue.main.async {
-                self.py_call.returned_pixel_data(
-                    PythonData(ptr: data,size: data_size),
-                    width,
-                    height,
-                    width * height * 4,
-                    self.kivy_texture
-                )
-            }
-    
+        if camStreamRunning {
+            if let imageBuffer = sampleBuffer.imageBuffer {
+                let (data,data_size,width,height) = imageBuffer.TextureData()
+                let pixel_data = PythonData(ptr: data,size: data_size)
+                
+                DispatchQueue.main.async {
+                    self.py_call.returned_pixel_data(
+                        pixel_data,
+                        width,
+                        height,
+                        data_size,
+                        self.kivy_texture
+                    )
+                }
+            } // if camSreamRunning end
         }
+        
     }
     
     func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
@@ -177,16 +185,13 @@ extension PythonCamaeraControl: AVCapturePhotoCaptureDelegate {
     }
     
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-        print("didFinishProcessingPhoto",photo.pixelBuffer!.TextureData())
         if let previewbuffer = photo.previewPixelBuffer {
             let (buff, size, width, height) = previewbuffer.TextureData()
-            //py_call.returned_thumbnail_data(PythonData(ptr: buff, size: size), width, height)
+            py_call.returned_thumbnail_data(PythonData(ptr: buff, size: size), width, height)
         }
-        
         if let pixelbuffer = photo.pixelBuffer {
             let (buff, size, width, height) = pixelbuffer.TextureData()
-            print(size,width,height)
-            //py_call.returned_image_data(PythonData(ptr: buff, size: size), width, height)
+            py_call.returned_image_data(PythonData(ptr: buff, size: size), width, height)
         }
         
     }
@@ -248,17 +253,23 @@ extension PythonCamaeraControl: CameraApi_Delegate {
     }
 
     func select_preview_preset(_ preset: PythonString) {
-        if captureSession.isRunning {
-            stopCapture()
-            let _preset = preset.string
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5 , execute: {
-                self.captureSession.sessionPreset = .init(rawValue: _preset)
-                self.startCapture()
-            })
-        } else {
-            captureSession.sessionPreset = .init(rawValue: preset.string)
+        let _preset = preset.string
+        
+        DispatchQueue.global().async {
             
+            if self.captureSession.isRunning {
+                self.stopCapture()
+                
+                //DispatchQueue.main.asyncAfter(deadline: .now() + 0.5 , execute: {
+                    self.captureSession.sessionPreset = .init(rawValue: _preset)
+                    self.startCapture()
+                //})
+            } else {
+                self.captureSession.sessionPreset = .init(rawValue: preset.string)
+                
+            }
         }
+        
         
     }
     
@@ -276,14 +287,16 @@ extension PythonCamaeraControl: CameraApi_Delegate {
     
     func select_camera(_ index: Int) {
         captureSession.removeInput(currentInputDevice)
+        //photoSession.removeInput(currentInputDevice)
         videoDevice = inputCameras_back[index]
         currentInputDevice = try! AVCaptureDeviceInput(device: videoDevice)
         captureSession.addInput(currentInputDevice)
+        //photoSession.addInput(currentInputDevice)
         //
     }
     
     func take_photo() {
-        
+        capturePhoto()
     }
     
     func take_multi_photo(_ count: Int) {
