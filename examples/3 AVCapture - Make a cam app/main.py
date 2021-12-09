@@ -1,13 +1,13 @@
 import json
 from typing import List
-
+from camera_view import CameraView
 from camera_api import CameraApi
 from kivy.app import App
 from kivy.clock import mainthread
 from kivy.graphics.texture import Texture
 from kivy.lang import Builder
 from kivy.properties import (BooleanProperty, ListProperty, NumericProperty,
-                             ObjectProperty, StringProperty)
+                             ObjectProperty, StringProperty, AliasProperty)
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
@@ -17,6 +17,9 @@ from kivy.uix.label import Label
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.widget import Widget
 from kivy.metrics import dp
+from kivy.uix.image import Image
+
+from kivy.uix.popup import Popup
 
 class OSD_Icon(Label):
     state = BooleanProperty(False)
@@ -31,6 +34,37 @@ class MainView(BoxLayout): ...
 
 class PreviewPresets(GridLayout): ...
 
+class CaptureIcon(Image):
+    app = ObjectProperty(None)
+    def on_touch_down(self,touch):
+        if self.collide_point(*touch.pos):
+            self.color = [1,0,0,1]
+            return True
+    
+    def on_touch_up(self,touch):
+        if self.collide_point(*touch.pos):
+            self.color = [1,1,0,1]
+            self.app.camera_api.take_photo()
+            return True
+        
+        
+class CapturePopup(Popup):
+    img = ObjectProperty(None)
+    
+    def __init__(self, **kwargs):
+        super(CapturePopup, self).__init__(**kwargs)
+    
+    
+    def show_capture(self, buffer: bytes, width, height):
+        tex: Texture = Texture.create(
+            size=(width, height),
+            colorfmt="bgra",
+            bufferfmt="ubyte"
+            )
+        tex.blit_buffer(buffer, colorfmt="bgra")
+        tex.flip_vertical()
+        self.img.texture = tex
+        self.open()
 
 class OSD_DropIcon(OSD_Icon):
     icons = ListProperty(None)
@@ -67,14 +101,8 @@ class OSD_DropIcon(OSD_Icon):
     #     if state:
     #         self.open_dropdown()
 
-class CameraView(FloatLayout):
-    tex = ObjectProperty(None)
-    app = ObjectProperty(None)
+class MyCameraView(CameraView):
     
-    touch_pos = ListProperty([0,0])
-    touched =  NumericProperty(0)
-    ratio = 1.0
-
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -94,7 +122,7 @@ class CameraView(FloatLayout):
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):
             self.touched = 0
-            return True
+            return super().on_touch_up(touch)
 
     def set_focus_point(self, app, x , y):
         focus_x =  x / self.width 
@@ -108,26 +136,32 @@ class CameraView(FloatLayout):
 
 Builder.load_string("""
                     
+<CapturePopup>:
+    img: img
+    size_hint: 0.6, 0.6
+    Image:
+        id: img
+        allow_stretch: True
+        keep_ratio: True
+        
+    
+                    
 <OSD_Icon>:
     canvas:
         Color:
             rgb: 1,1,0
         Line:
             rectangle: self.x, self.y, self.width, self.height
-<CameraView>:
+<MyCameraView>:
     app: app             
     canvas:
-        Rectangle:
-            texture: self.tex
-            pos: self.pos
-            size: self.width, self.height
-        
         Color:
             rgb: 1,1,0
             a: 0.5 * self.touched
-        Rectangle:
-            pos: self.touch_pos
-            size: self.width * 0.1, self.height * 0.1
+        Line:
+            width: 4
+            rectangle: self.touch_pos[0], self.touch_pos[1], self.width * 0.1, self.height * 0.1
+    
 
     OSD_Icon:
         text: 'AF' if self.state else 'MF'
@@ -153,7 +187,14 @@ Builder.load_string("""
         text: "res"
         size_hint: 0.1, 0.1
         pos_hint: {"right": 1, "top": 1}
-        
+    
+    CaptureIcon:
+        app: app
+        source: "photo_capture.png"
+        color: [1,1,0,1]
+        #background_normal: "capture-icon.png"
+        size_hint: 0.1, 0.1
+        pos_hint: {"right": 0.9, "center_y": 0.5}
     Slider:
         id: zoom
         text:'zoom'
@@ -190,20 +231,16 @@ Builder.load_string("""
     BoxLayout:
         
         orientation: 'vertical'
-        CameraView:
-            
+        MyCameraView:
             id: cam
-        # Label:
-        #     size_hint_y: 0.25
-        #     id: debug
-        #     text_size: self.size
-        #     #size: self.texture_size
         BoxLayout:
             size_hint_y: 0.25
             Label:
+                id: debug
+                font_size: 8
+                text_size: self.size
             BoxLayout:
                 orientation: 'vertical'
-                #orientation:'vertical'
                 size_hint_x: 0.2
                 Button:
                     id: btn0
@@ -215,12 +252,6 @@ Builder.load_string("""
                     text: "stop_capture"
                     on_release:
                         app.camera_api.stop_capture("")
-            # BoxLayout:
-            #     orientation:'vertical'
-            #     PreviewPresets:
-            #         id: videopresets
-            #     PreviewPresets:
-            #         id: cam_types
 
 """)
 
@@ -234,14 +265,18 @@ class MyApp(App):
     
     resolutions: dict
     
+    
+    capture_popup: Popup
+    
     def build(self):
         self.preview_buffersize = 0
-                
+        
+        self.capture_popup = CapturePopup()
         
         wid = MainView()
         ids = wid.ids
         self.cam = ids.cam
-
+        self.debug = ids.debug
         self.update_camview = self.cam.canvas.ask_update
         self.cam_select = self.cam.ids.cam_select
         self.cam_select.bind(selected=self.change_camera)
@@ -254,6 +289,8 @@ class MyApp(App):
         return wid
     
     def set_camera_texture(self, width: int, height: int) -> Texture:
+        print("set_camera_texture", width, height)
+
         tex: Texture = Texture.create(
             size=(width, height),
             colorfmt="bgra",
@@ -264,7 +301,7 @@ class MyApp(App):
         cam.tex = tex
         
         self.camera_api.set_preview_texture(tex)
-        self.preview_buffersize = width * height * 4
+        # self.preview_buffersize = width * height * 4
         return tex
     
     
@@ -295,12 +332,24 @@ class MyApp(App):
     #######################################################
     
     def returned_pixel_data(self, data: bytes, width: int, height: int, pixel_count: int, tex: Texture):
+        #print(len(data), pixel_count)
+        #self.debug.text = str(list(data[-1024:]))
         if pixel_count != self.preview_buffersize:
             tex = self.set_camera_texture(width,height)
-            print("changed resolution to",width, height)
+            data_size = len(data)
+            self.preview_buffersize = pixel_count
+            print("changed resolution to",width, height,data_size- pixel_count)
         if tex:
             tex.blit_buffer(data, colorfmt="bgra")
             self.update_camview()
+            
+            
+    def returned_image_data(self, data: bytes, width: int, height: int):
+        
+        self.capture_popup.show_capture(data, width, height)
+
+    def returned_thumbnail_data(self, data: bytes, width: int, height: int):
+        print(len(data),width, height)
     
     def get_camera_types(self, front: list[str], back: list[str]):
         self.camera_back_types = back

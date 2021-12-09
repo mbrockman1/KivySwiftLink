@@ -9,15 +9,25 @@
 /* Begin PBXBuildFile section */
 		8C1B3522271CA3C40056C417 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 8C1B3521271CA3C40056C417 /* ArgumentParser */; };
 		8C392504274EA93A004DDE8C /* PythonDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C392503274EA93A004DDE8C /* PythonDownloader.swift */; };
+		8C47F2AB275E5B780044A826 /* KSLUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C47F2AA275E5B780044A826 /* KSLUpdate.swift */; };
+		8C47F2AE275E6D350044A826 /* version.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C47F2AD275E6D350044A826 /* version.swift */; };
+		8C47F2B12760D62F0044A826 /* Extensions_Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C47F2B02760D62F0044A826 /* Extensions_Helpers.swift */; };
+		8C47F2B527611BE30044A826 /* RealmSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8C47F2B427611BE30044A826 /* RealmSwift */; };
+		8C47F2B927611D230044A826 /* RealmService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C47F2B827611D230044A826 /* RealmService.swift */; };
+		8C47F2BC276125660044A826 /* DB_Handler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C47F2BB276125660044A826 /* DB_Handler.swift */; };
+		8C47F2C1276173BA0044A826 /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = 8C47F2C0276173BA0044A826 /* Zip */; };
 		8C7A8DA1271D8AA50030E4A7 /* CommandLineFunctions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */; };
 		8C7A8DAF271DC9F80030E4A7 /* SwiftyJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 8C7A8DAE271DC9F80030E4A7 /* SwiftyJSON */; };
 		8C7A8DD6272334C70030E4A7 /* ProjectManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7A8DD5272334C70030E4A7 /* ProjectManager.swift */; };
 		8C7A8E052724D3100030E4A7 /* TestSuite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7A8E042724D3100030E4A7 /* TestSuite.swift */; };
 		8CC79EAA27183BCC0056BBFC /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79EA927183BCC0056BBFC /* main.swift */; };
 		8CC79EB327183BE30056BBFC /* PythonKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8CC79EB227183BE30056BBFC /* PythonKit */; };
-		8CC79ECD2719C4350056BBFC /* WrapClasses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79ECC2719C4350056BBFC /* WrapClasses.swift */; };
+		8CC79ECD2719C4350056BBFC /* WrapClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79ECC2719C4350056BBFC /* WrapClass.swift */; };
 		8CC79ED02719C84A0056BBFC /* Converters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79ECF2719C84A0056BBFC /* Converters.swift */; };
 		8CC79ED6271A33760056BBFC /* CodeLayouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC79ED5271A33760056BBFC /* CodeLayouts.swift */; };
+		8CDD0997275E1F3900DB8267 /* WrapFunction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDD0996275E1F3900DB8267 /* WrapFunction.swift */; };
+		8CDD099A275E1F6100DB8267 /* WrapModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDD0999275E1F6100DB8267 /* WrapModule.swift */; };
+		8CDD099D275E1F7A00DB8267 /* WrapArg.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDD099C275E1F7A00DB8267 /* WrapArg.swift */; };
 		8CE0C493272622E400C0D6D8 /* PythonHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE0C492272622E400C0D6D8 /* PythonHandler.swift */; };
 		8CE0C5082726ED9700C0D6D8 /* WrapperHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE0C5072726ED9700C0D6D8 /* WrapperHandler.swift */; };
 /* End PBXBuildFile section */
@@ -36,15 +46,23 @@
 
 /* Begin PBXFileReference section */
 		8C392503274EA93A004DDE8C /* PythonDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PythonDownloader.swift; sourceTree = "<group>"; };
+		8C47F2AA275E5B780044A826 /* KSLUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KSLUpdate.swift; sourceTree = "<group>"; };
+		8C47F2AD275E6D350044A826 /* version.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = version.swift; sourceTree = "<group>"; };
+		8C47F2B02760D62F0044A826 /* Extensions_Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions_Helpers.swift; sourceTree = "<group>"; };
+		8C47F2B827611D230044A826 /* RealmService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RealmService.swift; sourceTree = "<group>"; };
+		8C47F2BB276125660044A826 /* DB_Handler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DB_Handler.swift; sourceTree = "<group>"; };
 		8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandLineFunctions.swift; sourceTree = "<group>"; };
 		8C7A8DD5272334C70030E4A7 /* ProjectManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectManager.swift; sourceTree = "<group>"; };
 		8C7A8E042724D3100030E4A7 /* TestSuite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSuite.swift; sourceTree = "<group>"; };
 		8CC79EA627183BCC0056BBFC /* KivySwiftLink */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = KivySwiftLink; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CC79EA927183BCC0056BBFC /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		8CC79EB527183DEF0056BBFC /* KivySwiftLink.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KivySwiftLink.entitlements; sourceTree = "<group>"; };
-		8CC79ECC2719C4350056BBFC /* WrapClasses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapClasses.swift; sourceTree = "<group>"; };
+		8CC79ECC2719C4350056BBFC /* WrapClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapClass.swift; sourceTree = "<group>"; };
 		8CC79ECF2719C84A0056BBFC /* Converters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Converters.swift; sourceTree = "<group>"; };
 		8CC79ED5271A33760056BBFC /* CodeLayouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeLayouts.swift; sourceTree = "<group>"; };
+		8CDD0996275E1F3900DB8267 /* WrapFunction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapFunction.swift; sourceTree = "<group>"; };
+		8CDD0999275E1F6100DB8267 /* WrapModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapModule.swift; sourceTree = "<group>"; };
+		8CDD099C275E1F7A00DB8267 /* WrapArg.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapArg.swift; sourceTree = "<group>"; };
 		8CE0C492272622E400C0D6D8 /* PythonHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PythonHandler.swift; sourceTree = "<group>"; };
 		8CE0C5072726ED9700C0D6D8 /* WrapperHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapperHandler.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -54,15 +72,26 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8C47F2B527611BE30044A826 /* RealmSwift in Frameworks */,
 				8C7A8DAF271DC9F80030E4A7 /* SwiftyJSON in Frameworks */,
 				8C1B3522271CA3C40056C417 /* ArgumentParser in Frameworks */,
 				8CC79EB327183BE30056BBFC /* PythonKit in Frameworks */,
+				8C47F2C1276173BA0044A826 /* Zip in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		8C47F2B727611D010044A826 /* DB */ = {
+			isa = PBXGroup;
+			children = (
+				8C47F2B827611D230044A826 /* RealmService.swift */,
+				8C47F2BB276125660044A826 /* DB_Handler.swift */,
+			);
+			path = DB;
+			sourceTree = "<group>";
+		};
 		8CC79E9D27183BCC0056BBFC = {
 			isa = PBXGroup;
 			children = (
@@ -85,15 +114,22 @@
 			children = (
 				8CC79EB527183DEF0056BBFC /* KivySwiftLink.entitlements */,
 				8CC79EA927183BCC0056BBFC /* main.swift */,
-				8CC79ECC2719C4350056BBFC /* WrapClasses.swift */,
+				8C47F2B727611D010044A826 /* DB */,
+				8C47F2AA275E5B780044A826 /* KSLUpdate.swift */,
+				8CDD0999275E1F6100DB8267 /* WrapModule.swift */,
+				8CC79ECC2719C4350056BBFC /* WrapClass.swift */,
+				8CDD0996275E1F3900DB8267 /* WrapFunction.swift */,
+				8CDD099C275E1F7A00DB8267 /* WrapArg.swift */,
 				8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */,
-				8C392503274EA93A004DDE8C /* PythonDownloader.swift */,
+				8C47F2B02760D62F0044A826 /* Extensions_Helpers.swift */,
 				8CE0C5072726ED9700C0D6D8 /* WrapperHandler.swift */,
 				8CE0C492272622E400C0D6D8 /* PythonHandler.swift */,
 				8CC79ED5271A33760056BBFC /* CodeLayouts.swift */,
 				8CC79ECF2719C84A0056BBFC /* Converters.swift */,
 				8C7A8DD5272334C70030E4A7 /* ProjectManager.swift */,
+				8C392503274EA93A004DDE8C /* PythonDownloader.swift */,
 				8C7A8E042724D3100030E4A7 /* TestSuite.swift */,
+				8C47F2AD275E6D350044A826 /* version.swift */,
 			);
 			path = KivySwiftLink;
 			sourceTree = "<group>";
@@ -125,6 +161,8 @@
 				8CC79EB227183BE30056BBFC /* PythonKit */,
 				8C1B3521271CA3C40056C417 /* ArgumentParser */,
 				8C7A8DAE271DC9F80030E4A7 /* SwiftyJSON */,
+				8C47F2B427611BE30044A826 /* RealmSwift */,
+				8C47F2C0276173BA0044A826 /* Zip */,
 			);
 			productName = KivySwiftLink2;
 			productReference = 8CC79EA627183BCC0056BBFC /* KivySwiftLink */;
@@ -157,6 +195,8 @@
 				8CC79EB127183BE30056BBFC /* XCRemoteSwiftPackageReference "PythonKit" */,
 				8C1B3520271CA3C40056C417 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
 				8C7A8DAD271DC9F80030E4A7 /* XCRemoteSwiftPackageReference "SwiftyJSON" */,
+				8C47F2B327611BE30044A826 /* XCRemoteSwiftPackageReference "realm-cocoa" */,
+				8C47F2BF276173BA0044A826 /* XCRemoteSwiftPackageReference "Zip" */,
 			);
 			productRefGroup = 8CC79EA727183BCC0056BBFC /* Products */;
 			projectDirPath = "";
@@ -173,14 +213,22 @@
 			buildActionMask = 2147483647;
 			files = (
 				8CC79ED6271A33760056BBFC /* CodeLayouts.swift in Sources */,
+				8C47F2B927611D230044A826 /* RealmService.swift in Sources */,
+				8CDD0997275E1F3900DB8267 /* WrapFunction.swift in Sources */,
+				8C47F2AE275E6D350044A826 /* version.swift in Sources */,
 				8CE0C5082726ED9700C0D6D8 /* WrapperHandler.swift in Sources */,
-				8CC79ECD2719C4350056BBFC /* WrapClasses.swift in Sources */,
+				8CC79ECD2719C4350056BBFC /* WrapClass.swift in Sources */,
+				8C47F2B12760D62F0044A826 /* Extensions_Helpers.swift in Sources */,
 				8C7A8DA1271D8AA50030E4A7 /* CommandLineFunctions.swift in Sources */,
+				8C47F2BC276125660044A826 /* DB_Handler.swift in Sources */,
 				8C7A8E052724D3100030E4A7 /* TestSuite.swift in Sources */,
 				8C7A8DD6272334C70030E4A7 /* ProjectManager.swift in Sources */,
+				8CDD099A275E1F6100DB8267 /* WrapModule.swift in Sources */,
 				8C392504274EA93A004DDE8C /* PythonDownloader.swift in Sources */,
+				8C47F2AB275E5B780044A826 /* KSLUpdate.swift in Sources */,
 				8CC79EAA27183BCC0056BBFC /* main.swift in Sources */,
 				8CE0C493272622E400C0D6D8 /* PythonHandler.swift in Sources */,
+				8CDD099D275E1F7A00DB8267 /* WrapArg.swift in Sources */,
 				8CC79ED02719C84A0056BBFC /* Converters.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -379,6 +427,22 @@
 				minimumVersion = 1.0.1;
 			};
 		};
+		8C47F2B327611BE30044A826 /* XCRemoteSwiftPackageReference "realm-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/realm/realm-cocoa";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.20.0;
+			};
+		};
+		8C47F2BF276173BA0044A826 /* XCRemoteSwiftPackageReference "Zip" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/marmelroy/Zip";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.1.1;
+			};
+		};
 		8C7A8DAD271DC9F80030E4A7 /* XCRemoteSwiftPackageReference "SwiftyJSON" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/SwiftyJSON/SwiftyJSON";
@@ -402,6 +466,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8C1B3520271CA3C40056C417 /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
 			productName = ArgumentParser;
+		};
+		8C47F2B427611BE30044A826 /* RealmSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8C47F2B327611BE30044A826 /* XCRemoteSwiftPackageReference "realm-cocoa" */;
+			productName = RealmSwift;
+		};
+		8C47F2C0276173BA0044A826 /* Zip */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8C47F2BF276173BA0044A826 /* XCRemoteSwiftPackageReference "Zip" */;
+			productName = Zip;
 		};
 		8C7A8DAE271DC9F80030E4A7 /* SwiftyJSON */ = {
 			isa = XCSwiftPackageProductDependency;

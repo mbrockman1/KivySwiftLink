@@ -101,6 +101,7 @@ class PythonCamaeraControl: NSObject {
         photo_output.isHighResolutionCaptureEnabled = true
         photoSession.sessionPreset = .photo
         captureSession.sessionPreset = .photo
+        
 //        if photoSession.canAddInput(currentInputDevice) {
 //            photoSession.addInput(currentInputDevice)
 //        }

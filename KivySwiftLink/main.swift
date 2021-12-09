@@ -22,127 +22,58 @@ struct KivySwiftLink: ParsableCommand {
     
     static let configuration = CommandConfiguration(
             abstract: "KivySwiftLink",
-        subcommands: [Setup.self,SelectProject.self,Build.self,BuildAll.self,Create.self, Toolchain.self,Install.self, RunTest.self]
+        version: AppVersion.string,
+        subcommands: [Setup.self,Build.self, Toolchain.self,Install.self, UpdateApp.self, Project.self].sorted(by: {$0._commandName < $1._commandName})
     )
     
 }
 extension KivySwiftLink {
     
     struct Install: ParsableCommand {
-        @Option(name: .shortAndLong, help: "overwrite ksl if it already exist")
-        var forced: Bool?
+        static let configuration = CommandConfiguration(
+                abstract: "copy KivySwftLink as ksl to /usr/local/bin")
+        @Flag(name: .shortAndLong, help: "overwrite ksl if it already exist")
+        var forced = false
         
         func run() {
-            if let forced = self.forced {
-                copyItem(from: "./KivySwiftLink", to: "/usr/local/bin/ksl",force: forced)
-            } else {
-                print("Do you wish to copy KivySwiftLink as ksl to /usr/local/bin/")
-                if let str = readLine() {
-                    if str == "y" {
-                        print("copied file to /usr/local/bin/ksl")
-                        copyItem(from: "./KivySwiftLink", to: "/usr/local/bin/ksl")
-                    }
-                }
-            }
-            
+            InstallKSL(forced: forced)
         }
     }
     
     
     struct Setup: ParsableCommand {
-        
+        static let configuration = CommandConfiguration(
+                abstract: "setup working folder")
+        @Flag(name: .shortAndLong, help: "overwrite ksl if it already exist")
+        var update_only = false
         
         func run() {
             print("Installing KivySwiftLink Components")
-            InitWorkingFolder()
-        }
-    }
-    
-    struct Build: ParsableCommand {
-        
-        @Argument() var filename: String
-        
-        func run() {
-            
-            if JsonStorage().current_project() != nil {
-                print("building \(filename).pyi")
-                let file_man = FileManager()
-                let file_url = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources").appendingPathComponent("\(filename).pyi")
-                guard file_man.fileExists(atPath: file_url.path) else {
-                    print("\(file_url.path) dont exist")
-                    return
-                }
-                BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: filename)
-                update_project(files: [filename])
-                print("Done")
-            } else {
-                print("No Project Selected - use 'ksl select-project <project name (no -ios)>'")
-            }
-            
-        }
-    }
-    
-    struct BuildAll: ParsableCommand {
-            
-            func run() {
-                if JsonStorage().current_project() != nil {
-                    let file_man = FileManager()
-                    let wrapper_sources = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources")
-                    print("building all")
-                    let files = try! file_man.contentsOfDirectory(atPath: wrapper_sources.path).map{$0.replacingOccurrences(of: ".py", with: "")}
-                    for file in files {
-                        print(file)
-                        BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: file )
-                    }
-                    if files.count != 0 {
-                        update_project(files: files)
-                    }
-                }
-                
-                
+            if !update_only {
+                InitWorkingFolder()
             }
         }
+    }
     
-    struct SelectProject: ParsableCommand {
+    
+    
+    
+    
+    
+    
+    
+    
+    struct UpdateApp: ParsableCommand {
+        static let configuration = CommandConfiguration(
+                abstract: "download/install newest release of KivySwftLink from github")
+        func run() {
+            let release = getKslReleases().first!
             
-            @Argument() var project_name: String
-            
-            func run() {
-                //let path = URL(fileURLWithPath: root_path, isDirectory: true).appendingPathComponent("\(project_name)-ios", isDirectory: true)
-                
-                print("using \(project_name)-ios")
-                let jsondb = JsonStorage()
-                jsondb.set_project(name: project_name)
+            if AppVersion.compareVersionWithString(string: release.name) {
+                downloadKslRelease(release: release, forced: false)
             }
         }
-    
-    struct Create: ParsableCommand {
-        
-        @Argument() var project_name: String
-        @Argument() var python_source_folder: String
-        func run() {
-            print("creating \(project_name)-ios")
-            let project = ProjectManager(title: project_name, site_path: site_path)
-            project.create_project(title: project_name, py_src: python_source_folder)
-            project.load_xcode_project()
-            
-        }
     }
-    
-    struct Update: ParsableCommand {
-        
-        @Argument() var project_name: String
-        @Argument() var python_source_folder: String
-        func run() {
-            print("creating \(project_name)-ios")
-            let project = ProjectManager(title: project_name, site_path: site_path)
-            //project.create_project(title: project_name, py_src: python_source_folder)
-            //project.load_xcode_project()
-            
-        }
-    }
-    
-    
     
     struct RunTest: ParsableCommand {
         
@@ -153,12 +84,16 @@ extension KivySwiftLink {
             //for file in try! file_man.contentsOfDirectory(atPath: wrapper_sources.path) {
             //    BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: file.replacingOccurrences(of: ".py", with: "")  )
             //}
-            show_buildins()
+            updateWrappers()
+            //show_buildins()
             
         }
     }
     
     struct Toolchain: ParsableCommand {
+        
+        static let configuration = CommandConfiguration(
+                    abstract: "run toolchain commands")
         
         @Argument() var command: String?
         @Argument() var arg1: String?
@@ -173,6 +108,109 @@ extension KivySwiftLink {
             }
             let args: [String] = [arg1,arg2,arg3,arg4].filter{$0 != nil}.map{$0!}
             toolchain_venv(command: command!, args: args)
+        }
+    }
+    
+    
+}
+
+
+
+
+
+
+
+
+
+struct Project: ParsableCommand {
+    static let configuration = CommandConfiguration(
+                abstract: "Project options",
+        subcommands: [Create.self, Select.self, Update.self]
+                )
+    struct Select: ParsableCommand {
+        static let configuration = CommandConfiguration(
+                        abstract: "select project target, when using build <commands> / project update")
+        @Argument() var project_name: String
+                    
+        func run() {
+            //let path = URL(fileURLWithPath: root_path, isDirectory: true).appendingPathComponent("\(project_name)-ios", isDirectory: true)
+            
+            print("using \(project_name)-ios")
+            let fileman = FileManager()
+            let path = URL(fileURLWithPath: root_path, isDirectory: true).appendingPathComponent("\(project_name)-ios", isDirectory: true)
+            if !fileman.fileExists(atPath: path.path) {fatalError("\(path.path) doesnt exist")}
+            let db = ProjectHandler(db_path: nil)
+            if let ksl_proj = db.get_project(name: project_name) {
+                db.current_project = ksl_proj
+            } else {
+                let ksl_proj = db.add_project(name: project_name, path: path.path)
+                db.current_project = ksl_proj
+            }
+            
+        }
+    }
+    
+    struct Create: ParsableCommand {
+        static let configuration = CommandConfiguration(
+                        abstract: "create new ios project")
+            @Argument() var project_name: String
+            @Argument() var python_source_folder: String
+            func run() {
+                print("creating \(project_name)-ios")
+                let project = ProjectManager(title: project_name, site_path: site_path)
+                project.create_project(title: project_name, py_src: python_source_folder)
+                project.load_xcode_project()
+                
+            }
+        }
+    
+    struct Update: ParsableCommand {
+        static let configuration = CommandConfiguration(
+                        abstract: "update ios project = toolchain update <project>-ios")
+        func run() {
+            let db = ProjectHandler(db_path: nil)
+            if let current = db.current_project {
+                _toolchain(command: .update, args: ["\(current.name)-ios"])
+            }
+        }
+    }
+    
+}
+
+
+
+
+
+
+
+
+
+struct Build: ParsableCommand {
+    static let configuration = CommandConfiguration(
+                    abstract: "Build Wrapper Files",
+                    subcommands: [File.self, All.self],
+                    defaultSubcommand: File.self
+        
+                )
+    
+    struct File: ParsableCommand {
+        @Argument() var filename: String
+        func run() {
+            buildWrapper(name: filename)
+        }
+    }
+    
+    
+    struct All: ParsableCommand {
+        @Flag(name: .shortAndLong, help: "overwrite ksl if it already exist")
+        var update = false
+        func run() {
+            if update {
+                updateWrappers()
+            } else {
+                buildAllWrappers()
+            }
+            
         }
     }
 }

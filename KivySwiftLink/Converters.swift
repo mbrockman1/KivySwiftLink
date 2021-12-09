@@ -12,7 +12,7 @@ let newLine = "\n"
 let newLineTab = "\n\t"
 let newLineTabTab = "\n\t\t"
 
-enum PythonType: String, CaseIterable {
+enum PythonType: String, CaseIterable,Codable {
     case int
     case long
     case ulong
@@ -188,7 +188,7 @@ func get_typedef_types() -> [String: String]  {
             ""
         default:
             //types.append((type.rawValue,convertPythonListType(type: type.rawValue)))
-            types[type.rawValue] = convertPythonListType(type: type.rawValue, options: [.c_type])
+            types[type.rawValue] = convertPythonListType(type: type, options: [.c_type])
         }
         
     }
@@ -206,15 +206,15 @@ enum PythonTypeConvertOptions {
     case use_names
 }
 
-func PurePythonTypeConverter(type: String) -> String{
+func PurePythonTypeConverter(type: PythonType) -> String{
     
-    switch PythonType(rawValue: type) {
-    case .int, .int16, .int8, .short, .int32, .long, .longlong, .uint, .uint8, .uint16, .ushort, .uint32, .ulong, .ulonglong:
+    switch type {
+    case .int, .int16, .int8 ,.short, .int32, .long, .longlong, .uint, .uint8, .uint16, .ushort, .uint32, .ulong, .ulonglong:
         return "int"
     case .float, .float32, .double:
         return "float"
         
-    case .bytes, .char, .data:
+    case .bytes, .char, .data, .uchar:
         return "bytes"
         
     case .str:
@@ -229,6 +229,10 @@ func PurePythonTypeConverter(type: String) -> String{
         return "bool"
     case .tuple:
         return "tuple"
+    case .list:
+        return "list"
+    case .None:
+        return "None"
     default:
         print("type missing:",type)
         return "ERROR_TYPE"
@@ -248,14 +252,14 @@ func export_tuple(arg: WrapArg, options: [PythonTypeConvertOptions]) -> String {
     return "TUPLE_ERROR_TYPE"
 }
 
-func pythonType2pyx(type: String, options: [PythonTypeConvertOptions]) -> String {
+func pythonType2pyx(type: PythonType, options: [PythonTypeConvertOptions]) -> String {
     var objc = false
     var c_types = false
     if options.contains(.objc) {objc = true}
     if options.contains(.c_type) {c_types = true}
     var export: String
     var nonnull = false
-    switch PythonType(rawValue: type) {
+    switch type {
     
     case .bool:
         if objc {
@@ -350,8 +354,8 @@ func pythonType2pyx(type: String, options: [PythonTypeConvertOptions]) -> String
     case .tuple:
         export = "tuple"
     default:
-        if type.contains("SwiftFuncs") {
-            return type
+        if type.rawValue.contains("SwiftFuncs") {
+            return type.rawValue
         }
         print("<\(type)> is not a supported type or is not defined")
         print("""
@@ -382,19 +386,19 @@ func pythonType2pyx(type: String, options: [PythonTypeConvertOptions]) -> String
     
 }
 
-func convertPythonType(type: String, options: [PythonTypeConvertOptions]) -> String {
+func convertPythonType(type: PythonType, options: [PythonTypeConvertOptions]) -> String {
     if options.contains(.is_list) {
         return convertPythonListType(type: type, options: options)
     }
     return pythonType2pyx(type: type, options: options)
 }
 
-func convertPythonListType(type: String, options: [PythonTypeConvertOptions]) -> String {
+func convertPythonListType(type: PythonType, options: [PythonTypeConvertOptions]) -> String {
     if options.contains(.objc) {
 //        return "PythonList_\(SWIFT_TYPES[type]!) _Nonnull"
-        return "PythonList_\(SWIFT_TYPES[type]!)"
+        return "PythonList_\(SWIFT_TYPES[type.rawValue]!)"
     }
-    return "PythonList_\(SWIFT_TYPES[type]!)"
+    return "PythonList_\(SWIFT_TYPES[type.rawValue]!)"
 }
 
 
@@ -406,7 +410,7 @@ func convertPythonCallArg(arg: WrapArg) -> String {
     //let size_arg_name = "arg\(arg.idx + 1)"
     let size_arg_name = "arg\(arg.idx).size"
     
-    switch PythonType(rawValue: type) {
+    switch type {
     case .str:
         if is_list_data {return "[\(name).ptr[x].decode('utf8') for x in range(\(size_arg_name))]"}
         return "\(name).decode('utf-8')"
@@ -431,7 +435,7 @@ func convertReturnSend(f: WrapFunction, rname: String, code: String) -> String {
     let returns = f.returns
     let rtype = f.returns.type
     
-    switch PythonType(rawValue: rtype) {
+    switch rtype {
     case .str:
         if returns.is_list {
             return "[rtn_val.ptr[x].decode() for x in range(rtn_val.size)]"
@@ -466,9 +470,9 @@ enum PythonSendArgTypes {
 }
 //if list {return "\(name)_array, \(name)_size"}
 //if list {return "\(name)_array"}
-func convertPythonSendArg(type: String, name: String, options: [PythonSendArgTypes]) -> String {
+func convertPythonSendArg(type: PythonType, name: String, options: [PythonSendArgTypes]) -> String {
     let list = options.contains(.list)
-    switch PythonType(rawValue: type) {
+    switch type {
     case .str:
         if list {return "\(name)_struct"}
         return "\(name).encode()"
