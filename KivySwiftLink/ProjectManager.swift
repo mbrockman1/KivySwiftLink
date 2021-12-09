@@ -2,6 +2,8 @@
 import SwiftyJSON
 import Foundation
 import PythonKit
+import RealmSwift
+
 
 
 class JsonStorage {
@@ -103,16 +105,22 @@ class ProjectManager {
         update_classes_group()
     }
     
+    func get_keys() {
+    }
+    
     func update_classes_group() {
         load_xcode_project()
         let file_man = FileManager()
         let cur_dir = URL(fileURLWithPath: file_man.currentDirectoryPath)
         let support_files = cur_dir.appendingPathComponent("project_support_files")
         if let project = self.project {
-            project.remove_framework_search_paths(["/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator14.4.sdk/System/Library/Frameworks"])
+            project.remove_framework_search_paths([
+                "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator14.4.sdk/System/Library/Frameworks",
+                
+            ])
             project.remove_library_search_paths(["/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator14.4.sdk/usr/lib"])
             let sources = project.get_or_create_group("Sources")
-            let sources_list = sources.children.map{String($0._get_comment())!}
+            //let sources_list = sources.children.map{String($0._get_comment())!}
             for src in sources.children {
                 let ID = src
                 let file = String(src._get_comment())!

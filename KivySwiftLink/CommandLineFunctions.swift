@@ -15,67 +15,19 @@ enum PyTypes: PythonObject {
 
 import PythonKit
 
-extension Process {
 
-    private static let gitExecURL = URL(fileURLWithPath: "/usr/bin/git")
 
-    public func clone(repo: String, path: String) throws {
-        executableURL = Process.gitExecURL
-        arguments = ["clone", repo, path]
-        try run()
-        self.waitUntilExit()
-    }
 
-}
 
-func createFolder(name: String) {
-    do {
-        try FileManager().createDirectory(atPath: name, withIntermediateDirectories: false, attributes: [:])
-    } catch let error {
-        print(error.localizedDescription)
-    }
-}
 
-let ANSWERS = ["y","yes"]
 
-func copyItem(from: String, to: String, force: Bool=false) {
-    let fileman = FileManager()
-    if fileman.fileExists(atPath: to) && !force{
-        print("<\(to)> already exist do you wish to overwrite it ?")
-        print("enter y or yes: ", separator: "", terminator: " ")
-        if let input_string = readLine()?.lowercased() {
-            let input = input_string.trimmingCharacters(in: .whitespaces)
-            
-            if ANSWERS.contains(input) {
-                do {
-                    try fileman.removeItem(atPath: to)
-                    try fileman.copyItem(atPath: from, toPath: to)
-                } catch let error {
-                    print(error.localizedDescription)
-                }
-            }
-        }
-    } else {
-        do {
-            if force {
-                if fileman.fileExists(atPath: to) {
-                    try fileman.removeItem(atPath: to)
-                }
-                
-            }
-            try fileman.copyItem(atPath: from, toPath: to)
-        } catch let error {
-            print(error.localizedDescription)
-        }
-    }
-    
-}
 
 enum ToolchainCommands: String {
     case create
     case xcode
     case clean
     case build
+    case update
 }
 
 @discardableResult
@@ -94,42 +46,10 @@ func _toolchain(command: ToolchainCommands, args: [String]) {
     toolchain_venv(command: command.rawValue, args: args)
 }
 
-func downloadPython() {
-    let url = URL(string: "https://www.python.org/ftp/python/3.9.2/python-3.9.2-macosx10.9.pkg")
-    print("""
-        Python 3.9 not found, do you wish for KivySwiftLink to download <python-3.9.2-macosx10.9.pkg>
-        from \(url!) ?
-    """)
-    print("enter y or yes:", separator: "", terminator: " ")
-    if let input = readLine()?.lowercased() {
-        if ANSWERS.contains(input) {
-            FileDownloader.loadFileSync(url: url!) { (path, error) in
-                
-                print("\nPython 3.9.2 downloaded to : \(path!)")
-                
-                showInFinder(url: URL(fileURLWithPath: path!))
-                print("\nrun <python-3.9.2-macosx10.9.pkg> in the finder window")
-                    //readLine()
-                print("run \"/Applications/Python 3.9/Install Certificates.command\"\n")
-                }
-        }
-    } 
-    
-}
-func showInFinder(url: URL?) {
-    guard let url = url else { return }
-    
-    if url.hasDirectoryPath {
-        NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: url.path)
-    }
-    else {
-        showInFinderAndSelectLastComponent(of: url)
-    }
-}
 
-fileprivate func showInFinderAndSelectLastComponent(of url: URL) {
-    NSWorkspace.shared.activateFileViewerSelecting([url])
-}
+
+
+
 
 @discardableResult
 func pkg_install(path: String) -> Int32 {
@@ -268,11 +188,18 @@ func InitWorkingFolder() {
 
 }
 
-
-func getDocumentsDirectory() -> URL {
-    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-    return paths[0]
+func UpdateWorkingFolder() {
+    copyItem(from: "KivySwiftSupportFiles/swift_types.py", to: "venv/lib/python3.9/site-packages/swift_types.py",force: true)
+    
+    copyItem(from: "KivySwiftSupportFiles/project_support_files", to: "project_support_files",force: true)
+    copyItem(from: "KivySwiftSupportFiles/pythoncall_builder.py", to: "venv/lib/python3.9/site-packages/pythoncall_builder.py", force: true)
+    
+    copyItem(from: "KivySwiftSupportFiles/project_support_files/wrapper_typedefs.h", to: "wrapper_headers/wrapper_typedefs.h", force: true)
+    copyItem(from: "KivySwiftSupportFiles/swift_types.py", to: "venv/lib/python3.9/site-packages/swift_types.py", force: true)
 }
+
+
+
 
 
 
@@ -299,3 +226,60 @@ func resourceURL(to path: String) -> URL? {
     return URL(string: path, relativeTo: Bundle.main.resourceURL)
 }
 
+func buildWrapper(name: String) {
+    //if JsonStorage().current_project() != nil {
+    if ProjectHandler(db_path: nil).current_project != nil {
+        print("building \(name).pyi")
+        let file_man = FileManager()
+        let file_url = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources").appendingPathComponent("\(name).pyi")
+        guard file_man.fileExists(atPath: file_url.path) else {
+            print("\(file_url.path) dont exist")
+            return
+        }
+        BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: name)
+        update_project(files: [name])
+        print("Done")
+    } else {
+        print("No Project Selected - use 'ksl project select <project name (no -ios)>'")
+    }
+}
+
+func buildAllWrappers() {
+    if JsonStorage().current_project() != nil {
+        let file_man = FileManager()
+        let wrapper_sources = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources")
+        print("building all")
+        let files = try! file_man.contentsOfDirectory(atPath: wrapper_sources.path).map{$0.fileName()}
+        for file in files {
+            print(file)
+            BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: file )
+        }
+        if files.count != 0 {
+            update_project(files: files)
+        }
+    }
+}
+
+func updateWrappers() {
+    let file_man = FileManager()
+    let wrapper_sources = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources")
+    let lib_sources = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("dist/lib")
+    
+    let wrapper_files = try! file_man.contentsOfDirectory(at: wrapper_sources, includingPropertiesForKeys: [], options: .skipsHiddenFiles)
+    let lib_files = try! file_man.contentsOfDirectory(at: lib_sources, includingPropertiesForKeys: [], options: .skipsHiddenFiles)
+    //print(wrapper_files)
+    
+    for file in wrapper_files {
+        let file_date = fileModificationDate(url: file)!
+        let filename = file.path.fileName()
+        let lib_file = lib_sources.appendingPathComponent("lib\(file.path.fileName()).a")
+        if file_man.fileExists(atPath: lib_file.path) {
+            let lib_file_date = fileModificationDate(url: lib_file)!
+            if lib_file_date < file_date {
+                print(filename, file_date, lib_file_date)
+                BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: filename )
+            }
+        }
+        
+    }
+}

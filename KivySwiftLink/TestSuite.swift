@@ -36,7 +36,7 @@ func buildTestWrapper() {
         print("building \(wrap_module.filename)")
         let py_name = wrap_module.filename
         let wrapper_builds_path = cur_dir_url.appendingPathComponent("wrapper_builds", isDirectory: true)
-        let wrapper_headers_path = cur_dir_url.appendingPathComponent("wrapper_headers", isDirectory: true)
+        //let wrapper_headers_path = cur_dir_url.appendingPathComponent("wrapper_headers", isDirectory: true)
         let recipe_dir = wrapper_builds_path.appendingPathComponent(py_name, isDirectory: true)
         let src_path = recipe_dir.appendingPathComponent("src", isDirectory: true)
         if !file_man.fileExists(atPath: src_path.path){
@@ -59,13 +59,13 @@ func buildTestWrapper() {
         }
         let wrapper_typedefs = cur_dir_url.appendingPathComponent("project_support_files/wrapper_typedefs.h")
         let typedefs_dst = src_path.appendingPathComponent("wrapper_typedefs.h")
-        let wrapper_header = wrapper_headers_path.appendingPathComponent("\(wrap_module.filename).h")
+        //let wrapper_header = wrapper_headers_path.appendingPathComponent("\(wrap_module.filename).h")
         
         if !file_man.fileExists(atPath: typedefs_dst.path){
             copyItem(from: wrapper_typedefs.path, to: typedefs_dst.path)
         }
 
-        //_toolchain(command: .clean, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
-        //_toolchain(command: .build, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
+        _toolchain(command: .clean, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
+        _toolchain(command: .build, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
     }//update_project()
 }

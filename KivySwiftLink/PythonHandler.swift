@@ -22,6 +22,16 @@ enum astTypes: PythonObject {
     case list
 }
 
+func pyiConversion() -> [PythonObject:PythonObject] {
+    var out: [PythonObject:PythonObject] = [:]
+    
+    for key in PythonType.allCases {
+        out[key.rawValue.pythonObject] = PurePythonTypeConverter(type: key).pythonObject
+    }
+    return out
+}
+
+let pyiTypes = pyiConversion()
 
 func show_buildins() {
     print(python_buildins)
@@ -72,8 +82,8 @@ class PythonASTconverter {
     
     func generatePYI(code: String) -> String {
         let pyi_parse = pbuilder.parse_helper
-        
-        return String(pyi_parse(code))!
+        let pyi_types: PythonObject = pyiTypes.pythonObject
+        return String(pyi_parse(code, pyi_types))!
         
     }
 

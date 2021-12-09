@@ -133,9 +133,9 @@ func generateEnums(cls: WrapClass, options: [EnumGeneratorOptions]) -> String {
 func listFunctionLine(wrap_arg: WrapArg) -> String {
     let arg = wrap_arg.name
     let arg_type = convertPythonType(type: wrap_arg.type, options: [])
-    if let size = wrap_arg.size {} else {print(wrap_arg.type)}
+    //if let size = wrap_arg.size {} else {print(wrap_arg.type)}
     let type_size = wrap_arg.size!
-    let decode = "\(if: wrap_arg.type == "object", "<PythonObject>")"
+    let decode = "\(if: (wrap_arg.type == .object) , "<PythonObject>")"
     return """
             cdef int \(arg)_size = len(\(arg))
             cdef \(arg_type)* \(arg)_array = <\(arg_type)*> malloc(\(arg)_size  * \(type_size))
@@ -190,7 +190,7 @@ func generateCallbackFunctions(module: WrapModule, options: [PythonTypeConvertOp
 //                    //\(pythonType2pyx(type: function.returns.type, options: options)) \(cls.title)_\(function.name)(\(function.export(options: options));
 //                    """)
                 } else {
-                    var send_options = options
+                    //var send_options = options
                     //send_options.append(.header)
                     output.append(functionGenerator(wraptitle: cls.title, function: function, options: options))
                 }
@@ -339,7 +339,7 @@ func generateSendFunctions(module: WrapModule, objc: Bool) -> String {
                 if function.returns.is_list {
                     func_return_options.append(.is_list)
                 }
-                let return_type = "\(pythonType2pyx(type: function.returns.type, options: return_options))"
+                //let return_type = "\(pythonType2pyx(type: function.returns.type, options: return_options))"
                 //print(return_type)
                 let return_type2 = convertPythonType(type: function.returns.type, options: func_return_options)
                 var func_string = "\(return_type2) \(cls.title)_\(function.name)(\(function.export(options: send_options)))"
@@ -372,14 +372,14 @@ func generatePyxClassFunctions(module: WrapModule) -> String {
             if !function.is_callback {
                 let return_type = function.returns.type
                 var rtn: String
-                if return_type == "void" {rtn = "None"} else {rtn = PurePythonTypeConverter(type: return_type)}
+                if return_type == .void {rtn = "None"} else {rtn = PurePythonTypeConverter(type: return_type)}
                 let py_return = "\(if: function.returns.is_list,"list[\(rtn)]",rtn)"
                 output.append("\t"+"def \(function.name)(self, \(function.export(options: [.py_mode]))) -> \(py_return):")
                 //handle list args
                 let list_args = function.args.filter{$0.is_list}
                 
                 for list_arg in list_args {
-                    if list_arg.type == "str" {
+                    if list_arg.type == .str {
                         output.append(strlistFunctionLine(wrap_arg: list_arg))
                     } else {
                         output.append(listFunctionLine(wrap_arg: list_arg))
@@ -388,18 +388,18 @@ func generatePyxClassFunctions(module: WrapModule) -> String {
                 }
                 //output.append(contentsOf: list_args.map{listFunctionLine(wrap_arg: $0)})
                 
-                let jsondata_args = function.args.filter{$0.type=="jsondata"}
+                let jsondata_args = function.args.filter{$0.type == .jsondata}
                 for json in jsondata_args {
                     output.append("\t\tcdef bytes j_\(json.name) = json.dumps(\(json.name)).encode()")
                     //output.append("\t\tcdef const unsigned char* __\(json.name) = _\(json.name)")
                     output.append("\t\tcdef long \(json.name)_size = len(j_\(json.name))")
                 }
-                let data_args = function.args.filter{$0.type=="data"}
+                let data_args = function.args.filter{$0.type == .data}
                 output.append(contentsOf: data_args.map{"\t\tcdef long \($0.name)_size = len(\($0.name))"})
                 
                 output.append("\t\t" + generateFunctionCode(title: cls.title, function: function))
                 for arg in list_args {
-                    if arg.type == "str" {
+                    if arg.type == .str {
 //                        output.append("""
 //                        for x in range(\(arg.name)_size)
 //                        """)
@@ -431,7 +431,7 @@ func generateFunctionCode(title: String, function: WrapFunction) -> String {
             output.append("\(title)_\(function.name)(\(function.send_args.joined(separator: ", ")))")
         } else { // sends
             
-            if function.returns.type != "void" {
+            if function.returns.type != .void {
                 let rtn = function.returns
                 let rname = "\(title)_\(function.name)"
                 let code = "\(rname)(\(function.send_args_py.joined(separator: ", ")))"
@@ -534,9 +534,8 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
     for arg in imps {
         let list = arg.is_list!
         let data = arg.is_data!
-        let jsondata = arg.type == "jsondata"
+        let jsondata = arg.type == .jsondata
         
-        print("generateTypeDefImports",arg.type, list, data)
         let dtype = pythonType2pyx(type: arg.type, options: [.c_type])
         //
         if list || data || jsondata {
@@ -549,7 +548,7 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
                 """)
             } else {
                 
-                if arg.is_list && ["object","str"].contains(arg.type) {
+                if arg.is_list && [.object,.str].contains(arg.type) {
                     output.append("""
                         ctypedef struct \(arg.pyx_type!):
                             const \(convertPythonType(type: arg.type, options: [])) * ptr
