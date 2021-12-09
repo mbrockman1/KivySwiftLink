@@ -182,7 +182,7 @@ func InitWorkingFolder() {
     } catch {
         print("cant delete folders")
     }
-    _toolchain(command: .build, args: ["python3", "kivy"])
+    _toolchain(command: .build, args: ["python3==3.9.2", "kivy"])
     //toolchain(command: "build", args: ["kivy"])
     print("Setup done")
 
