@@ -10,8 +10,9 @@ import Foundation
 
 func BuildWrapperFile(root_path: String, site_path: String, py_name: String) {
     let file_man = FileManager()
-    let cur_dir = URL(fileURLWithPath: file_man.currentDirectoryPath)
-    let site_manager = cur_dir.appendingPathComponent("venv/lib/python3.9/site-packages", isDirectory: true)
+    let cur_dir = URL(fileURLWithPath: root_path)
+//    let site_manager = cur_dir.appendingPathComponent("venv/lib/python3.9/site-packages", isDirectory: true)
+    let site_manager = URL(fileURLWithPath: site_path)
     let py_file = cur_dir.appendingPathComponent("wrapper_sources").appendingPathComponent("\(py_name).pyi")
     if !file_man.fileExists(atPath: py_file.path) {
         print("no wrapper file named: \(py_name).pyi")
@@ -25,7 +26,7 @@ func BuildWrapperFile(root_path: String, site_path: String, py_name: String) {
         try! file_man.createDirectory(atPath: src_path.path, withIntermediateDirectories: true, attributes: [:])
     }
     let py_ast = PythonASTconverter(filename: py_name, site_path: site_path)
-    let wrap_module = py_ast.generateModule()
+    let wrap_module = py_ast.generateModule(root: root_path)
     //let export_dir = getDocumentsDirectory().appendingPathComponent("ksl_exports")
     let pyxfile = src_path.appendingPathComponent("\(py_name).pyx")
     let h_file = src_path.appendingPathComponent("_\(py_name).h")
@@ -51,8 +52,8 @@ func BuildWrapperFile(root_path: String, site_path: String, py_name: String) {
         copyItem(from: wrapper_typedefs.path, to: typedefs_dst.path, force: true)
     //}
 
-    _toolchain(command: .clean, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
-    _toolchain(command: .build, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
+    _toolchain(path: root_path, command: .clean, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
+    _toolchain(path: root_path, command: .build, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
 
     copyItem(from: h_file.path, to: wrapper_header.path, force: true)
 }

@@ -23,7 +23,7 @@ struct KivySwiftLink: ParsableCommand {
     static let configuration = CommandConfiguration(
             abstract: "KivySwiftLink",
         version: AppVersion.string,
-        subcommands: [Setup.self,Build.self, Toolchain.self,Install.self, UpdateApp.self, Project.self].sorted(by: {$0._commandName < $1._commandName})
+        subcommands: [Setup.self,Build.self, Toolchain.self,Install.self, UpdateApp.self, Project.self, Helper.self].sorted(by: {$0._commandName < $1._commandName})
     )
     
 }
@@ -31,7 +31,7 @@ extension KivySwiftLink {
     
     struct Install: ParsableCommand {
         static let configuration = CommandConfiguration(
-                abstract: "copy KivySwftLink as ksl to /usr/local/bin")
+                abstract: "Copy KivySwftLink as ksl to /usr/local/bin")
         @Flag(name: .shortAndLong, help: "overwrite ksl if it already exist")
         var forced = false
         
@@ -43,13 +43,17 @@ extension KivySwiftLink {
     
     struct Setup: ParsableCommand {
         static let configuration = CommandConfiguration(
-                abstract: "setup working folder")
+                abstract: "Setup working folder")
         @Flag(name: .shortAndLong, help: "overwrite ksl if it already exist")
         var update_only = false
         
         func run() {
-            print("Installing KivySwiftLink Components")
-            if !update_only {
+            
+            if update_only {
+                print("Updating KivySwiftLink Components")
+                UpdateWorkingFolder()
+            } else {
+                print("Installing KivySwiftLink Components")
                 InitWorkingFolder()
             }
         }
@@ -65,7 +69,7 @@ extension KivySwiftLink {
     
     struct UpdateApp: ParsableCommand {
         static let configuration = CommandConfiguration(
-                abstract: "download/install newest release of KivySwftLink from github")
+                abstract: "Download/install newest release of KivySwftLink from github")
         func run() {
             let release = getKslReleases().first!
             
@@ -93,7 +97,7 @@ extension KivySwiftLink {
     struct Toolchain: ParsableCommand {
         
         static let configuration = CommandConfiguration(
-                    abstract: "run toolchain commands")
+                    abstract: "Run toolchain commands")
         
         @Argument() var command: String?
         @Argument() var arg1: String?
@@ -107,10 +111,9 @@ extension KivySwiftLink {
                 return
             }
             let args: [String] = [arg1,arg2,arg3,arg4].filter{$0 != nil}.map{$0!}
-            toolchain_venv(command: command!, args: args)
+            toolchain_venv(path: root_path ,command: command!, args: args)
         }
     }
-    
     
 }
 
@@ -152,7 +155,7 @@ struct Project: ParsableCommand {
     
     struct Create: ParsableCommand {
         static let configuration = CommandConfiguration(
-                        abstract: "create new ios project")
+                        abstract: "Create new ios project")
             @Argument() var project_name: String
             @Argument() var python_source_folder: String
             func run() {
@@ -166,11 +169,11 @@ struct Project: ParsableCommand {
     
     struct Update: ParsableCommand {
         static let configuration = CommandConfiguration(
-                        abstract: "update ios project = toolchain update <project>-ios")
+                        abstract: "Update ios project = toolchain update <project>-ios")
         func run() {
             let db = ProjectHandler(db_path: nil)
             if let current = db.current_project {
-                _toolchain(command: .update, args: ["\(current.name)-ios"])
+                _toolchain(path:root_path , command: .update, args: ["\(current.name)-ios"])
             }
         }
     }
@@ -202,7 +205,7 @@ struct Build: ParsableCommand {
     
     
     struct All: ParsableCommand {
-        @Flag(name: .shortAndLong, help: "overwrite ksl if it already exist")
+        @Flag(name: .shortAndLong, help: "Build Changes Only")
         var update = false
         func run() {
             if update {
@@ -211,6 +214,30 @@ struct Build: ParsableCommand {
                 buildAllWrappers()
             }
             
+        }
+    }
+}
+
+
+
+struct Helper: ParsableCommand {
+    static let configuration = CommandConfiguration(
+                    abstract: "Xcode Helper - Use Xcode Build to update Wrappers",
+                    subcommands: [Script.self, Update.self]
+                )
+    
+    struct Script: ParsableCommand {
+        
+        func run() throws {
+            
+        }
+    }
+    
+    struct Update: ParsableCommand {
+        @Argument() var path: String
+        
+        func run() throws {
+            updateWrappers(path: path)
         }
     }
 }

@@ -9,24 +9,29 @@ import Foundation
 import SwiftyJSON
 
 
-class WrapClassBase: Codable {
+class WrapClass: Codable {
     let title: String
     var functions: [WrapFunction]
     var decorators: [WrapClassDecorator]
     
+    private enum CodingKeys: CodingKey {
+        case title
+        case functions
+        case decorators
+    }
     
-}
-
-
-//WrapClass
-class WrapClass: WrapClassBase {
     var pointer_compare_strings: [String] = []
     var pointer_compare_dict: [String:[String:String]] = [:]
     var dispatch_mode = false
     var has_swift_functions = false
     
     required init(from decoder: Decoder) throws {
-        try super.init(from: decoder)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        title = try! container.decode(String.self, forKey: .title)
+        functions = try! container.decode([WrapFunction].self, forKey: .functions)
+        decorators = try! container.decode([WrapClassDecorator].self, forKey: .decorators)
+        
+        
         handleDecorators()
         let callback_count = functions.filter{$0.is_callback}.count
         //let sends_count = functions.filter{!$0.is_callback && !$0.swift_func}.count
@@ -45,7 +50,6 @@ class WrapClass: WrapClassBase {
                         "name":"func_struct",
                         "type":"PythonCoreMidiSwiftFuncs",
                         "idx": 0
-                        
                     ]
                 ],
                 "swift_func": true,

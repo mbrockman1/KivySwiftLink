@@ -8,21 +8,72 @@
 import Foundation
 
 
-class WrapFunctionBase: Codable {
+
+class WrapFunction: Codable {
     let name: String
     var args: [WrapArg]
-    var returns: WrapArg
+    let returns: WrapArg
     let is_callback: Bool
     let swift_func: Bool
-    var call_class: String!
-    var call_target: String!
+    let call_class: String!
+    let call_target: String!
     
-}
-
-class WrapFunction: WrapFunctionBase {
+    private enum CodingKeys: CodingKey {
+        case name
+        case args
+        case returns
+        case is_callback
+        case swift_func
+        case call_class
+        case call_target
+    }
+    
     var compare_string: String = ""
     var function_pointer = ""
     var wrap_class: WrapClass!
+    
+    
+    
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if container.contains(.name) {
+            name = try! container.decode(String.self, forKey: .name)
+        } else {
+            name = ""
+        }
+        if container.contains(.args) {
+            args = try! container.decode([WrapArg].self, forKey: .args)
+        } else {
+            args = []
+        }
+        if container.contains(.returns) {
+            returns = try! container.decode(WrapArg.self, forKey: .returns)
+        } else {
+            returns = WrapArg(name: "", type: .None, other_type: "", idx: 0, is_return: true, is_list: false, is_json: false, is_data: false, is_tuple: false)
+        }
+        if container.contains(.is_callback) {
+            is_callback = try! container.decode(Bool.self, forKey: .is_callback)
+        } else {
+            is_callback = false
+        }
+        if container.contains(.swift_func) {
+            swift_func = try! container.decode(Bool.self, forKey: .swift_func)
+        } else {
+            swift_func = false
+        }
+        if container.contains(.call_class) {
+            call_class = try! container.decode(String.self, forKey: .call_class)
+        } else {
+            call_class = nil
+        }
+        if container.contains(.call_target) {
+            call_target = try! container.decode(String.self, forKey: .call_target)
+        } else {
+            call_target = nil
+        }
+    }
+    
+    
     
     func get_callArg(name: String) -> WrapArg! {
         for arg in args {
@@ -36,18 +87,13 @@ class WrapFunction: WrapFunctionBase {
     func call_args(cython_callback: Bool = false) -> [String] {
         var call_class = ""
         var call_target = ""
-        //print("call_args:")
         if self.call_class != nil {call_class = self.call_class}
         if self.call_target != nil {call_target = self.call_target}
         let _args = args.filter{arg -> Bool in
             arg.name != call_target && arg.name != call_class
         }
         return _args.map {
-            //print($0.name,$0.is_counter!, cython_callback)
-            if !$0.is_counter!   {
-                return convertPythonCallArg(arg: $0)
-                }
-            return ""
+            convertPythonCallArg(arg: $0)
         }.filter({$0 != ""})
     }
     
@@ -60,18 +106,13 @@ class WrapFunction: WrapFunctionBase {
             arg.name != call_target && arg.name != call_class
         }
         return _args.map {
-            if !$0.is_counter! {
-                return convertPythonCallArg(arg: $0)
-                }
-            return ""
+            convertPythonCallArg(arg: $0)
         }.filter({$0 != ""})
     }
     
     var send_args: [String] {
         args.map {
-//        args.filter{$0.is_counter!}.map {
-            //if !$0.is_counter {
-            //var name: String
+
             var send_options: [PythonSendArgTypes] = []
             if $0.is_list {send_options.append(.list)}
             return convertPythonSendArg(type: $0.type, name: $0.name, options: send_options)
@@ -80,24 +121,13 @@ class WrapFunction: WrapFunctionBase {
     
     var send_args_py: [String] {
         args.map {
-        //args.filter{!$0.is_counter!}.map {
-            //if !$0.is_counter {
-            //var name: String
             var send_options: [PythonSendArgTypes] = []
             if $0.is_list {send_options.append(.list)}
             return convertPythonSendArg(type: $0.type, name: $0.name, options: send_options)
         }.filter({$0 != ""})
     }
     
-    required init(from decoder: Decoder) throws {
-        try super.init(from: decoder)
-    }
-    
-
-    
-    
     func export(options: [PythonTypeConvertOptions])  -> String {
-        //print("export", options)
         if options.contains(.objc) {
             let func_args = args.map({ arg in
                 arg.export(options: options)!
@@ -107,28 +137,19 @@ class WrapFunction: WrapFunctionBase {
             } else {
                 return func_args.joined(separator: ", ")
             }
-            
         }
+        
         var _args: [WrapArg]
+        
         if options.contains(.py_mode) {
-            _args = args.filter({!$0.is_counter})
+            _args = args
         } else {
             _args = args
         }
-//        _args = _args.filter{arg -> Bool in
-//            arg.name != call_target && arg.name != call_class
-//        }
         let func_args = _args.map({ arg in
-            
             return arg.export(options: options)!
         })
         return func_args.joined(separator: ", ")
-//        if options.contains(.header) {
-//            return func_args.joined(separator: " ")
-//        } else {
-//            return func_args.joined(separator: ", ")
-//        }
-        
     }
     
 }

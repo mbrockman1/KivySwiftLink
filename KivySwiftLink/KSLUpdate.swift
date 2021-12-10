@@ -93,9 +93,9 @@ func downloadKslRelease(release: KSLRelease, forced: Bool) {
 
 func installRelease(url: URL,error: Error?, forced: Bool) -> Void {
     //let path = url.path
-    let test_url = URL(fileURLWithPath: "/Users/musicmaker/Library/Developer/Xcode/DerivedData/KivySwiftLink-eewvehksjwljcddezgmkixwtkicv/Build/Products/Debug/KivySwiftLink.zip")
+    //let test_url = URL(fileURLWithPath: "/Users/musicmaker/Library/Developer/Xcode/DerivedData/KivySwiftLink-eewvehksjwljcddezgmkixwtkicv/Build/Products/Debug/KivySwiftLink.zip")
     if forced {
-        installFromZip(url: test_url)
+        installFromZip(url: url)
     } else {
         print("Do you wish to unzip KivySwiftLink as ksl to /usr/local/bin/")
         print("enter y or yes: ", separator: "", terminator: " ")
@@ -103,7 +103,7 @@ func installRelease(url: URL,error: Error?, forced: Bool) -> Void {
                 let input = input_string.trimmingCharacters(in: .whitespaces)
                 if ANSWERS.contains(input) {
                     print("unzipping file to /usr/local/bin/ksl")
-                    installFromZip(url: test_url)
+                    installFromZip(url: url)
             }
         }
     }

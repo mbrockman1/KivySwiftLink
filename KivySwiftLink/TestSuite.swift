@@ -65,7 +65,7 @@ func buildTestWrapper() {
             copyItem(from: wrapper_typedefs.path, to: typedefs_dst.path)
         }
 
-        _toolchain(command: .clean, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
-        _toolchain(command: .build, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
+        _toolchain(path: cur_dir, command: .clean, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
+        _toolchain(path: cur_dir, command: .build, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
     }//update_project()
 }
