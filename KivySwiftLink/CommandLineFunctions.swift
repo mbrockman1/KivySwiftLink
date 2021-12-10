@@ -290,7 +290,7 @@ func updateWrappers(path: String! = nil) {
     }
     
     let wrapper_files = try! file_man.contentsOfDirectory(at: wrapper_sources, includingPropertiesForKeys: [], options: .skipsHiddenFiles)
-    let lib_files = try! file_man.contentsOfDirectory(at: lib_sources, includingPropertiesForKeys: [], options: .skipsHiddenFiles)
+    //let lib_files = try! file_man.contentsOfDirectory(at: lib_sources, includingPropertiesForKeys: [], options: .skipsHiddenFiles)
     //print(wrapper_files)
     
     for file in wrapper_files {

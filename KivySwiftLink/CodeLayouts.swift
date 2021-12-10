@@ -134,7 +134,7 @@ func listFunctionLine(wrap_arg: WrapArg) -> String {
     let arg = wrap_arg.name
     let arg_type = convertPythonType(type: wrap_arg.type, options: [])
     //if let size = wrap_arg.size {} else {print(wrap_arg.type)}
-    let type_size = wrap_arg.size!
+    let type_size = wrap_arg.size
     let decode = "\(if: (wrap_arg.type == .object) , "<PythonObject>")"
     return """
             cdef int \(arg)_size = len(\(arg))
@@ -142,14 +142,14 @@ func listFunctionLine(wrap_arg: WrapArg) -> String {
             cdef int \(arg)_i
             for \(arg)_i in range(\(arg)_size):
                 \(arg)_array[\(arg)_i] = \(decode)\(arg)[\(arg)_i]
-            cdef \(wrap_arg.pyx_type!) \(arg)_struct = [\(arg)_array, \(arg)_size]
+            cdef \(wrap_arg.pyx_type) \(arg)_struct = [\(arg)_array, \(arg)_size]
     """
 }
 
 func dataFunctionLine(wrap_arg: WrapArg) -> String {
     let arg = wrap_arg.name
     let arg_type = convertPythonType(type: wrap_arg.type, options: [])
-    let type_size = wrap_arg.size!
+    let type_size = wrap_arg.size
     let decode = ""
     return """
             cdef int \(arg)_size = len(\(arg))
@@ -164,7 +164,7 @@ func dataFunctionLine(wrap_arg: WrapArg) -> String {
 func strlistFunctionLine(wrap_arg: WrapArg) -> String {
     let arg = wrap_arg.name
     let arg_type = convertPythonType(type: wrap_arg.type, options: [])
-    let type_size = wrap_arg.size!
+    let type_size = wrap_arg.size
     let decode = ""
     return """
             \(arg)_bytes = [x.encode('utf-8') for x in \(arg)]
@@ -299,7 +299,7 @@ func generateSendProtocol(module: WrapModule) -> String {
         for function in cls.functions {
             if !function.is_callback && !function.swift_func {
                 //cls_protocols.append("- (\(pythonType2pyx(type: function.returns.type, options: [.objc])))\(function.name)\(function.export(options: [.objc, .header]));")
-                cls_protocols.append("- (\(function.returns.objc_type!))\(function.name)\(function.export(options: [.objc, .header]));")
+                cls_protocols.append("- (\(function.returns.objc_type))\(function.name)\(function.export(options: [.objc, .header]));")
 
             }
         }
@@ -438,7 +438,7 @@ func generateFunctionCode(title: String, function: WrapFunction) -> String {
 //                if rtn.is_data || rtn.is_list {
 //                    output.append("cdef long \(rname)_size = len(\(rname))")
 //                }
-                output.append("cdef \(rtn.pyx_type!) rtn_val = \(code)")
+                output.append("cdef \(rtn.pyx_type) rtn_val = \(code)")
                 output.append("return \(convertReturnSend(f: function, rname: rname, code: code))")
             } else {
                 output.append("\(title)_\(function.name)(\(function.send_args_py.joined(separator: ", ")))")
@@ -459,14 +459,14 @@ func setCallPath(wraptitle: String, function: WrapFunction, options: [functionCo
     if call_class_is_arg(function: function) {
         if let call_target = function.call_target {
             let target = function.get_callArg(name: function.call_class)
-            return "(<object> \(target!.objc_name!)).\(call_target).\(function.name)"
+            return "(<object> \(target!.objc_name)).\(call_target).\(function.name)"
         }
         let target = function.get_callArg(name: function.call_class)
-        return "(<object> \(target!.objc_name!)).\(function.name)"
+        return "(<object> \(target!.objc_name)).\(function.name)"
     }
     
     if call_target_is_arg(function: function) {
-        return "(<object> \(function.get_callArg(name: function.call_target)!.objc_name!))"
+        return "(<object> \(function.get_callArg(name: function.call_target)!.objc_name))"
     }
     
     if let call_class = function.call_class {
@@ -532,8 +532,8 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
         !$0.is_list && $1.is_list
     }
     for arg in imps {
-        let list = arg.is_list!
-        let data = arg.is_data!
+        let list = arg.is_list
+        let data = arg.is_data
         let jsondata = arg.type == .jsondata
         
         let dtype = pythonType2pyx(type: arg.type, options: [.c_type])
@@ -541,7 +541,7 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
         if list || data || jsondata {
             if list && (data || jsondata) {
                 output.append("""
-                    ctypedef struct \(arg.pyx_type!):
+                    ctypedef struct \(arg.pyx_type):
                         const \(convertPythonType(type: arg.type, options: [.objc]))\(if: list, "*") ptr
                         long size;
                 
@@ -550,7 +550,7 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
                 
                 if arg.is_list && [.object,.str].contains(arg.type) {
                     output.append("""
-                        ctypedef struct \(arg.pyx_type!):
+                        ctypedef struct \(arg.pyx_type):
                             const \(convertPythonType(type: arg.type, options: [])) * ptr
                             long size;
                     
@@ -559,7 +559,7 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
                     // Normal types / lists with normal types
                     //\(if: list, "const ")\(dtype)\(if: list, "*") ptr
                     output.append("""
-                        ctypedef struct \(arg.pyx_type!):
+                        ctypedef struct \(arg.pyx_type):
                             \(if: list, "const ")\(dtype)\(if: list, " *") ptr
                             long size;
                     
@@ -570,7 +570,7 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
             
             
         } else {
-            output.append("\t"+"ctypedef \(dtype) \(arg.pyx_type!)\n")
+            output.append("\t"+"ctypedef \(dtype) \(arg.pyx_type)\n")
         }
         
         
@@ -629,7 +629,7 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
                 
                 for function in cls.functions.filter({!$0.is_callback && !$0.swift_func}) {
                     let has_args = function.args.count != 0
-                    let return_type = "\(if: objc_m, function.returns.objc_type!, function.returns.pyx_type!)"
+                    let return_type = "\(if: objc_m, function.returns.objc_type, function.returns.pyx_type)"
                     output.append("""
                     \(return_type) \(cls.title)_\(function.name)(\(function.export(options: [.use_names, .objc]))) {
                         \(if: function.returns.name != "void", "return ")[\(cls.title.lowercased()) \(function.name)\(if: has_args, ": ")\(function.args.map{$0.name}.joined(separator: ": "))];
@@ -639,7 +639,7 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
                 
                 
             default:
-                ""
+                continue
             }
         }
     }
@@ -648,10 +648,10 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
 
 
 func createSetSwiftFunctions(cls: WrapClass) {
-    var json = JSON()
-    var function: JSON = [
-        "name": "set_SwiftFunctions"
-    ]
+//    var json = JSON()
+//    var function: JSON = [
+//        "name": "set_SwiftFunctions"
+//    ]
 }
 
 func createRecipe(title: String) -> String{

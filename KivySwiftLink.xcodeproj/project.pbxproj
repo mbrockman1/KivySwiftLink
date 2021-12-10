@@ -92,6 +92,18 @@
 			path = DB;
 			sourceTree = "<group>";
 		};
+		8C8C73632763AE2400311236 /* WrapperFiles */ = {
+			isa = PBXGroup;
+			children = (
+				8CDD0999275E1F6100DB8267 /* WrapModule.swift */,
+				8CC79ECC2719C4350056BBFC /* WrapClass.swift */,
+				8CDD0996275E1F3900DB8267 /* WrapFunction.swift */,
+				8CDD099C275E1F7A00DB8267 /* WrapArg.swift */,
+				8CE0C5072726ED9700C0D6D8 /* WrapperHandler.swift */,
+			);
+			path = WrapperFiles;
+			sourceTree = "<group>";
+		};
 		8CC79E9D27183BCC0056BBFC = {
 			isa = PBXGroup;
 			children = (
@@ -116,13 +128,9 @@
 				8CC79EA927183BCC0056BBFC /* main.swift */,
 				8C47F2B727611D010044A826 /* DB */,
 				8C47F2AA275E5B780044A826 /* KSLUpdate.swift */,
-				8CDD0999275E1F6100DB8267 /* WrapModule.swift */,
-				8CC79ECC2719C4350056BBFC /* WrapClass.swift */,
-				8CDD0996275E1F3900DB8267 /* WrapFunction.swift */,
-				8CDD099C275E1F7A00DB8267 /* WrapArg.swift */,
+				8C8C73632763AE2400311236 /* WrapperFiles */,
 				8C7A8DA0271D8AA50030E4A7 /* CommandLineFunctions.swift */,
 				8C47F2B02760D62F0044A826 /* Extensions_Helpers.swift */,
-				8CE0C5072726ED9700C0D6D8 /* WrapperHandler.swift */,
 				8CE0C492272622E400C0D6D8 /* PythonHandler.swift */,
 				8CC79ED5271A33760056BBFC /* CodeLayouts.swift */,
 				8CC79ECF2719C84A0056BBFC /* Converters.swift */,

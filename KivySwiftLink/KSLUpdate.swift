@@ -93,7 +93,7 @@ func downloadKslRelease(release: KSLRelease, forced: Bool) {
 
 func installRelease(url: URL,error: Error?, forced: Bool) -> Void {
     //let path = url.path
-    let test_url = URL(fileURLWithPath: "/Users/musicmaker/Library/Developer/Xcode/DerivedData/KivySwiftLink-eewvehksjwljcddezgmkixwtkicv/Build/Products/Debug/KivySwiftLink.zip")
+    //let test_url = URL(fileURLWithPath: "/Users/musicmaker/Library/Developer/Xcode/DerivedData/KivySwiftLink-eewvehksjwljcddezgmkixwtkicv/Build/Products/Debug/KivySwiftLink.zip")
     if forced {
         installFromZip(url: url)
     } else {

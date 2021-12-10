@@ -44,7 +44,7 @@ class WrapModule: WrapModuleBase {
         for cls in classes {
             var class_vars: [String] = []
             var class_ext_options: [CythonClassOptionTypes] = [.init_callstruct]
-            var EnumStrings: String = ""
+            //var EnumStrings: String = ""
             var swift_funcs_struct = ""
             if dispatchEnabled {
                 let dis_dec = cls.decorators.filter({$0.type=="EventDispatch"})[0]
@@ -54,7 +54,7 @@ class WrapModule: WrapModuleBase {
 
                 """)
                 class_ext_options.append(.event_dispatch)
-                EnumStrings = generateEnums(cls: cls, options: [.cython,.dispatch_events])
+                //EnumStrings = generateEnums(cls: cls, options: [.cython,.dispatch_events])
             }
             if cls.has_swift_functions {
                 class_ext_options.append(.swift_functions)
@@ -165,7 +165,7 @@ class WrapModule: WrapModuleBase {
         let test_types = ["object","json","jsondata","data","str", "bytes"]
         
         for cls in classes {
-            var has_swift_functions = false
+            //var has_swift_functions = false
             for function in cls.functions {
                 let returns = function.returns
                 if (returns.is_list || returns.is_data) && !["object","void"].contains(returns.type.rawValue) {
@@ -195,7 +195,7 @@ class WrapModule: WrapModuleBase {
                         }
                     }
                 }
-                if function.swift_func {has_swift_functions = true}
+                //if function.swift_func {has_swift_functions = true}
             } //function loop end
             
            

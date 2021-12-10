@@ -80,6 +80,7 @@ let TYPE_SIZES: [String:Int] = [
     "json": MemoryLayout<CChar>.size,
     "bool": MemoryLayout<CBool>.size,
     "str": MemoryLayout<CChar>.size,
+    "void": MemoryLayout<Void>.size
     
 ]
 
@@ -186,7 +187,7 @@ func get_typedef_types() -> [String: String]  {
     for type in PythonType.allCases {
         switch type {
         case .list, .void:
-            ""
+            continue
         default:
             //types.append((type.rawValue,convertPythonListType(type: type.rawValue)))
             types[type.rawValue] = convertPythonListType(type: type, options: [.c_type])
@@ -233,8 +234,8 @@ func PurePythonTypeConverter(type: PythonType) -> String{
 
 func export_tuple(arg: WrapArg, options: [PythonTypeConvertOptions]) -> String {
     let py_mode = options.contains(.py_mode)
-    let objc_mode = options.contains(.objc)
-    let c_mode = options.contains(.c_type)
+    //let objc_mode = options.contains(.objc)
+    //let c_mode = options.contains(.c_type)
     
     if arg.is_tuple == true {
         if py_mode {
@@ -399,10 +400,10 @@ func convertPythonListType(type: PythonType, options: [PythonTypeConvertOptions]
 
 
 func convertPythonCallArg(arg: WrapArg) -> String {
-    let is_return = arg.is_return
+    //let is_return = arg.is_return
     let type = arg.type
-    let is_list_data = arg.is_list!
-    let name = arg.objc_name!
+    let is_list_data = arg.is_list
+    let name = arg.objc_name
     //let size_arg_name = "arg\(arg.idx + 1)"
     let size_arg_name = "arg\(arg.idx).size"
     
