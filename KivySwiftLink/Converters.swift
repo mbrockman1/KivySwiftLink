@@ -43,6 +43,7 @@ enum PythonType: String, CaseIterable,Codable {
     case bool
     case void
     case None
+    case other
 }
 
 
@@ -225,17 +226,8 @@ func PurePythonTypeConverter(type: PythonType) -> String{
     
     case .void:
         return "None"
-    case .bool:
-        return "bool"
-    case .tuple:
-        return "tuple"
-    case .list:
-        return "list"
-    case .None:
-        return "None"
-    default:
-        print("type missing:",type)
-        return "ERROR_TYPE"
+    case .bool, .tuple, .list, .None, .other:
+        return type.rawValue
     }
 }
 
@@ -353,6 +345,10 @@ func pythonType2pyx(type: PythonType, options: [PythonTypeConvertOptions]) -> St
         export = "void"
     case .tuple:
         export = "tuple"
+    case .None:
+        export = type.rawValue
+    case .other:
+        export = type.rawValue
     default:
         if type.rawValue.contains("SwiftFuncs") {
             return type.rawValue

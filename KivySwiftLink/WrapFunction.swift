@@ -44,10 +44,10 @@ class WrapFunction: WrapFunctionBase {
         }
         return _args.map {
             //print($0.name,$0.is_counter!, cython_callback)
-            if !$0.is_counter!   {
+            //if $0.type != .other   {
                 return convertPythonCallArg(arg: $0)
-                }
-            return ""
+            //    }
+            //return $0.type.rawValue
         }.filter({$0 != ""})
     }
     

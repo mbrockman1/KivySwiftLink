@@ -93,7 +93,7 @@ class ProjectManager {
     }
     
     func create_project(title: String, py_src: String) {
-        _toolchain(command: .create, args: [title, py_src])
+        _toolchain(path: root_path.path, command: .create, args: [title, py_src])
         bridge_header = project_dir.appendingPathComponent("\(project_title)-Bridging-Header.h")
         
         let file_man = FileManager()

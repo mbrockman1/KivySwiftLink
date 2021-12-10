@@ -69,8 +69,8 @@ class PythonASTconverter {
         pyWrapClass = pbuilder.PyWrapClass
     }
     
-    func generateModule() -> WrapModule {
-        let cur_dir = FileManager().currentDirectoryPath
+    func generateModule(root: String) -> WrapModule {
+        let cur_dir = root
         let wrap_file = try! String.init(contentsOfFile: cur_dir + "/wrapper_sources/" + filename + ".pyi").replacingOccurrences(of: "List[", with: "list[")
         //let module = ast.parse(wrap_file)
         let wrap_module_string = pyWrapClass.json_export(filename ,wrap_file)

@@ -5,12 +5,17 @@
 //  Created by MusicMaker on 06/12/2021.
 //
 
+
+let PythonTypes_String = PythonType.allCases.map({$0.rawValue})
+
 import Foundation
 
 class WrapArgBase: Codable {
     let name: String
     let type: PythonType
+    let other_type: String
     let idx: Int
+    
     
     var is_return: Bool!
     var is_list: Bool!
@@ -29,6 +34,28 @@ class WrapArgBase: Codable {
     
     var is_tuple: Bool!
     var tuple_types: [WrapArg]!
+    
+    
+    private enum CodingKeys: CodingKey {
+            case name
+            case type
+            case idx
+            }
+    
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        do {
+            type = try container.decode(PythonType.self, forKey: .type)
+            other_type = ""
+        } catch {
+            type = .other
+            other_type = try container.decode(String.self, forKey: .type)
+            print(type, other_type)
+        }
+        
+        name = try! container.decode(String.self, forKey: .name)
+        idx = try! container.decode(Int.self, forKey: .idx)
+    }
 }
 
 class WrapArg: WrapArgBase, Equatable {
@@ -70,9 +97,15 @@ class WrapArg: WrapArgBase, Equatable {
             pyx_type_options.append(.is_list)
             objc_type_options.append(.is_list)
         }
-        pyx_type = convertPythonType(type: type, options: pyx_type_options)
+        if type == .other {
+            pyx_type = other_type
+            objc_type = other_type
+        } else {
+            pyx_type = convertPythonType(type: type, options: pyx_type_options)
+            objc_type = convertPythonType(type: type, options: objc_type_options)
+        }
+        
         objc_name = "arg\(idx)"
-        objc_type = convertPythonType(type: type, options: objc_type_options)
         size = TYPE_SIZES[type.rawValue]
         
     }
@@ -87,14 +120,19 @@ class WrapArg: WrapArgBase, Equatable {
         } else {
             _name = objc_name!
         }
-        
+        if type == .other { print(type,other_type, options)}
         if options.contains(.objc) {
             if self.is_list {options.append(.is_list)}
             if options.contains(.header) {
                 var header_string = ""
                 switch idx {
                 case 0:
-                    header_string.append(":(\(convertPythonType(type: type, options: options) ))\(name)")
+                    if type == .other {
+                        
+                    } else {
+                        header_string.append(":(\(convertPythonType(type: type, options: options) ))\(name)")
+                    }
+                    
                 default:
                     //header_string.append("\(name):(\(convertPythonType(type: type, options: options) ))\(name)")
                     header_string.append(":(\(convertPythonType(type: type, options: options) ))\(name)")
@@ -102,18 +140,25 @@ class WrapArg: WrapArgBase, Equatable {
                 //let func_string = "\(convertPythonType(type: type, is_list: is_list, objc: objc, header: header)) \(objc_name!)"
                 return header_string
             } else {
+                if type == .other {return "\(other_type) \(_name)"}
                 let func_string = "\(convertPythonType(type: type, options: options)) \(_name)"
                 return func_string
             }
         }
         if options.contains(.py_mode) {
             if is_list {return "\(name): List[\(PurePythonTypeConverter(type: type))]"}
+            
+            if type == .other {
+                print(other_type)
+                return "\(name): \(other_type)"
+            }
             return "\(name): \(PurePythonTypeConverter(type: type))"
         }
         var arg_options = options
         if self.is_list {
             arg_options.append(.is_list)
         }
+        if type == .other {return "\(other_type) \(_name)"}
         let func_string = "\(convertPythonType(type: type, options: arg_options)) \(_name)"
         //let func_string = "\(convertPythonType(type: PurePythonTypeConverter(type: type), options: options)) \(_name)"
         return func_string

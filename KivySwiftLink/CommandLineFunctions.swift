@@ -42,8 +42,8 @@ func toolchain(command: String, args: [String]) -> Int32 {
     return task.terminationStatus
 }
 
-func _toolchain(command: ToolchainCommands, args: [String]) {
-    toolchain_venv(command: command.rawValue, args: args)
+func _toolchain(path: String, command: ToolchainCommands, args: [String]) {
+    toolchain_venv(path: path, command: command.rawValue, args: args)
 }
 
 
@@ -64,11 +64,11 @@ func pkg_install(path: String) -> Int32 {
 }
 
 @discardableResult
-func toolchain_venv(command: String, args: [String]) -> Int32 {
+func toolchain_venv(path: String, command: String, args: [String]) -> Int32 {
     //print("toolchain_venv running")
     //var targs: [String] = ["-c","source venv/bin/activate", "&&", "python --version"]
     let targs = ["-c", """
-    source venv/bin/activate
+    source \(path)/venv/bin/activate
     toolchain \(command) \(args.joined(separator: " "))
     """]
     //targs.append(contentsOf: args)
@@ -182,13 +182,16 @@ func InitWorkingFolder() {
     } catch {
         print("cant delete folders")
     }
-    _toolchain(command: .build, args: ["python3==3.9.2", "kivy"])
+    _toolchain(path: root_path, command: .build, args: ["python3==3.9.2", "kivy"])
     //toolchain(command: "build", args: ["kivy"])
     print("Setup done")
 
 }
 
 func UpdateWorkingFolder() {
+    let fm = FileManager()
+    try! Process().clone(repo: "https://github.com/psychowasp/KivySwiftSupportFiles.git", path: "KivySwiftSupportFiles")
+    
     copyItem(from: "KivySwiftSupportFiles/swift_types.py", to: "venv/lib/python3.9/site-packages/swift_types.py",force: true)
     
     copyItem(from: "KivySwiftSupportFiles/project_support_files", to: "project_support_files",force: true)
@@ -196,6 +199,11 @@ func UpdateWorkingFolder() {
     
     copyItem(from: "KivySwiftSupportFiles/project_support_files/wrapper_typedefs.h", to: "wrapper_headers/wrapper_typedefs.h", force: true)
     copyItem(from: "KivySwiftSupportFiles/swift_types.py", to: "venv/lib/python3.9/site-packages/swift_types.py", force: true)
+    do {
+        try fm.removeItem(atPath: "KivySwiftSupportFiles")
+    } catch {
+        print("cant delete folders")
+    }
 }
 
 
@@ -260,16 +268,33 @@ func buildAllWrappers() {
     }
 }
 
-func updateWrappers() {
+func updateWrappers(path: String! = nil) {
     let file_man = FileManager()
-    let wrapper_sources = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources")
-    let lib_sources = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("dist/lib")
+    var wrapper_sources: URL
+    var lib_sources: URL
+    var rpath: String
+    var spath: String
+    
+    
+    if let p = path {
+        print("p = path")
+        wrapper_sources = URL(fileURLWithPath: p).appendingPathComponent("wrapper_sources")
+        lib_sources = URL(fileURLWithPath: p).appendingPathComponent("dist/lib")
+        rpath = p
+        spath = URL(fileURLWithPath: p).appendingPathComponent("/venv/lib/python3.9/site-packages").path
+    } else {
+        wrapper_sources = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources")
+        lib_sources = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("dist/lib")
+        rpath = root_path
+        spath = site_path
+    }
     
     let wrapper_files = try! file_man.contentsOfDirectory(at: wrapper_sources, includingPropertiesForKeys: [], options: .skipsHiddenFiles)
     let lib_files = try! file_man.contentsOfDirectory(at: lib_sources, includingPropertiesForKeys: [], options: .skipsHiddenFiles)
     //print(wrapper_files)
     
     for file in wrapper_files {
+        print(file)
         let file_date = fileModificationDate(url: file)!
         let filename = file.path.fileName()
         let lib_file = lib_sources.appendingPathComponent("lib\(file.path.fileName()).a")
@@ -277,7 +302,7 @@ func updateWrappers() {
             let lib_file_date = fileModificationDate(url: lib_file)!
             if lib_file_date < file_date {
                 print(filename, file_date, lib_file_date)
-                BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: filename )
+                BuildWrapperFile(root_path: rpath, site_path: spath, py_name: filename )
             }
         }
         
