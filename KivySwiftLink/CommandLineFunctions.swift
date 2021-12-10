@@ -1,9 +1,3 @@
-//
-//  CLI_Functions.swift
-//  KivySwiftLink
-//
-//  Created by MusicMaker on 18/10/2021.
-//
 
 import Foundation
 
@@ -207,29 +201,19 @@ func UpdateWorkingFolder() {
 }
 
 
-
-
-
-
 func update_project(files: [String]) {
-    let p_dict = get_project()!
-    let project = ProjectManager(title: p_dict["project_name"] as! String, site_path: site_path)
-    project.update_frameworks_lib_a()
-    project.update_bridging_header(keys: files)
-    
-}
-
-
-func get_project() -> [String:Any]! {
-    if let project_dict = JsonStorage().current_project() {
-        //let project = ProjectManager(title: project_name, site_path: site_path)
-        //exit(1)
-        return project_dict
+    let db = ProjectHandler(db_path: nil)
+    if let p = db.global.current {
+        let project = ProjectManager(title: p.name, site_path: site_path)
+        project.update_frameworks_lib_a()
+        project.update_bridging_header(keys: files)
     }
-    
-    //exit(1)
-    return nil
+    else {
+        print("No Project Selected - use 'ksl project select <project name (no -ios)>'")
+    }
+
 }
+
 func resourceURL(to path: String) -> URL? {
     return URL(string: path, relativeTo: Bundle.main.resourceURL)
 }
@@ -254,10 +238,10 @@ func buildWrapper(name: String) {
 
 func buildAllWrappers() {
     if JsonStorage().current_project() != nil {
-        let file_man = FileManager()
-        let wrapper_sources = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources")
+        let fm = FileManager()
+        let wrapper_sources = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("wrapper_sources")
         print("building all")
-        let files = try! file_man.contentsOfDirectory(atPath: wrapper_sources.path).map{$0.fileName()}
+        let files = try! fm.contentsOfDirectory(atPath: wrapper_sources.path).map{$0.fileName()}
         for file in files {
             print(file)
             BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: file )
@@ -269,7 +253,7 @@ func buildAllWrappers() {
 }
 
 func updateWrappers(path: String! = nil) {
-    let file_man = FileManager()
+    let fm = FileManager()
     var wrapper_sources: URL
     var lib_sources: URL
     var rpath: String
@@ -277,31 +261,27 @@ func updateWrappers(path: String! = nil) {
     
     
     if let p = path {
-        print("p = path")
         wrapper_sources = URL(fileURLWithPath: p).appendingPathComponent("wrapper_sources")
         lib_sources = URL(fileURLWithPath: p).appendingPathComponent("dist/lib")
         rpath = p
         spath = URL(fileURLWithPath: p).appendingPathComponent("/venv/lib/python3.9/site-packages").path
     } else {
-        wrapper_sources = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources")
-        lib_sources = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("dist/lib")
+        wrapper_sources = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("wrapper_sources")
+        lib_sources = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("dist/lib")
         rpath = root_path
         spath = site_path
     }
     
-    let wrapper_files = try! file_man.contentsOfDirectory(at: wrapper_sources, includingPropertiesForKeys: [], options: .skipsHiddenFiles)
-    //let lib_files = try! file_man.contentsOfDirectory(at: lib_sources, includingPropertiesForKeys: [], options: .skipsHiddenFiles)
-    //print(wrapper_files)
+    let wrapper_files = try! fm.contentsOfDirectory(at: wrapper_sources, includingPropertiesForKeys: [], options: .skipsHiddenFiles)
     
     for file in wrapper_files {
-        print(file)
         let file_date = fileModificationDate(url: file)!
         let filename = file.path.fileName()
         let lib_file = lib_sources.appendingPathComponent("lib\(file.path.fileName()).a")
-        if file_man.fileExists(atPath: lib_file.path) {
+        if fm.fileExists(atPath: lib_file.path) {
             let lib_file_date = fileModificationDate(url: lib_file)!
             if lib_file_date < file_date {
-                print(filename, file_date, lib_file_date)
+                print(filename)
                 BuildWrapperFile(root_path: rpath, site_path: spath, py_name: filename )
             }
         }
