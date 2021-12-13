@@ -206,6 +206,7 @@ enum PythonTypeConvertOptions {
     case is_list
     case py_mode
     case use_names
+    case dispatch
 }
 
 func PurePythonTypeConverter(type: PythonType) -> String{
@@ -422,10 +423,23 @@ func convertPythonCallArg(arg: WrapArg) -> String {
     case .object:
         if is_list_data {return "[<object>\(name).ptr[x] for x in range(\(size_arg_name))]"}
         return "<object>\(name)"
+    case .other:
+        return convertOtherCallArg(arg: arg)
     default:
         if is_list_data {return "[\(name).ptr[x].decode('utf8') for x in range(\(size_arg_name))]"}
         return name
     }
+}
+
+func convertOtherCallArg(arg: WrapArg) -> String{
+    if arg.is_enum {
+        print(arg.name, arg.cls)
+        if let cls = arg.cls {
+            return "\(cls.title)_events[<int>\(arg.objc_name)]"
+        }
+        return arg.objc_name
+    }
+    return arg.objc_name
 }
 
 func convertReturnSend(f: WrapFunction, rname: String, code: String) -> String {

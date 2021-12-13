@@ -1,8 +1,5 @@
 //
 //  Extensions_Helpers.swift
-//  KivySwiftLink
-//
-//  Created by MusicMaker on 08/12/2021.
 //
 
 import Foundation

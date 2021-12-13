@@ -6,12 +6,15 @@
 //
 import SwiftyJSON
 import Foundation
-func generateCythonClass(_class: String, class_vars: String, dispatch_mode: Bool) -> String {
+func generateCythonClass(cls: WrapClass, class_vars: String, dispatch_mode: Bool) -> String {
+    let _class = cls.title
     if dispatch_mode {
+        let events = cls.dispatch_events.map{"\"\($0)\""}
     let string = """
     cdef public void* \(_class)_voidptr
-    cdef public void* \(_class)_dispatch
+    #cdef public void* \(_class)_dispatch
     cdef public \(_class) \(_class)_shared
+    cdef list \(_class)_events = [\(events.joined(separator: ", "))]
 
     cdef class \(_class)(EventDispatcher):
     \(class_vars)
@@ -360,6 +363,56 @@ func generateSendFunctions(module: WrapModule, objc: Bool) -> String {
     
 }
 
+func generateDispatchFunctions(cls: WrapClass, objc: Bool) {
+    let decoder = JSONDecoder()
+    
+    //for event in cls.dispatch_events {
+        
+        let dispatch_function: JSON = [
+            "name":"dispatch",
+            "args": [
+                [
+                    "name":"event",
+                    "type":"other",
+                    "other_type": "\(cls.title)Events",
+                    "is_enum": true,
+                    "idx": 0
+                ],
+                [
+                    "name":"*largs",
+                    "type":"jsondata",
+                    "is_data": true,
+                    "is_json": true,
+                    "idx": 1
+                ],
+                [
+                    "name":"**kwargs",
+                    "type":"jsondata",
+                    "is_data": true,
+                    "is_json": true,
+                    "idx": 2
+                ]
+            ],
+            //"swift_func": false,
+            "is_callback": true,
+            "is_dispatch": true,
+            "returns": [
+                "name": "void",
+                "type": "void",
+                "idx": 0,
+                "is_return": true
+            ]
+        ]
+        
+        
+        let function = try! decoder.decode(WrapFunction.self, from: dispatch_function.rawData())
+    function.wrap_class = cls
+    function.set_args_cls(cls: cls)
+        cls.functions.insert(function, at: 0)
+    //}
+ 
+}
+
 
 
 
@@ -420,6 +473,7 @@ enum functionCodeType {
     case objc
     case send
     case call
+    case dispatch
 }
 
 func generateFunctionCode(title: String, function: WrapFunction) -> String {
@@ -453,7 +507,9 @@ func setCallPath(wraptitle: String, function: WrapFunction, options: [functionCo
     if function.swift_func {
         return "\(wraptitle)_shared.\(function.name)"
     }
-    
+    if function.is_dispatch {
+        return "\(wraptitle)_shared.\(function.name)"
+    }
     
     
     if call_class_is_arg(function: function) {
@@ -484,9 +540,10 @@ func functionGenerator(wraptitle: String, function: WrapFunction, options: [Pyth
     //print("functionGenerator", wraptitle, function.name, options)
     if function.is_callback {
         var call_args: [String]
+        var call_path_options: [functionCodeType] = [.cython]
         if options.contains(.header) {call_args = function.call_args(cython_callback: true )} else {call_args = function.call_args(cython_callback: false)}
         let func_args = function.export(options: options)
-        let call_path = setCallPath(wraptitle: wraptitle, function: function, options: [.cython])
+        let call_path = setCallPath(wraptitle: wraptitle, function: function, options: call_path_options)
         let return_type = pythonType2pyx(type: function.returns.type, options: options)
 
         //let return_type = pythonType2pyx(type: pythonType2pyx(type: function.returns.type, options: options), options: options)

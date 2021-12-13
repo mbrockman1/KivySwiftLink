@@ -18,6 +18,9 @@ class WrapFunction: Codable {
     let call_class: String!
     let call_target: String!
     
+    
+    let is_dispatch: Bool
+    
     private enum CodingKeys: CodingKey {
         case name
         case args
@@ -26,6 +29,7 @@ class WrapFunction: Codable {
         case swift_func
         case call_class
         case call_target
+        case is_dispatch
     }
     
     var compare_string: String = ""
@@ -49,7 +53,7 @@ class WrapFunction: Codable {
         if container.contains(.returns) {
             returns = try! container.decode(WrapArg.self, forKey: .returns)
         } else {
-            returns = WrapArg(name: "", type: .None, other_type: "", idx: 0, is_return: true, is_list: false, is_json: false, is_data: false, is_tuple: false)
+            returns = WrapArg(name: "", type: .void, other_type: "", idx: 0, is_return: true, is_list: false, is_json: false, is_data: false, is_tuple: false, is_enum: false)
         }
         if container.contains(.is_callback) {
             is_callback = try! container.decode(Bool.self, forKey: .is_callback)
@@ -71,9 +75,19 @@ class WrapFunction: Codable {
         } else {
             call_target = nil
         }
+        
+        if container.contains(.is_dispatch) {
+            is_dispatch = try! container.decode(Bool.self, forKey: .is_dispatch)
+        } else {
+            is_dispatch = false
+        }
     }
     
-    
+    func set_args_cls(cls: WrapClass) {
+        for arg in args {
+            arg.cls = cls
+        }
+    }
     
     func get_callArg(name: String) -> WrapArg! {
         for arg in args {

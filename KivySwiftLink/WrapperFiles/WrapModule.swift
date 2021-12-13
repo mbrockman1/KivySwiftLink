@@ -46,11 +46,11 @@ class WrapModule: WrapModuleBase {
             var class_ext_options: [CythonClassOptionTypes] = [.init_callstruct]
             //var EnumStrings: String = ""
             var swift_funcs_struct = ""
-            if dispatchEnabled {
-                let dis_dec = cls.decorators.filter({$0.type=="EventDispatch"})[0]
-                let events = (dis_dec.dict[0]["events"] as! [String]).map({"\"\($0)\""})
+            if cls.dispatch_mode {
+//                let dis_dec = cls.decorators.filter({$0.type=="EventDispatch"})[0]
+//                let events = (dis_dec.dict[0]["events"] as! [String]).map({"\"\($0)\""})
                 class_vars.append("""
-                \tevents = [\(events.joined(separator: ", "))]
+                \tevents = [\(cls.dispatch_events.map({"\"\($0)\""}).joined(separator: ", "))]
 
                 """)
                 class_ext_options.append(.event_dispatch)
@@ -66,6 +66,7 @@ class WrapModule: WrapModuleBase {
             let pyx_string = """
             cdef extern from "_\(filename).h":
                 ######## cdef extern Callback Function Pointers: ########
+                \(if: cls.dispatch_mode, generateEnums(cls: cls, options: [.cython,.dispatch_events]))
                 \(generateFunctionPointers(module: self, objc: false, options: [.excluded_callbacks]))
 
                 ######## cdef extern Callback Struct: ########
@@ -77,12 +78,12 @@ class WrapModule: WrapModuleBase {
                 void set_\(cls.title)_Callback(\(cls.title)Callbacks callback)
                 \(generateSendFunctions(module: self, objc: false))
                 
-                \(if: cls.dispatch_mode, generateEnums(cls: cls, options: [.cython,.dispatch_events]))
+            
             ######## Callbacks Functions: ########
             \(generateCallbackFunctions(module: self, options: [.header]))
             
             ######## Cython Class: ########
-            \(generateCythonClass(_class: cls.title, class_vars: class_vars.joined(separator: newLine), dispatch_mode: cls.dispatch_mode))
+            \(generateCythonClass(cls: cls, class_vars: class_vars.joined(separator: newLine), dispatch_mode: cls.dispatch_mode))
 
                 ######## Cython Class Extensions: ########
                 \(extendCythonClass(cls: cls, options: class_ext_options))

@@ -24,6 +24,7 @@ class WrapClass: Codable {
     var pointer_compare_dict: [String:[String:String]] = [:]
     var dispatch_mode = false
     var has_swift_functions = false
+    var dispatch_events: [String] = []
     
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -33,6 +34,11 @@ class WrapClass: Codable {
         
         
         handleDecorators()
+        for function in functions {
+            function.wrap_class = self
+            function.set_args_cls(cls: self)
+            print(function.name,function.wrap_class)
+        }
         let callback_count = functions.filter{$0.is_callback}.count
         //let sends_count = functions.filter{!$0.is_callback && !$0.swift_func}.count
         if callback_count > 0 {
@@ -68,7 +74,9 @@ class WrapClass: Codable {
         }
         
         
-        
+        if dispatch_mode {
+            generateDispatchFunctions(cls: self, objc: false)
+        }
         
         generateFunctionCompares()
         doFunctionCompares()
@@ -77,6 +85,9 @@ class WrapClass: Codable {
     func handleDecorators() {
         let decs = decorators.map({$0.type})
         if decs.contains("EventDispatch") {self.dispatch_mode = true}
+        let dis_dec = decorators.filter({$0.type=="EventDispatch"})[0]
+        dispatch_events = (dis_dec.dict[0]["events"] as! [String])
+        
         for function in self.functions {if function.swift_func {self.has_swift_functions = true; break}}
         
     }
