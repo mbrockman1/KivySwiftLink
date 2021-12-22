@@ -52,7 +52,7 @@ class JsonStorage {
 let BRIDGE_STRING = """
 #import \"runMain.h\"
 //#Wrappers Start"
-#import "wrapper_typedefs.h"
+#include "wrapper_typedefs.h"
 //#Wrappers End
 //Insert Other OBJ-C Headers Here:
 """
@@ -176,9 +176,9 @@ class ProjectManager {
         //let wrap_start = header_strings.firstIndex(where: {$0.contains("//#Wrappers Start")})!
         let wrap_end = header_strings.firstIndex(where: {$0.contains("//#Wrappers End")})!
         for key in keys {
-            if !header_strings.contains("#import \"\(key).h\"") {
+            if !header_strings.contains("#include \"\(key).h\"") {
                 if let _ = header_strings.firstIndex(where: {$0.contains("//#Wrappers Start")} ) {
-                    header_strings.insert("#import \"\(key).h\"", at: wrap_end)
+                    header_strings.insert("#include \"\(key).h\"", at: wrap_end)
                 }
             }
             

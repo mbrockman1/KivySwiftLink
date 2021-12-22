@@ -55,8 +55,7 @@ func generateCythonClass(cls: WrapClass, class_vars: String, dispatch_mode: Bool
                 \(_class)_shared = self
             global \(_class)_voidptr
             \(_class)_voidptr = <const void*>callback_class
-            
-    """
+    """.replacingOccurrences(of: "    ", with: "\t")
 }
 
 
@@ -108,6 +107,7 @@ func generateEnums(cls: WrapClass, options: [EnumGeneratorOptions]) -> String {
     var string: [String] = []
     for option in options {
         if option == .dispatch_events {
+            print("generateEnums", cls.decorators)
             if let dis_dec = cls.decorators.filter({$0.type=="EventDispatch"}).first {
                 let events = (dis_dec.dict[0]["events"] as! [String])
                 if options.contains(.cython) {
@@ -239,7 +239,7 @@ func generateFunctionPointers(module: WrapModule, objc: Bool, options: [Function
 enum StructTypeOptions {
     case pyx
     case objc
-    
+    case swift
     case callbacks
     case event_dispatch
     case swift_functions
@@ -251,45 +251,73 @@ func generateStruct(module: WrapModule, options: [StructTypeOptions]) -> String 
     let objc = options.contains(.objc)
     let swift_mode = options.contains(.swift_functions)
     let callback_mode = options.contains(.callbacks)
-    if swift_mode {ending = "SwiftFuncs"} else if callback_mode {ending = "Callbacks"}
+    if swift_mode {ending = "SwiftFuncs"}
+    else if callback_mode {ending = "Callbacks"}
+    else if options.contains(.swift) {ending = "Sends"}
     
     for cls in module.classes {
         var struct_args: [String] = []
         for function in cls.functions {
             if callback_mode {
                 if function.is_callback {
-                    let arg = "\t\(function.function_pointer)\(if: objc, " _Nonnull") \(function.name)"
+                    let arg = "\(function.function_pointer)\(if: objc, " _Nonnull") \(function.name)"
                     struct_args.append(arg)
                 }
             }
             
             else if swift_mode {
                 if function.swift_func && !function.is_callback {
-                    let arg = "\t\(function.function_pointer)\(if: objc, " _Nonnull") \(function.name)"
+                    let arg = "\(function.function_pointer)\(if: objc, " _Nonnull") \(function.name)"
+                    struct_args.append(arg)
+                }
+            }
+            if options.contains(.swift) {
+                if !function.is_callback {
+                    let arg = "\(function.function_pointer)\(if: objc, " _Nonnull") \(function.name)"
                     struct_args.append(arg)
                 }
             }
             
         }
         
-        
-        
-        if objc {
-            output.append(
-                """
-                typedef struct \(cls.title)\(ending) {
-                \(struct_args.joined(separator: ";\n"));
-                } \(cls.title)\(ending);
-                """
-            )
+        if options.contains(.swift) {
+            if objc {
+                output.append(
+                    """
+                    typedef struct \(cls.title)\(ending) {
+                        \(struct_args.joined(separator: ";\n\t"));
+                    } \(cls.title)\(ending);
+                    """
+                )
+            } else {
+                output.append(
+                    """
+                    ctypedef struct \(cls.title)\(ending):
+                        \t\(struct_args.joined(separator: newLineTabTab))
+                    """
+                )
+            }
+            
         } else {
-            output.append(
-            """
-            ctypedef struct \(cls.title)\(ending):
-            \t\(struct_args.joined(separator: "\n\t"))
-            """
-            )
+            if objc {
+                output.append(
+                    """
+                    typedef struct \(cls.title)\(ending) {
+                        \(struct_args.joined(separator: ";\n\t"));
+                    } \(cls.title)\(ending);
+                    """
+                )
+            } else {
+                output.append(
+                """
+                ctypedef struct \(cls.title)\(ending):
+                    \t\(struct_args.joined(separator: newLineTabTab))
+                """
+                )
+            }
         }
+        
+        
     }
     return output.joined(separator: newLineTab) + newLine
 }
@@ -313,6 +341,37 @@ func generateSendProtocol(module: WrapModule) -> String {
         @end
 
         static id<\(cls.title)_Delegate> _Nonnull \(cls.title.lowercased());        
+        """
+        protocol_strings.append(protocol_string)
+    }
+    return protocol_strings.joined(separator: newLine)
+}
+
+func generateSwiftSendProtocol(module: WrapModule) -> String {
+    var protocol_strings: [String] = []
+    for cls in module.classes {
+        var cls_protocols: [String] = []
+        for function in cls.functions {
+            if !function.is_callback && !function.swift_func {
+                //cls_protocols.append("- (\(pythonType2pyx(type: function.returns.type, options: [.objc])))\(function.name)\(function.export(options: [.objc, .header]));")
+                //cls_protocols.append("- (\(function.returns.objc_type))\(function.name)\(function.export(options: [.objc, .header]));")
+                let swift_return = "\(if: function.returns.type != .void, "-> \(function.returns.swift_type)", "")"
+                //let func_args = function.args.map{"\($0.name): \($0.name)"}.joined(separator: ", ")
+                cls_protocols.append("""
+                    func \(function.name)(\(function.export(options: [.use_names, .swift, .protocols]))) \(swift_return)
+                """)
+            }
+        }
+        //func set_\(cls.title)_Callback(_ callback: \(cls.title)Callbacks)
+
+        let protocol_string = """
+        protocol \(cls.title)_Delegate {
+            func set_\(cls.title)_Callback(_ callback: \(cls.title)Callbacks)
+        \(cls_protocols.joined(separator: newLine))
+        }
+
+        private var \(cls.title.lowercased()): \(cls.title)_Delegate!
+        
         """
         protocol_strings.append(protocol_string)
     }
@@ -540,7 +599,7 @@ func functionGenerator(wraptitle: String, function: WrapFunction, options: [Pyth
     //print("functionGenerator", wraptitle, function.name, options)
     if function.is_callback {
         var call_args: [String]
-        var call_path_options: [functionCodeType] = [.cython]
+        let call_path_options: [functionCodeType] = [.cython]
         if options.contains(.header) {call_args = function.call_args(cython_callback: true )} else {call_args = function.call_args(cython_callback: false)}
         let func_args = function.export(options: options)
         let call_path = setCallPath(wraptitle: wraptitle, function: function, options: call_path_options)
@@ -645,6 +704,8 @@ enum handlerFunctionCodeType {
     case init_delegate
     case objc_h
     case objc_m
+    case swift
+    case protocols
     case send
     case callback
 }
@@ -700,6 +761,47 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
             }
         }
     }
+    if options.contains(.swift) {
+        for option in options {
+            switch option {
+            case .init_delegate:
+                output.append("""
+                func Init\(cls.title)_Delegate(delegate: \(cls.title)_Delegate) {
+                    \(cls.title.lowercased()) = delegate
+                    print("setting \(cls.title) delegate \\(String(describing: \(cls.title.lowercased())))")
+                }
+                """)
+            case .callback:
+                let call_args = cls.functions.filter{!$0.is_callback && !$0.swift_func && !$0.is_dispatch}.map{"\($0.name): \(cls.title)_\($0.name)"}.joined(separator: ", ")
+                output.append("""
+                @_silgen_name(\"set_\(cls.title)_Callback\")
+                func set_\(cls.title)_Callback(_ callback: \(cls.title)Callbacks) {
+                    print("setting callback \\(String(describing: \(cls.title.lowercased())))")
+                    \(cls.title.lowercased()).set_\(cls.title)_Callback(callback)
+                    \(cls.title.lowercased())Callback = \(cls.title)PyCallback(callback: callback)
+                    //let calls = \(cls.title)Sends(\(call_args))
+                }
+                """)
+            case .send:
+                //output.append("\(generateSendFunctions(module: self , objc: true))")
+                
+                for function in cls.functions.filter({!$0.is_callback && !$0.swift_func}) {
+                    let swift_return = "\(if: function.returns.type != .void, "-> \(function.returns.swift_type)", "")"
+                    let func_args = function.args.map{"\($0.name): \(swiftCallArgs(arg: $0))"}.joined(separator: ", ")
+                    output.append("""
+                    @_silgen_name(\"\(cls.title)_\(function.name)\")
+                    func \(cls.title)_\(function.name)(\(function.export(options: [.use_names, .swift]))) \(swift_return) {
+                        \(if: function.returns.type != .void, "return ")\(cls.title.lowercased()).\(function.name)(\(func_args))
+                    }
+                    """)
+                }
+                
+                
+            default:
+                continue
+            }
+        }
+    }
     return output.joined(separator: newLine)
 }
 
@@ -733,7 +835,7 @@ func createRecipe(title: String) -> String{
     """
 }
 
-func createSetupPy(title: String) -> String {
+func _createSetupPy(title: String) -> String {
     """
     from distutils.core import setup, Extension
 
@@ -745,6 +847,24 @@ func createSetupPy(title: String) -> String {
                         libraries=[],
                         library_dirs=[],
                         extra_compile_args=['-ObjC','-w'],
+                        )
+          ]
+        )
+    """
+}
+
+func createSetupPy(title: String) -> String {
+    """
+    from distutils.core import setup, Extension
+
+    setup(name='\(title)',
+          version='1.0',
+          ext_modules=[
+              Extension('\(title)', # Put the name of your extension here
+                        ['\(title).c'],
+                        libraries=[],
+                        library_dirs=[],
+                        extra_compile_args=['-w'],
                         )
           ]
         )

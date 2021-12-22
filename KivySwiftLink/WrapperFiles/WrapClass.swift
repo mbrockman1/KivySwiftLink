@@ -30,14 +30,20 @@ class WrapClass: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         title = try! container.decode(String.self, forKey: .title)
         functions = try! container.decode([WrapFunction].self, forKey: .functions)
-        decorators = try! container.decode([WrapClassDecorator].self, forKey: .decorators)
+        if container.contains(.decorators) {
+            decorators = try container.decode([WrapClassDecorator].self, forKey: .decorators)
+        } else {
+            decorators = []
+        }
+        
+        
         
         
         handleDecorators()
         for function in functions {
             function.wrap_class = self
             function.set_args_cls(cls: self)
-            print(function.name,function.wrap_class)
+            print(function.name,function.wrap_class!)
         }
         let callback_count = functions.filter{$0.is_callback}.count
         //let sends_count = functions.filter{!$0.is_callback && !$0.swift_func}.count
@@ -45,6 +51,7 @@ class WrapClass: Codable {
             //let func_init_string = try! JSON(extendedGraphemeClusterLiteral: "").rawData()
             //let set_callback_function = WrapFunction()
         }
+        print("inited \(self.title)")
     }
     func build() {
         //print("build",self,has_swift_functions)
@@ -85,8 +92,10 @@ class WrapClass: Codable {
     func handleDecorators() {
         let decs = decorators.map({$0.type})
         if decs.contains("EventDispatch") {self.dispatch_mode = true}
-        let dis_dec = decorators.filter({$0.type=="EventDispatch"})[0]
-        dispatch_events = (dis_dec.dict[0]["events"] as! [String])
+        if let dis_dec = decorators.filter({$0.type=="EventDispatch"}).first {
+            dispatch_events = (dis_dec.dict[0]["events"] as! [String])
+        }
+        
         
         for function in self.functions {if function.swift_func {self.has_swift_functions = true; break}}
         

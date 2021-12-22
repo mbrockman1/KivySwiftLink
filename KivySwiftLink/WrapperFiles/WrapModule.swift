@@ -50,7 +50,7 @@ class WrapModule: WrapModuleBase {
 //                let dis_dec = cls.decorators.filter({$0.type=="EventDispatch"})[0]
 //                let events = (dis_dec.dict[0]["events"] as! [String]).map({"\"\($0)\""})
                 class_vars.append("""
-                \tevents = [\(cls.dispatch_events.map({"\"\($0)\""}).joined(separator: ", "))]
+                \t__events__ = \(cls.title)_events
 
                 """)
                 class_ext_options.append(.event_dispatch)
@@ -62,7 +62,7 @@ class WrapModule: WrapModuleBase {
                 swift_funcs_struct = generateStruct(module: self, options: [.swift_functions])
                 swift_funcs_struct.append("\n\t\(generateFunctionPointers(module: self, objc: false, options: [.excluded_callbacks_only]))")
             }
-            
+            print("pyx_string started")
             let pyx_string = """
             cdef extern from "_\(filename).h":
                 ######## cdef extern Callback Function Pointers: ########
@@ -93,16 +93,20 @@ class WrapModule: WrapModuleBase {
             pyx_strings.append(pyx_string)
         }
         return pyx_strings.joined(separator: newLine).replacingOccurrences(of: "    ", with: "\t")
-        
+        //
+        //\(generatePyxClassFunctions(module: self)  )
+        //\(generateStruct(module: self, options: [.swift]))
     }
     
     var h: String {
         //let cls = self.classes[0]
-        var h_string = """
-        #import <Foundation/Foundation.h>
-        #import "wrapper_typedefs.h"
-
-        """
+        var h_string = ["""
+        #ifndef \(filename)_h
+        #define \(filename)_h
+        #include "wrapper_typedefs.h"
+        #include <stdbool.h>
+        
+        """]
         for cls in self.classes{
             h_string.append( """
             //insert enums / Structs
@@ -114,16 +118,19 @@ class WrapModule: WrapModuleBase {
             \(if: cls.has_swift_functions, generateStruct(module: self, options: [.swift_functions, .objc]) )
             \(if: cls.has_swift_functions, generateFunctionPointers(module: self, objc: true, options: [.excluded_callbacks_only]) )
             \(generateStruct(module: self, options: [.objc, .callbacks]))
-            
+                        
             //######## Send Functions Protocol: ########//
-            \(generateSendProtocol(module: self))
-            \(generateHandlerFuncs(cls: cls, options: [.objc_h, .init_delegate, .callback]))
+            \(generateHandlerFuncs(cls: cls, options: [.objc_h]))
             //######## Send Functions: ########//
             \(generateSendFunctions(module: self, objc: true))
             """)
+            //\(generateSendProtocol(module: self))
+            //\(generateStruct(module: self, options: [.objc, .swift]))
+            //\(generateHandlerFuncs(cls: cls, options: [.objc_h, .init_delegate, .callback]))
+            //
         }
-        
-        return h_string
+        h_string.append("#endif /* \(filename)_h */")
+        return h_string.joined(separator: newLine)
     }
     
     var m: String {
@@ -135,6 +142,32 @@ class WrapModule: WrapModuleBase {
             m_string.append("\(generateHandlerFuncs(cls: cls, options: [.objc_m, .init_delegate, .callback, .send]))")
         }
         return m_string
+        }
+    
+    var c: String {
+        var c_string = """
+        #import "_\(filename).h"
+        """
+        for cls in self.classes {
+            c_string.append("\(generateHandlerFuncs(cls: cls, options: [.objc_m, .init_delegate, .callback, .send]))")
+        }
+        return c_string
+    }
+    
+    var swift: String {
+        var swift_string = """
+        import Foundation
+        
+        //######## Send Functions Protocol: ########//
+        \(generateSwiftSendProtocol(module: self))
+        
+        \(generateSwiftCallbackWrap(module: self) )
+        
+        """
+        for cls in self.classes {
+            swift_string.append("\(generateHandlerFuncs(cls: cls, options: [.swift, .init_delegate, .callback, .send]))")
+        }
+        return swift_string
         }
     
     func build() {

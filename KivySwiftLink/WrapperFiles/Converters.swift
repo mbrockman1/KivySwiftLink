@@ -139,7 +139,8 @@ let SWIFT_TYPES = [
     "json": "PythonJsonString",
     "bytes": "PythonBytes",
     "str": "PythonString",
-    "bool": "Bool"
+    "bool": "Bool",
+    "void": "Void"
 ]
 
 let MALLOC_TYPES = [
@@ -203,10 +204,12 @@ enum PythonTypeConvertOptions {
     case objc
     case header
     case c_type
+    case swift
     case is_list
     case py_mode
     case use_names
     case dispatch
+    case protocols
 }
 
 func PurePythonTypeConverter(type: PythonType) -> String{
@@ -251,13 +254,14 @@ func pythonType2pyx(type: PythonType, options: [PythonTypeConvertOptions]) -> St
     var c_types = false
     if options.contains(.objc) {objc = true}
     if options.contains(.c_type) {c_types = true}
+    if options.contains(.swift) {return SWIFT_TYPES[type.rawValue]!}
     var export: String
     var nonnull = false
     switch type {
     
     case .bool:
         if objc {
-            export = "BOOL"
+            export = "bool"
         } else {
             export = "bint"
         }
@@ -384,10 +388,48 @@ func pythonType2pyx(type: PythonType, options: [PythonTypeConvertOptions]) -> St
     
 }
 
+func pyType2Swift(type: PythonType) -> String {
+    switch type {
+    case .str:
+        return "String"
+    case .bytes:
+        return "[Int8]"
+    case .data, .jsondata:
+        return "Data"
+    default:
+        return SWIFT_TYPES[type.rawValue]!
+        
+    }
+    
+}
+
+func swiftCallArgs(arg: WrapArg) -> String {
+    let name = arg.name
+    let list = arg.is_list
+    switch arg.type {
+    case .str:
+        return "String(cString: \(name))"
+    case .jsondata, .data:
+        return "\(name).data"
+    default:
+        if list {
+            return "pointer2array(data: \(name).ptr, count: \(name).size)"
+        }
+        return name
+    }
+}
+
 func convertPythonType(type: PythonType, options: [PythonTypeConvertOptions]) -> String {
+    if options.contains(.protocols) {
+        if options.contains(.is_list) {
+            return "[\(pyType2Swift(type: type))]"
+        }
+        return pyType2Swift(type: type)
+    }
     if options.contains(.is_list) {
         return convertPythonListType(type: type, options: options)
     }
+    
     return pythonType2pyx(type: type, options: options)
 }
 
@@ -395,6 +437,9 @@ func convertPythonListType(type: PythonType, options: [PythonTypeConvertOptions]
     if options.contains(.objc) {
 //        return "PythonList_\(SWIFT_TYPES[type]!) _Nonnull"
         return "PythonList_\(SWIFT_TYPES[type.rawValue]!)"
+    }
+    if options.contains(.protocols) {
+        return "[\(pyType2Swift(type: type))]"
     }
     return "PythonList_\(SWIFT_TYPES[type.rawValue]!)"
 }
@@ -433,7 +478,7 @@ func convertPythonCallArg(arg: WrapArg) -> String {
 
 func convertOtherCallArg(arg: WrapArg) -> String{
     if arg.is_enum {
-        print(arg.name, arg.cls)
+        print(arg.name, arg.cls!)
         if let cls = arg.cls {
             return "\(cls.title)_events[<int>\(arg.objc_name)]"
         }

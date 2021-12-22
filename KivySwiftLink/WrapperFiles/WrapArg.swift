@@ -29,6 +29,7 @@ class WrapArg: Codable, Equatable {
     
     var pyx_name: String
     var pyx_type: String
+    var swift_type: String
     
     var size: Int
     
@@ -75,10 +76,12 @@ class WrapArg: Codable, Equatable {
                 size = 8
                 pyx_type = other_type
                 objc_type = other_type
+                swift_type = other_type
             } else {
                 size = TYPE_SIZES[type.rawValue]!
                 pyx_type = convertPythonType(type: type, options: pyx_type_options)
                 objc_type = convertPythonType(type: type, options: objc_type_options)
+                swift_type = SWIFT_TYPES[type.rawValue]!
             }
         }
     
@@ -140,10 +143,18 @@ class WrapArg: Codable, Equatable {
             size = 8
             pyx_type = other_type
             objc_type = other_type
+            swift_type = other_type
         } else {
             size = TYPE_SIZES[type.rawValue]!
             pyx_type = convertPythonType(type: type, options: pyx_type_options)
             objc_type = convertPythonType(type: type, options: objc_type_options)
+            if let swift_t = SWIFT_TYPES[type.rawValue] {
+                swift_type = swift_t
+            } else {
+                swift_type = ""
+                print(type.rawValue)
+            }
+            
         }
         
                 
@@ -187,6 +198,16 @@ class WrapArg: Codable, Equatable {
                 return func_string
             }
         }
+        
+        if options.contains(.swift) {
+            if self.is_list {options.append(.is_list)}
+            if options.contains(.protocols) {
+                return "\(_name): \(convertPythonType(type: type, options: options))"
+            }
+            return "_ \(_name): \(convertPythonType(type: type, options: options))"
+        }
+        
+        
         if options.contains(.py_mode) {
             if is_list {return "\(name): List[\(PurePythonTypeConverter(type: type))]"}
             

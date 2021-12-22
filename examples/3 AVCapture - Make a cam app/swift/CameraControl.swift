@@ -43,7 +43,7 @@ class PythonCamaeraControl: NSObject {
     
     override init() {
         super.init()
-        InitCameraApi_Delegate(self)
+        InitCameraApi_Delegate(delegate: self)
         add_cemeras()
         
     }
@@ -200,8 +200,17 @@ extension PythonCamaeraControl: AVCapturePhotoCaptureDelegate {
 }
 
 extension PythonCamaeraControl: CameraApi_Delegate {
+    func encode_image(image: Data) {
+        
+    }
     
-    func auto_exposure(_ state: Bool) {
+    func send_(image: [UInt8]) {
+        
+    }
+    
+
+    
+    func auto_exposure(state: Bool) {
         try! videoDevice.lockForConfiguration()
         if state {
             videoDevice.exposureMode = .locked
@@ -214,7 +223,7 @@ extension PythonCamaeraControl: CameraApi_Delegate {
         
     }
     
-    func set_exposure(_ value: Double) {
+    func set_exposure(value: Double) {
         try! videoDevice.lockForConfiguration()
         videoDevice.setExposureTargetBias(Float(value)) { (time) in
             print(time)
@@ -222,13 +231,13 @@ extension PythonCamaeraControl: CameraApi_Delegate {
         videoDevice.unlockForConfiguration()
     }
     
-    func zoom_camera(_ zoom: Double) {
+    func zoom_camera(zoom: Double) {
         try! videoDevice.lockForConfiguration()
         videoDevice.videoZoomFactor = CGFloat(zoom)
         videoDevice.unlockForConfiguration()
     }
     
-    func set_focus_point(_ x: Double, _ y: Double) {
+    func set_focus_point(x: Double, y: Double) {
         let focus_point = CGPoint(x: x, y: 1 - y)
         print(focus_point)
         print(videoDevice.isFocusPointOfInterestSupported)
@@ -249,12 +258,11 @@ extension PythonCamaeraControl: CameraApi_Delegate {
         
         py_call.set_preview_presets(available_video_presets.rawBytes()!)
     }
-    func set_preview_texture(_ tex: PythonObject) {
+    func set_preview_texture(tex: PythonObject) {
         kivy_texture = tex
     }
 
-    func select_preview_preset(_ preset: PythonString) {
-        let _preset = preset.string
+    func select_preview_preset(preset: String) {
         
         DispatchQueue.global().async {
             
@@ -262,11 +270,11 @@ extension PythonCamaeraControl: CameraApi_Delegate {
                 self.stopCapture()
                 
                 //DispatchQueue.main.asyncAfter(deadline: .now() + 0.5 , execute: {
-                    self.captureSession.sessionPreset = .init(rawValue: _preset)
+                    self.captureSession.sessionPreset = .init(rawValue: preset)
                     self.startCapture()
                 //})
             } else {
-                self.captureSession.sessionPreset = .init(rawValue: preset.string)
+                self.captureSession.sessionPreset = .init(rawValue: preset)
                 
             }
         }
@@ -274,19 +282,19 @@ extension PythonCamaeraControl: CameraApi_Delegate {
         
     }
     
-    func start_capture(_ mode: PythonString) {
+    func start_capture(mode: String) {
         self.startCapture()
     }
     
-    func stop_capture(_ mode: PythonString) {
+    func stop_capture(mode: String) {
         self.stopCapture()
     }
     
-    func set_camera_mode(_ mode: PythonString) {
+    func set_camera_mode(mode: String) {
         
     }
     
-    func select_camera(_ index: Int) {
+    func select_camera(index: Int) {
         captureSession.removeInput(currentInputDevice)
         //photoSession.removeInput(currentInputDevice)
         videoDevice = inputCameras_back[index]
@@ -300,7 +308,7 @@ extension PythonCamaeraControl: CameraApi_Delegate {
         capturePhoto()
     }
     
-    func take_multi_photo(_ count: Int) {
+    func take_multi_photo(count: Int) {
         
     }
     

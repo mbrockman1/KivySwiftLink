@@ -153,6 +153,17 @@ class WrapFunction: Codable {
             }
         }
         
+        if options.contains(.swift) {
+            let func_args = args.map({ arg in
+                arg.export(options: options)!
+            })
+ 
+            return func_args.joined(separator: ", ")
+            
+        }
+        
+        
+        
         var _args: [WrapArg]
         
         if options.contains(.py_mode) {
