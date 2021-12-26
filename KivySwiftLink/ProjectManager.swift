@@ -143,7 +143,6 @@ class ProjectManager {
             do { try main_m.replacingOccurrences(of: "int main(int argc, char *argv[]) {", with: "int run_main(int argc, char *argv[]) {").write(to: run_main_path, atomically: true, encoding: .utf8) } catch { print(error.localizedDescription)}
             do { try "int run_main(int argc, char *argv[]);".write(to: project_dir.appendingPathComponent("runMain.h"), atomically: true, encoding: .utf8) } catch  { print(error.localizedDescription) }
             
-            print("copying swift main files")
             for item in ["runMain.h","runMain.m"] {
                 project.add_file(project_dir.appendingPathComponent(item).path, parent: classes)
             }
@@ -202,13 +201,32 @@ class ProjectManager {
                 if !updated { updated = true }
                 project.add_file(root_lib_path.appendingPathComponent(lib).path, parent: frameworks, force: true)
             }
-        
+            update_swift_wrapper_group(project: project, updated: &updated)
         if updated {
             project.backup()
             project.save()
             }
         } else {print("no project selected")}
         
+        
+    }
+    
+    func update_swift_wrapper_group(project: PythonObject, updated: inout Bool) {
+        let fm = FileManager()
+        let proj_dir = self.project_dir
+        let cur_dir = URL(fileURLWithPath: fm.currentDirectoryPath)
+        
+        let wrap_dir = cur_dir.appendingPathComponent("wrapper_headers/swift", isDirectory: true)
+        let wrap_dir_files = try! fm.contentsOfDirectory(atPath: wrap_dir.path).filter{$0 != ".DS_Store"}
+        
+        let sources = project.get_or_create_group("Sources")
+        let swift_wrappers = project.get_or_create_group("SwiftWrappers",parent: sources)
+        let swift_wraps = swift_wrappers.children.map{String($0._get_comment())!}
+
+        for wrap in wrap_dir_files.find_missing(compare_array: swift_wraps) {
+            if !updated { updated = true }
+            project.add_file(wrap_dir.appendingPathComponent(wrap).path, parent: swift_wrappers, force: true)
+        }
         
     }
     
@@ -220,4 +238,9 @@ extension Array where Element == String {
     func find_missing_lib_a(compare_array: [String]) -> [String]{
         return Array(Set(self).subtracting(compare_array))
     }
+    
+    func find_missing(compare_array: [String]) -> [String]{
+        return Array(Set(self).subtracting(compare_array))
+    }
 }
+

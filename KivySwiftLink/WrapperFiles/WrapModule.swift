@@ -58,11 +58,10 @@ class WrapModule: WrapModuleBase {
             }
             if cls.has_swift_functions {
                 class_ext_options.append(.swift_functions)
-                class_vars.append("\t" + cls.functions.filter{$0.swift_func && !$0.is_callback}.map{"cdef \($0.function_pointer) _\($0.name)_"}.joined(separator: "\n\t") + newLine)
+                class_vars.append("\t" + cls.functions.filter{$0.has_option(option: .swift_func) && !$0.has_option(option: .callback)}.map{"cdef \($0.function_pointer) _\($0.name)_"}.joined(separator: "\n\t") + newLine)
                 swift_funcs_struct = generateStruct(module: self, options: [.swift_functions])
                 swift_funcs_struct.append("\n\t\(generateFunctionPointers(module: self, objc: false, options: [.excluded_callbacks_only]))")
             }
-            print("pyx_string started")
             let pyx_string = """
             cdef extern from "_\(filename).h":
                 ######## cdef extern Callback Function Pointers: ########
@@ -202,18 +201,17 @@ class WrapModule: WrapModuleBase {
             //var has_swift_functions = false
             for function in cls.functions {
                 let returns = function.returns
-                if (returns.is_list || returns.is_data) && !["object","void"].contains(returns.type.rawValue) {
-                    fatalError("\n\t\(if: returns.is_list,"list[\(returns.type.rawValue)]",returns.type.rawValue) as return type is not supported atm")
+                if (returns.has_option(.list) || returns.has_option(.data)) && !["object","void"].contains(returns.type.rawValue) {
+                    fatalError("\n\t\(if: returns.has_option(.list),"list[\(returns.type.rawValue)]",returns.type.rawValue) as return type is not supported atm")
                 }
-                if !usedTypes.contains(where: {$0.type == returns.type && ($0.is_list == returns.is_list)}) {
+                if !usedTypes.contains(where: {$0.type == returns.type && ($0.has_option(.list) == returns.has_option(.list))}) {
                     //check for supported return list
                     
                     
-                    if returns.is_list || returns.is_data || returns.is_json || test_types.contains(returns.type.rawValue) {
+                    if returns.has_option(.list) || returns.has_option(.data) || returns.has_option(.json) || test_types.contains(returns.type.rawValue) {
                         
                         usedTypes.append(returns)
-                        if !usedTypes.contains(where: {$0.type == returns.type && !$0.is_list}) {
-                            //print("list type not found", returns.type)
+                        if !usedTypes.contains(where: {$0.type == returns.type && !$0.has_option(.list)}) {
                             usedTypes.append(add_missing_arg_type(type: returns.type.rawValue))
                         }
                     }
@@ -221,10 +219,10 @@ class WrapModule: WrapModuleBase {
                 }
                                     
                 for arg in function.args {
+                    let is_list = arg.has_option(.list)
                     
-                    
-                    if !usedTypes.contains(where: {$0.type == arg.type && ($0.is_list == arg.is_list)}) {
-                        if arg.is_list || arg.is_data || arg.is_json || test_types.contains(arg.type.rawValue){
+                    if !usedTypes.contains(where: {$0.type == arg.type && ($0.has_option(.list) == is_list)}) {
+                        if is_list || arg.has_option(.data) || arg.has_option(.json) || test_types.contains(arg.type.rawValue){
                             usedTypes.append(arg)
                         }
                     }

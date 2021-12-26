@@ -241,7 +241,7 @@ func export_tuple(arg: WrapArg, options: [PythonTypeConvertOptions]) -> String {
     //let objc_mode = options.contains(.objc)
     //let c_mode = options.contains(.c_type)
     
-    if arg.is_tuple == true {
+    if arg.has_option(.tuple) == true {
         if py_mode {
             return "tuple[\(arg.tuple_types!.map{PurePythonTypeConverter(type: $0.type)})]"
         }
@@ -405,7 +405,7 @@ func pyType2Swift(type: PythonType) -> String {
 
 func swiftCallArgs(arg: WrapArg) -> String {
     let name = arg.name
-    let list = arg.is_list
+    let list = arg.has_option(.list)
     switch arg.type {
     case .str:
         return "String(cString: \(name))"
@@ -415,6 +415,22 @@ func swiftCallArgs(arg: WrapArg) -> String {
         if list {
             return "pointer2array(data: \(name).ptr, count: \(name).size)"
         }
+        return name
+    }
+}
+
+func swiftCallbackArgs(arg: WrapArg) -> String {
+    let name = arg.name
+    let list = arg.has_option(.list)
+    
+    switch arg.type {
+    case .str:
+        return "\(name).pythonString"
+    case .data:
+        return "\(name).pythonData"
+    case .jsondata:
+        return "\(name).pythonJsonData"
+    default:
         return name
     }
 }
@@ -448,7 +464,7 @@ func convertPythonListType(type: PythonType, options: [PythonTypeConvertOptions]
 func convertPythonCallArg(arg: WrapArg) -> String {
     //let is_return = arg.is_return
     let type = arg.type
-    let is_list_data = arg.is_list
+    let is_list_data = arg.has_option(.list)
     let name = arg.objc_name
     //let size_arg_name = "arg\(arg.idx + 1)"
     let size_arg_name = "arg\(arg.idx).size"
@@ -477,8 +493,7 @@ func convertPythonCallArg(arg: WrapArg) -> String {
 }
 
 func convertOtherCallArg(arg: WrapArg) -> String{
-    if arg.is_enum {
-        print(arg.name, arg.cls!)
+    if arg.has_option(.enum_) {
         if let cls = arg.cls {
             return "\(cls.title)_events[<int>\(arg.objc_name)]"
         }
@@ -493,27 +508,27 @@ func convertReturnSend(f: WrapFunction, rname: String, code: String) -> String {
     
     switch rtype {
     case .str:
-        if returns.is_list {
+        if returns.has_option(.list) {
             return "[rtn_val.ptr[x].decode() for x in range(rtn_val.size)]"
         }
         return "\(code).decode()"
     case .data:
-        if returns.is_list {
+        if returns.has_option(.list) {
             return "[rtn_val.ptr[x].ptr[:rtn_val.ptr[x].size] for x in range(rtn_val.size)]"
         }
         return "rtn_val.ptr[:rtn_val.size]"
     case .jsondata:
-        if returns.is_list {
+        if returns.has_option(.list) {
             return "[json.loads(rtn_val.ptr[x].ptr[:rtn_val.ptr[x].size]) for x in range(rtn_val.size)]"
         }
         return "json.loads(rtn_val.ptr[:rtn_val.size])"
     case .object:
-        if returns.is_list {
+        if returns.has_option(.list) {
             return "[(<object>rtn_val.ptr[x]) for x in range(rtn_val.size)]"
         }
         return "<object>\(code)"
     default:
-        if returns.is_list {
+        if returns.has_option(.list) {
             return "[rtn_val.ptr[x] for x in range(rtn_val.size)]"
         }
         return code

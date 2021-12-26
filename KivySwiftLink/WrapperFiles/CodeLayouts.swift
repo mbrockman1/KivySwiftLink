@@ -74,7 +74,7 @@ func extendCythonClass(cls: WrapClass, options: [CythonClassOptionTypes]) -> Str
         case .init_callstruct:
             let string = """
                 cdef \(cls.title)Callbacks callbacks = [
-                    \(cls.functions.filter{$0.is_callback}.map({"\t\(cls.title)_\($0.name)"}).joined(separator: ",\n\t\t"))
+                    \(cls.functions.filter{$0.has_option(option: .callback)}.map({"\t\(cls.title)_\($0.name)"}).joined(separator: ",\n\t\t"))
                     ]
                     set_\(cls.title)_Callback(callbacks)
             """
@@ -83,7 +83,7 @@ func extendCythonClass(cls: WrapClass, options: [CythonClassOptionTypes]) -> Str
             
             output.append("")
         case .swift_functions:
-            let func_string = cls.functions.filter{$0.swift_func && !$0.is_callback}.map{"self._\($0.name)_ = func_struct.\($0.name)"}.joined(separator: "\n\t\t")
+            let func_string = cls.functions.filter{$0.has_option(option: .swift_func) && !$0.has_option(option: .callback)}.map{"self._\($0.name)_ = func_struct.\($0.name)"}.joined(separator: "\n\t\t")
             output.append("""
             cdef set_swift_functions(self, \(cls.title)SwiftFuncs func_struct ):
                     \(func_string)
@@ -107,7 +107,6 @@ func generateEnums(cls: WrapClass, options: [EnumGeneratorOptions]) -> String {
     var string: [String] = []
     for option in options {
         if option == .dispatch_events {
-            print("generateEnums", cls.decorators)
             if let dis_dec = cls.decorators.filter({$0.type=="EventDispatch"}).first {
                 let events = (dis_dec.dict[0]["events"] as! [String])
                 if options.contains(.cython) {
@@ -186,7 +185,7 @@ func generateCallbackFunctions(module: WrapModule, options: [PythonTypeConvertOp
         
         for function in cls.functions {
             
-            if function.is_callback {
+            if function.has_option(option: .callback) {
                 if options.contains(.objc) {
                     output.append(functionGenerator(wraptitle: cls.title, function: function, options: options))
 //                    output.append("""
@@ -259,20 +258,20 @@ func generateStruct(module: WrapModule, options: [StructTypeOptions]) -> String 
         var struct_args: [String] = []
         for function in cls.functions {
             if callback_mode {
-                if function.is_callback {
+                if function.has_option(option: .callback) {
                     let arg = "\(function.function_pointer)\(if: objc, " _Nonnull") \(function.name)"
                     struct_args.append(arg)
                 }
             }
             
             else if swift_mode {
-                if function.swift_func && !function.is_callback {
+                if function.has_option(option: .swift_func) && !function.has_option(option: .callback) {
                     let arg = "\(function.function_pointer)\(if: objc, " _Nonnull") \(function.name)"
                     struct_args.append(arg)
                 }
             }
             if options.contains(.swift) {
-                if !function.is_callback {
+                if !function.has_option(option: .callback) {
                     let arg = "\(function.function_pointer)\(if: objc, " _Nonnull") \(function.name)"
                     struct_args.append(arg)
                 }
@@ -328,7 +327,7 @@ func generateSendProtocol(module: WrapModule) -> String {
     for cls in module.classes {
         var cls_protocols: [String] = []
         for function in cls.functions {
-            if !function.is_callback && !function.swift_func {
+            if !function.has_option(option: .callback) && !function.has_option(option: .swift_func) {
                 //cls_protocols.append("- (\(pythonType2pyx(type: function.returns.type, options: [.objc])))\(function.name)\(function.export(options: [.objc, .header]));")
                 cls_protocols.append("- (\(function.returns.objc_type))\(function.name)\(function.export(options: [.objc, .header]));")
 
@@ -352,7 +351,7 @@ func generateSwiftSendProtocol(module: WrapModule) -> String {
     for cls in module.classes {
         var cls_protocols: [String] = []
         for function in cls.functions {
-            if !function.is_callback && !function.swift_func {
+            if !function.has_option(option: .callback) && !function.has_option(option: .swift_func) {
                 //cls_protocols.append("- (\(pythonType2pyx(type: function.returns.type, options: [.objc])))\(function.name)\(function.export(options: [.objc, .header]));")
                 //cls_protocols.append("- (\(function.returns.objc_type))\(function.name)\(function.export(options: [.objc, .header]));")
                 let swift_return = "\(if: function.returns.type != .void, "-> \(function.returns.swift_type)", "")"
@@ -363,13 +362,14 @@ func generateSwiftSendProtocol(module: WrapModule) -> String {
             }
         }
         //func set_\(cls.title)_Callback(_ callback: \(cls.title)Callbacks)
-
+        var call_title = cls.title.titleCase()
+        call_title.removeFirst()
         let protocol_string = """
         protocol \(cls.title)_Delegate {
-            func set_\(cls.title)_Callback(_ callback: \(cls.title)Callbacks)
+            func set_\(cls.title)_Callback(callback: \(cls.title)PyCallback)
         \(cls_protocols.joined(separator: newLine))
         }
-
+        
         private var \(cls.title.lowercased()): \(cls.title)_Delegate!
         
         """
@@ -396,9 +396,9 @@ func generateSendFunctions(module: WrapModule, objc: Bool) -> String {
     for cls in module.classes {
         
         for function in cls.functions {
-            if !function.is_callback && !function.swift_func {
+            if !function.has_option(option: .callback) && !function.has_option(option: .swift_func) {
                 var func_return_options = return_options
-                if function.returns.is_list {
+                if function.returns.has_option(.list) {
                     func_return_options.append(.is_list)
                 }
                 //let return_type = "\(pythonType2pyx(type: function.returns.type, options: return_options))"
@@ -453,8 +453,7 @@ func generateDispatchFunctions(cls: WrapClass, objc: Bool) {
                 ]
             ],
             //"swift_func": false,
-            "is_callback": true,
-            "is_dispatch": true,
+            "options": ["callback","dispatch"],
             "returns": [
                 "name": "void",
                 "type": "void",
@@ -481,14 +480,14 @@ func generatePyxClassFunctions(module: WrapModule) -> String {
     for cls in module.classes {
         
         for function in cls.functions {
-            if !function.is_callback {
+            if !function.has_option(option: .callback) {
                 let return_type = function.returns.type
                 var rtn: String
                 if return_type == .void {rtn = "None"} else {rtn = PurePythonTypeConverter(type: return_type)}
-                let py_return = "\(if: function.returns.is_list,"list[\(rtn)]",rtn)"
+                let py_return = "\(if: function.returns.has_option(.list),"list[\(rtn)]",rtn)"
                 output.append("\t"+"def \(function.name)(self, \(function.export(options: [.py_mode]))) -> \(py_return):")
                 //handle list args
-                let list_args = function.args.filter{$0.is_list}
+                let list_args = function.args.filter{$0.has_option(.list)}
                 
                 for list_arg in list_args {
                     if list_arg.type == .str {
@@ -537,10 +536,10 @@ enum functionCodeType {
 
 func generateFunctionCode(title: String, function: WrapFunction) -> String {
     var output: [String] = []
-    if function.swift_func {
+    if function.has_option(option: .swift_func) {
         output.append("self._\(function.name)_(\(function.send_args.joined(separator: ", ")))")
     } else {
-        if function.is_callback {
+        if function.has_option(option: .callback) {
             output.append("\(title)_\(function.name)(\(function.send_args.joined(separator: ", ")))")
         } else { // sends
             
@@ -563,10 +562,10 @@ func generateFunctionCode(title: String, function: WrapFunction) -> String {
     return output.joined(separator: "\n\t\t")
 }
 func setCallPath(wraptitle: String, function: WrapFunction, options: [functionCodeType]) -> String {
-    if function.swift_func {
+    if function.has_option(option: .swift_func) {
         return "\(wraptitle)_shared.\(function.name)"
     }
-    if function.is_dispatch {
+    if function.has_option(option: .dispatch) {
         return "\(wraptitle)_shared.\(function.name)"
     }
     
@@ -597,7 +596,7 @@ func functionGenerator(wraptitle: String, function: WrapFunction, options: [Pyth
     var output: String
     let objc = options.contains(.objc)
     //print("functionGenerator", wraptitle, function.name, options)
-    if function.is_callback {
+    if function.has_option(option: .callback) {
         var call_args: [String]
         let call_path_options: [functionCodeType] = [.cython]
         if options.contains(.header) {call_args = function.call_args(cython_callback: true )} else {call_args = function.call_args(cython_callback: false)}
@@ -645,11 +644,11 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
     if imports.count == 0 {return ""}
     var imps = imports
     imps.sort {
-        !$0.is_list && $1.is_list
+        !$0.has_option(.list) && $1.has_option(.list)
     }
     for arg in imps {
-        let list = arg.is_list
-        let data = arg.is_data
+        let list = arg.has_option(.list)
+        let data = arg.type == .data
         let jsondata = arg.type == .jsondata
         
         let dtype = pythonType2pyx(type: arg.type, options: [.c_type])
@@ -664,7 +663,7 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
                 """)
             } else {
                 
-                if arg.is_list && [.object,.str].contains(arg.type) {
+                if list && [.object,.str].contains(arg.type) {
                     output.append("""
                         ctypedef struct \(arg.pyx_type):
                             const \(convertPythonType(type: arg.type, options: [])) * ptr
@@ -745,7 +744,7 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
             case .send:
                 //output.append("\(generateSendFunctions(module: self , objc: true))")
                 
-                for function in cls.functions.filter({!$0.is_callback && !$0.swift_func}) {
+                for function in cls.functions.filter({!$0.has_option(option: .callback) && !$0.has_option(option: .swift_func)}) {
                     let has_args = function.args.count != 0
                     let return_type = "\(if: objc_m, function.returns.objc_type, function.returns.pyx_type)"
                     output.append("""
@@ -772,20 +771,22 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
                 }
                 """)
             case .callback:
-                let call_args = cls.functions.filter{!$0.is_callback && !$0.swift_func && !$0.is_dispatch}.map{"\($0.name): \(cls.title)_\($0.name)"}.joined(separator: ", ")
+                let call_args = cls.functions.filter{!$0.has_option(option: .callback) && !$0.has_option(option: .swift_func) && !$0.has_option(option: .dispatch)}.map{"\($0.name): \(cls.title)_\($0.name)"}.joined(separator: ", ")
+                var call_title = cls.title.titleCase()
+                call_title.removeFirst()
                 output.append("""
                 @_silgen_name(\"set_\(cls.title)_Callback\")
                 func set_\(cls.title)_Callback(_ callback: \(cls.title)Callbacks) {
                     print("setting callback \\(String(describing: \(cls.title.lowercased())))")
-                    \(cls.title.lowercased()).set_\(cls.title)_Callback(callback)
-                    \(cls.title.lowercased())Callback = \(cls.title)PyCallback(callback: callback)
+                    \(cls.title.lowercased()).set_\(cls.title)_Callback(callback: \(cls.title)PyCallback(callback: callback))
+                    //\(call_title)Callback = \(cls.title)PyCallback(callback: callback)
                     //let calls = \(cls.title)Sends(\(call_args))
                 }
                 """)
             case .send:
                 //output.append("\(generateSendFunctions(module: self , objc: true))")
                 
-                for function in cls.functions.filter({!$0.is_callback && !$0.swift_func}) {
+                for function in cls.functions.filter({!$0.has_option(option: .callback) && !$0.has_option(option: .swift_func)}) {
                     let swift_return = "\(if: function.returns.type != .void, "-> \(function.returns.swift_type)", "")"
                     let func_args = function.args.map{"\($0.name): \(swiftCallArgs(arg: $0))"}.joined(separator: ", ")
                     output.append("""

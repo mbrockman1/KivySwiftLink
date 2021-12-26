@@ -146,7 +146,7 @@ func getDocumentsDirectory() -> URL {
 
 extension Collection {
 @inlinable
-public __consuming func split(
+public __consuming func split_(
     maxSplits: Int = Int.max,
     omittingEmptySubsequences: Bool = true,
     includeSeparator: Bool = false,
@@ -196,4 +196,17 @@ public __consuming func split(
     return result
 }
 
+}
+
+
+extension String {
+    func titleCase() -> String {
+        return self
+            .replacingOccurrences(of: "([A-Z])",
+                                  with: "_$1",
+                                  options: .regularExpression,
+                                  range: range(of: self))
+            // If input is in llamaCase
+            .lowercased()
+    }
 }

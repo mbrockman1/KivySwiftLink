@@ -7,29 +7,42 @@
 
 import Foundation
 
-
+enum WrapFunctionOption: String, CaseIterable,Codable {
+    case list
+    case data
+    case json
+    case callback
+    case swift_func
+    case dispatch
+    case direct
+}
 
 class WrapFunction: Codable {
     let name: String
     var args: [WrapArg]
     let returns: WrapArg
-    let is_callback: Bool
-    let swift_func: Bool
+    //let is_callback: Bool
+    //let swift_func: Bool
+    //let direct: Bool
     let call_class: String!
     let call_target: String!
     
+    var options: [WrapFunctionOption]
     
-    let is_dispatch: Bool
+    
+    //let is_dispatch: Bool
     
     private enum CodingKeys: CodingKey {
         case name
         case args
         case returns
-        case is_callback
-        case swift_func
+        //case is_callback
+        //case swift_func
         case call_class
         case call_target
-        case is_dispatch
+        //case is_dispatch
+        //case direct
+        case options
     }
     
     var compare_string: String = ""
@@ -53,18 +66,9 @@ class WrapFunction: Codable {
         if container.contains(.returns) {
             returns = try! container.decode(WrapArg.self, forKey: .returns)
         } else {
-            returns = WrapArg(name: "", type: .void, other_type: "", idx: 0, is_return: true, is_list: false, is_json: false, is_data: false, is_tuple: false, is_enum: false)
+            returns = WrapArg(name: "", type: .void, other_type: "", idx: 0, arg_options: [.return_])
         }
-        if container.contains(.is_callback) {
-            is_callback = try! container.decode(Bool.self, forKey: .is_callback)
-        } else {
-            is_callback = false
-        }
-        if container.contains(.swift_func) {
-            swift_func = try! container.decode(Bool.self, forKey: .swift_func)
-        } else {
-            swift_func = false
-        }
+
         if container.contains(.call_class) {
             call_class = try! container.decode(String.self, forKey: .call_class)
         } else {
@@ -76,11 +80,16 @@ class WrapFunction: Codable {
             call_target = nil
         }
         
-        if container.contains(.is_dispatch) {
-            is_dispatch = try! container.decode(Bool.self, forKey: .is_dispatch)
+        
+        if container.contains(.options) {
+            options = try! container.decode([WrapFunctionOption].self, forKey: .options)
         } else {
-            is_dispatch = false
+            options = []
         }
+    }
+    
+    func has_option(option: WrapFunctionOption) -> Bool {
+        return options.contains(option)
     }
     
     func set_args_cls(cls: WrapClass) {
@@ -128,7 +137,7 @@ class WrapFunction: Codable {
         args.map {
 
             var send_options: [PythonSendArgTypes] = []
-            if $0.is_list {send_options.append(.list)}
+            if $0.has_option(.list) {send_options.append(.list)}
             return convertPythonSendArg(type: $0.type, name: $0.name, options: send_options)
         }.filter({$0 != ""})
     }
@@ -136,7 +145,7 @@ class WrapFunction: Codable {
     var send_args_py: [String] {
         args.map {
             var send_options: [PythonSendArgTypes] = []
-            if $0.is_list {send_options.append(.list)}
+            if $0.has_option(.list) {send_options.append(.list)}
             return convertPythonSendArg(type: $0.type, name: $0.name, options: send_options)
         }.filter({$0 != ""})
     }

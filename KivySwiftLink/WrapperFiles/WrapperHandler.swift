@@ -9,6 +9,8 @@ import Foundation
 
 
 func BuildWrapperFile(root_path: String, site_path: String, py_name: String) {
+    
+    
     let file_man = FileManager()
     let cur_dir = URL(fileURLWithPath: root_path)
 //    let site_manager = cur_dir.appendingPathComponent("venv/lib/python3.9/site-packages", isDirectory: true)
@@ -27,11 +29,8 @@ func BuildWrapperFile(root_path: String, site_path: String, py_name: String) {
     if !file_man.fileExists(atPath: src_path.path){
         try! file_man.createDirectory(atPath: src_path.path, withIntermediateDirectories: true, attributes: [:])
     }
-    print("converting ast")
     let py_ast = PythonASTconverter(filename: py_name, site_path: site_path)
-    print("converted ast")
     let wrap_module = py_ast.generateModule(root: root_path)
-    print("generated module")
     //let export_dir = getDocumentsDirectory().appendingPathComponent("ksl_exports")
     let pyxfile = src_path.appendingPathComponent("\(py_name).pyx")
     let h_file = src_path.appendingPathComponent("_\(py_name).h")

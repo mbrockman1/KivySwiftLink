@@ -43,18 +43,15 @@ class WrapClass: Codable {
         for function in functions {
             function.wrap_class = self
             function.set_args_cls(cls: self)
-            print(function.name,function.wrap_class!)
         }
-        let callback_count = functions.filter{$0.is_callback}.count
+        let callback_count = functions.filter{$0.options.contains(.callback)}.count
         //let sends_count = functions.filter{!$0.is_callback && !$0.swift_func}.count
         if callback_count > 0 {
             //let func_init_string = try! JSON(extendedGraphemeClusterLiteral: "").rawData()
             //let set_callback_function = WrapFunction()
         }
-        print("inited \(self.title)")
     }
     func build() {
-        //print("build",self,has_swift_functions)
         if has_swift_functions {
             let set_swift_function: JSON = [
                 "name":"set_swift_functions",
@@ -97,7 +94,7 @@ class WrapClass: Codable {
         }
         
         
-        for function in self.functions {if function.swift_func {self.has_swift_functions = true; break}}
+        for function in self.functions {if function.has_option(option: .swift_func) {self.has_swift_functions = true; break}}
         
     }
     
@@ -107,7 +104,7 @@ class WrapClass: Codable {
                 let compare_args = function.args.map {$0.type.rawValue}
                 let compare_string = "\(function.returns) \(compare_args.joined(separator: " "))"
                 function.compare_string = compare_string
-                if function.is_callback || function.swift_func {
+                if function.has_option(option: .callback) || function.has_option(option: .swift_func) {
                     if !pointer_compare_strings.contains(compare_string) {
                         pointer_compare_strings.append(compare_string)
                         let compare_count = pointer_compare_strings.count
@@ -116,7 +113,7 @@ class WrapClass: Codable {
                             "pyx_string": function.export(options: []),
                             "objc_string": function.export(options: [.objc]),
                             "returns": pythonType2pyx(type: function.returns.type, options: []),
-                            "excluded_callbacks": "\(function.swift_func && function.is_callback)"
+                            "excluded_callbacks": "\(function.has_option(option: .swift_func) && function.has_option(option: .callback))"
                             ]
                     }
                 }
@@ -127,7 +124,7 @@ class WrapClass: Codable {
     func doFunctionCompares() {
         
         for function in functions {
-            if function.is_callback || function.swift_func {
+            if function.has_option(option: .callback) || function.has_option(option: .swift_func) {
                 let compare_string = function.compare_string
                 let pointer_type = pointer_compare_dict[compare_string]!
                 function.function_pointer = pointer_type["name"]!
