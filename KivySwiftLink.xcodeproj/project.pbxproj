@@ -32,6 +32,8 @@
 		8CDD099D275E1F7A00DB8267 /* WrapArg.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDD099C275E1F7A00DB8267 /* WrapArg.swift */; };
 		8CE0C493272622E400C0D6D8 /* PythonHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE0C492272622E400C0D6D8 /* PythonHandler.swift */; };
 		8CE0C5082726ED9700C0D6D8 /* WrapperHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE0C5072726ED9700C0D6D8 /* WrapperHandler.swift */; };
+		8CE1B71C2779E99400A7A368 /* WrapArgExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE1B71B2779E99400A7A368 /* WrapArgExtensions.swift */; };
+		8CE1B71F2779ED7F00A7A368 /* WrapModuleExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE1B71E2779ED7F00A7A368 /* WrapModuleExtensions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -70,6 +72,8 @@
 		8CDD099C275E1F7A00DB8267 /* WrapArg.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapArg.swift; sourceTree = "<group>"; };
 		8CE0C492272622E400C0D6D8 /* PythonHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PythonHandler.swift; sourceTree = "<group>"; };
 		8CE0C5072726ED9700C0D6D8 /* WrapperHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapperHandler.swift; sourceTree = "<group>"; };
+		8CE1B71B2779E99400A7A368 /* WrapArgExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapArgExtensions.swift; sourceTree = "<group>"; };
+		8CE1B71E2779ED7F00A7A368 /* WrapModuleExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrapModuleExtensions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,9 +105,11 @@
 			isa = PBXGroup;
 			children = (
 				8CDD0999275E1F6100DB8267 /* WrapModule.swift */,
+				8CE1B71E2779ED7F00A7A368 /* WrapModuleExtensions.swift */,
 				8CC79ECC2719C4350056BBFC /* WrapClass.swift */,
 				8CDD0996275E1F3900DB8267 /* WrapFunction.swift */,
 				8CDD099C275E1F7A00DB8267 /* WrapArg.swift */,
+				8CE1B71B2779E99400A7A368 /* WrapArgExtensions.swift */,
 				8CE0C5072726ED9700C0D6D8 /* WrapperHandler.swift */,
 				8CC79ED5271A33760056BBFC /* CodeLayouts.swift */,
 				8CC79ECF2719C84A0056BBFC /* Converters.swift */,
@@ -234,10 +240,12 @@
 				8CDD0997275E1F3900DB8267 /* WrapFunction.swift in Sources */,
 				8C47F2AE275E6D350044A826 /* version.swift in Sources */,
 				8CE0C5082726ED9700C0D6D8 /* WrapperHandler.swift in Sources */,
+				8CE1B71C2779E99400A7A368 /* WrapArgExtensions.swift in Sources */,
 				8CC79ECD2719C4350056BBFC /* WrapClass.swift in Sources */,
 				8C1DE8F727682859001B8E06 /* SwiftGenerator.swift in Sources */,
 				8C47F2B12760D62F0044A826 /* Extensions_Helpers.swift in Sources */,
 				8C7A8DA1271D8AA50030E4A7 /* CommandLineFunctions.swift in Sources */,
+				8CE1B71F2779ED7F00A7A368 /* WrapModuleExtensions.swift in Sources */,
 				8C1DE8FD276A46AC001B8E06 /* SwiftCodeLayout.swift in Sources */,
 				8C47F2BC276125660044A826 /* DB_Handler.swift in Sources */,
 				8C7A8E052724D3100030E4A7 /* TestSuite.swift in Sources */,

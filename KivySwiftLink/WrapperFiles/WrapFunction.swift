@@ -116,7 +116,7 @@ class WrapFunction: Codable {
             arg.name != call_target && arg.name != call_class
         }
         return _args.map {
-            convertPythonCallArg(arg: $0)
+            $0.convertPythonCallArg
         }.filter({$0 != ""})
     }
     
@@ -129,7 +129,7 @@ class WrapFunction: Codable {
             arg.name != call_target && arg.name != call_class
         }
         return _args.map {
-            convertPythonCallArg(arg: $0)
+            $0.convertPythonCallArg
         }.filter({$0 != ""})
     }
     
@@ -138,7 +138,7 @@ class WrapFunction: Codable {
 
             var send_options: [PythonSendArgTypes] = []
             if $0.has_option(.list) {send_options.append(.list)}
-            return convertPythonSendArg(type: $0.type, name: $0.name, options: send_options)
+            return $0.convertPythonSendArg(options: send_options)
         }.filter({$0 != ""})
     }
     
@@ -146,7 +146,7 @@ class WrapFunction: Codable {
         args.map {
             var send_options: [PythonSendArgTypes] = []
             if $0.has_option(.list) {send_options.append(.list)}
-            return convertPythonSendArg(type: $0.type, name: $0.name, options: send_options)
+            return $0.convertPythonSendArg(options: send_options)
         }.filter({$0 != ""})
     }
     
@@ -186,4 +186,63 @@ class WrapFunction: Codable {
         return func_args.joined(separator: ", ")
     }
     
+}
+
+
+
+
+extension WrapFunction {
+    func convertReturnSend(rname: String, code: String) -> String {
+        let rtype = returns.type
+        
+        switch rtype {
+        case .str:
+            if returns.has_option(.list) {
+                return "[rtn_val.ptr[x].decode() for x in range(rtn_val.size)]"
+            }
+            return "\(code).decode()"
+        case .data:
+            if returns.has_option(.list) {
+                return "[rtn_val.ptr[x].ptr[:rtn_val.ptr[x].size] for x in range(rtn_val.size)]"
+            }
+            return "rtn_val.ptr[:rtn_val.size]"
+        case .jsondata:
+            if returns.has_option(.list) {
+                return "[json.loads(rtn_val.ptr[x].ptr[:rtn_val.ptr[x].size]) for x in range(rtn_val.size)]"
+            }
+            return "json.loads(rtn_val.ptr[:rtn_val.size])"
+        case .object:
+            if returns.has_option(.list) {
+                return "[(<object>rtn_val.ptr[x]) for x in range(rtn_val.size)]"
+            }
+            return "<object>\(code)"
+        default:
+            if returns.has_option(.list) {
+                return "[rtn_val.ptr[x] for x in range(rtn_val.size)]"
+            }
+            return code
+        }
+    }
+    
+    var call_target_is_arg: Bool {
+        let _args = args.map{$0.name}
+        if let call_target = call_target {
+            if _args.contains(call_target) {
+                return true
+            }
+        }
+        return false
+        
+    }
+
+    var call_class_is_arg: Bool {
+        let _args = args.map{$0.name}
+        if let call_class = call_class {
+            if _args.contains(call_class) {
+                return true
+            }
+        }
+        return false
+    }
+
 }

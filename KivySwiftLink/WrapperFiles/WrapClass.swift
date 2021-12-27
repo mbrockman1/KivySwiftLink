@@ -58,17 +58,17 @@ class WrapClass: Codable {
                 "args": [
                     [
                         "name":"func_struct",
-                        "type":"PythonCoreMidiSwiftFuncs",
+                        "type": "other",
+                        "other_type":"\(title)SwiftFuncs",
                         "idx": 0
                     ]
                 ],
-                "swift_func": true,
-                "is_callback": true,
+                "options": ["swift_func", "callback"],
                 "returns": [
                     "name": "void",
                     "type": "void",
                     "idx": 0,
-                    "is_return": true
+                    "options": ["return_"],
                 ]
             ]
             
@@ -112,7 +112,7 @@ class WrapClass: Codable {
                             "name": "\(title)_ptr\(compare_count)",
                             "pyx_string": function.export(options: []),
                             "objc_string": function.export(options: [.objc]),
-                            "returns": pythonType2pyx(type: function.returns.type, options: []),
+                            "returns": function.returns.pythonType2pyx(options: []),
                             "excluded_callbacks": "\(function.has_option(option: .swift_func) && function.has_option(option: .callback))"
                             ]
                     }

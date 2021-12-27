@@ -59,27 +59,27 @@ class WrapModule: WrapModuleBase {
             if cls.has_swift_functions {
                 class_ext_options.append(.swift_functions)
                 class_vars.append("\t" + cls.functions.filter{$0.has_option(option: .swift_func) && !$0.has_option(option: .callback)}.map{"cdef \($0.function_pointer) _\($0.name)_"}.joined(separator: "\n\t") + newLine)
-                swift_funcs_struct = generateStruct(module: self, options: [.swift_functions])
-                swift_funcs_struct.append("\n\t\(generateFunctionPointers(module: self, objc: false, options: [.excluded_callbacks_only]))")
+                swift_funcs_struct = generateStruct(options: [.swift_functions])
+                swift_funcs_struct.append("\n\t\(generateFunctionPointers(objc: false, options: [.excluded_callbacks_only]))")
             }
             let pyx_string = """
             cdef extern from "_\(filename).h":
                 ######## cdef extern Callback Function Pointers: ########
                 \(if: cls.dispatch_mode, generateEnums(cls: cls, options: [.cython,.dispatch_events]))
-                \(generateFunctionPointers(module: self, objc: false, options: [.excluded_callbacks]))
+                \(generateFunctionPointers(objc: false, options: [.excluded_callbacks]))
 
                 ######## cdef extern Callback Struct: ########
                 \(swift_funcs_struct)
                 
-                \(generateStruct(module: self, options: [.callbacks]))
+                \(generateStruct(options: [.callbacks]))
                 
                 ######## cdef extern Send Functions: ########
                 void set_\(cls.title)_Callback(\(cls.title)Callbacks callback)
-                \(generateSendFunctions(module: self, objc: false))
+                \(generateSendFunctions(objc: false))
                 
             
             ######## Callbacks Functions: ########
-            \(generateCallbackFunctions(module: self, options: [.header]))
+            \(generateCallbackFunctions(options: [.header]))
             
             ######## Cython Class: ########
             \(generateCythonClass(cls: cls, class_vars: class_vars.joined(separator: newLine), dispatch_mode: cls.dispatch_mode))
@@ -87,7 +87,7 @@ class WrapModule: WrapModuleBase {
                 ######## Cython Class Extensions: ########
                 \(extendCythonClass(cls: cls, options: class_ext_options))
                 ######## Class Functions: ########
-            \(generatePyxClassFunctions(module: self)  )
+            \(generatePyxClassFunctions)
             """
             pyx_strings.append(pyx_string)
         }
@@ -111,17 +111,17 @@ class WrapModule: WrapModuleBase {
             //insert enums / Structs
             \(if: cls.dispatch_mode,generateEnums(cls: cls, options: [.dispatch_events, .objc]))
             //######## cdef extern Callback Function Pointers: ########//
-            \(generateFunctionPointers(module: self, objc: true, options: [.excluded_callbacks]))
+            \(generateFunctionPointers(objc: true, options: [.excluded_callbacks]))
             
             //######## cdef extern Callback Struct: ########//
-            \(if: cls.has_swift_functions, generateStruct(module: self, options: [.swift_functions, .objc]) )
-            \(if: cls.has_swift_functions, generateFunctionPointers(module: self, objc: true, options: [.excluded_callbacks_only]) )
-            \(generateStruct(module: self, options: [.objc, .callbacks]))
+            \(if: cls.has_swift_functions, generateStruct(options: [.swift_functions, .objc]) )
+            \(if: cls.has_swift_functions, generateFunctionPointers(objc: true, options: [.excluded_callbacks_only]) )
+            \(generateStruct(options: [.objc, .callbacks]))
                         
             //######## Send Functions Protocol: ########//
             \(generateHandlerFuncs(cls: cls, options: [.objc_h]))
             //######## Send Functions: ########//
-            \(generateSendFunctions(module: self, objc: true))
+            \(generateSendFunctions(objc: true))
             """)
             //\(generateSendProtocol(module: self))
             //\(generateStruct(module: self, options: [.objc, .swift]))
@@ -158,9 +158,9 @@ class WrapModule: WrapModuleBase {
         import Foundation
         
         //######## Send Functions Protocol: ########//
-        \(generateSwiftSendProtocol(module: self))
+        \(generateSwiftSendProtocol)
         
-        \(generateSwiftCallbackWrap(module: self) )
+        \(generateSwiftCallbackWrap)
         
         """
         for cls in self.classes {

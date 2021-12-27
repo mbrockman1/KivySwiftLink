@@ -213,7 +213,7 @@ class ProjectManager {
     
     func update_swift_wrapper_group(project: PythonObject, updated: inout Bool) {
         let fm = FileManager()
-        let proj_dir = self.project_dir
+        //let proj_dir = self.project_dir
         let cur_dir = URL(fileURLWithPath: fm.currentDirectoryPath)
         
         let wrap_dir = cur_dir.appendingPathComponent("wrapper_headers/swift", isDirectory: true)

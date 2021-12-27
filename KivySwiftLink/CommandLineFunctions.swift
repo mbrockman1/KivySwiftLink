@@ -237,11 +237,12 @@ func buildWrapper(name: String) {
 }
 
 func buildAllWrappers() {
-    if JsonStorage().current_project() != nil {
+    if ProjectHandler(db_path: nil).current_project != nil {
         let fm = FileManager()
         let wrapper_sources = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("wrapper_sources")
         print("building all")
         let files = try! fm.contentsOfDirectory(atPath: wrapper_sources.path).map{$0.fileName()}
+        print(files)
         for file in files {
             print(file)
             BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: file )
