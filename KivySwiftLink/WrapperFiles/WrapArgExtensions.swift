@@ -6,13 +6,15 @@ import Foundation
 extension WrapArg {
     
     func convertPythonType( options: [PythonTypeConvertOptions]) -> String {
+        let list = has_option(.list)
         if options.contains(.protocols) {
-            if options.contains(.is_list) {
+//            if options.contains(.is_list) {
+            if list {
                 return "[\(pyType2Swift)]"
             }
             return pyType2Swift
         }
-        if self.options.contains(.list) {
+        if list {
             return convertPythonListType(options: options)
         }
         if self.options.contains(.array) {

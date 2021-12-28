@@ -90,18 +90,15 @@ extension WrapModule {
             
             for function in cls.functions {
                 if !function.has_option(option: .callback) && !function.has_option(option: .swift_func) {
-                    var func_return_options = return_options
-                    if function.returns.has_option(.list) {
-                        func_return_options.append(.is_list)
-                    }
+                    let func_return_options = return_options
+//                    if function.returns.has_option(.list) {
+//                        func_return_options.append(.is_list)
+//                    }
                     //let return_type = "\(pythonType2pyx(type: function.returns.type, options: return_options))"
                     //print(return_type)
                     let return_type2 = function.returns.convertPythonType(options: func_return_options)
                     var func_string = "\(return_type2) \(cls.title)_\(function.name)(\(function.export(options: send_options)))"
                     if objc { func_string.append(";") }
-                    
-                    
-                    
                     
                     send_strings.append(func_string)
                 }

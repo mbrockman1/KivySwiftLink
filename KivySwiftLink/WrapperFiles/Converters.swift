@@ -12,46 +12,7 @@ let newLine = "\n"
 let newLineTab = "\n\t"
 let newLineTabTab = "\n\t\t"
 
-enum PythonType: String, CaseIterable,Codable {
-    case int
-    case long
-    case ulong
-    case uint
-    case int32
-    case uint32
-    case int8
-    case char
-    case uint8
-    case uchar
-    case ushort
-    case short
-    case int16
-    case uint16
-    case longlong
-    case ulonglong
-    case float
-    case double
-    case float32
-    case str
-    case bytes
-    case data
-    case json
-    case jsondata
-    case list
-    case tuple
-    case object
-    case bool
-    case void
-    case None
-    case other
-}
 
-
-
-enum pyx_types: String {
-    case int32
-    case uint32
-}
 let TYPE_SIZES: [String:Int] = [
     "PythonCallback": 0,
     "int": MemoryLayout<CLong>.size,
@@ -175,12 +136,7 @@ let MALLOC_TYPES = [
 
 
 let TYPEDEF_BASETYPES: [String:String] = [:]
-    //"const void*":"PythonObject",
-    //"const unsigned char*":"PythonData",
-    //"const unsigned char*":"PythonJsonData",
-    //"const char*":"PythonBytes",
-    //"const char*":"PythonString"
-//]
+
 
 func get_typedef_types() -> [String: String]  {
     var types = TYPEDEF_BASETYPES
@@ -200,17 +156,7 @@ func get_typedef_types() -> [String: String]  {
     return types
 }
 
-enum PythonTypeConvertOptions {
-    case objc
-    case header
-    case c_type
-    case swift
-    case is_list
-    case py_mode
-    case use_names
-    case dispatch
-    case protocols
-}
+
 
 func PurePythonTypeConverter(type: PythonType) -> String{
     
@@ -253,10 +199,7 @@ func convertPythonListType_(type: PythonType, options: [PythonTypeConvertOptions
 
 
 
-enum PythonSendArgTypes {
-    case list
-    case data
-}
+
 //if list {return "\(name)_array, \(name)_size"}
 //if list {return "\(name)_array"}
 

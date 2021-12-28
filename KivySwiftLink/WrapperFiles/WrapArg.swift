@@ -84,12 +84,12 @@ class WrapArg: Codable, Equatable {
         pyx_name = name
         objc_name = "arg\(idx)"
         
-        var pyx_type_options: [PythonTypeConvertOptions] = []
-        var objc_type_options: [PythonTypeConvertOptions] = [.objc]
-        if options.contains(.list) {
-            pyx_type_options.append(.is_list)
-            objc_type_options.append(.is_list)
-        }
+//        var pyx_type_options: [PythonTypeConvertOptions] = []
+//        var objc_type_options: [PythonTypeConvertOptions] = [.objc]
+//        if options.contains(.list) {
+//            pyx_type_options.append(.is_list)
+//            objc_type_options.append(.is_list)
+//        }
         if type == .other {
             size = 8
             pyx_type = other_type
@@ -100,8 +100,8 @@ class WrapArg: Codable, Equatable {
             pyx_type = ""
             objc_type = ""
             swift_type = SWIFT_TYPES[type.rawValue]!
-            pyx_type = convertPythonType(options: pyx_type_options)
-            objc_type = convertPythonType(options: objc_type_options)
+            pyx_type = convertPythonType(options: [])
+            objc_type = convertPythonType(options: [.objc])
         }
     }
     
@@ -119,51 +119,23 @@ class WrapArg: Codable, Equatable {
         } else {
             other_type = try container.decode(String.self, forKey: .type)
         }
-//        if container.contains(.is_data) {
-//            is_data = try! container.decode(Bool.self, forKey: .is_data)
-//        } else {
-//            is_data = false
-//        }
-//        if container.contains(.is_json) {
-//            is_json = try container.decode(Bool.self, forKey: .is_json)
-//        } else {
-//            is_json = false
-//        }
-//        if container.contains(.is_list) {
-//            is_list = try container.decode(Bool.self, forKey: .is_list)
-//        } else {
-//            is_list = false
-//        }
-//        if container.contains(.is_return) {
-//            is_return = try container.decode(Bool.self, forKey: .is_return)
-//        } else {
-//            is_return = false
-//        }
+
         if container.contains(.options) {
             options = try container.decode([WrapArgOptions].self, forKey: .options)
         } else {
             options = []
         }
-//        if container.contains(.is_tuple) {
-//            is_tuple = try container.decode(Bool.self, forKey: .is_tuple)
-//        } else {
-//            is_tuple = false
-//        }
-//        if container.contains(.is_enum) {
-//            is_enum = try container.decode(Bool.self, forKey: .is_enum)
-//        } else {
-//            is_enum = false
-//        }
+        
         
         pyx_name = name
         objc_name = "arg\(idx)"
         
-        var pyx_type_options: [PythonTypeConvertOptions] = []
-        var objc_type_options: [PythonTypeConvertOptions] = [.objc]
-        if self.options.contains(.list) {
-            pyx_type_options.append(.is_list)
-            objc_type_options.append(.is_list)
-        }
+//        var pyx_type_options: [PythonTypeConvertOptions] = []
+//        var objc_type_options: [PythonTypeConvertOptions] = [.objc]
+//        if self.options.contains(.list) {
+//            pyx_type_options.append(.is_list)
+//            objc_type_options.append(.is_list)
+//        }
         if type == .other {
             size = 8
             pyx_type = other_type
@@ -178,8 +150,8 @@ class WrapArg: Codable, Equatable {
             } else {
                 swift_type = ""
             }
-            pyx_type = convertPythonType(options: pyx_type_options)
-            objc_type = convertPythonType(options: objc_type_options)
+            pyx_type = convertPythonType(options: [])
+            objc_type = convertPythonType(options: [.objc])
         }
         
         
@@ -195,7 +167,7 @@ class WrapArg: Codable, Equatable {
     }
     
     func export(options: [PythonTypeConvertOptions]) -> String! {
-        var options = options
+        //var options = options
         var _name: String
         let is_list = has_option(.list)
         if options.contains(.use_names) {
@@ -204,7 +176,7 @@ class WrapArg: Codable, Equatable {
             _name = objc_name
         }
         if options.contains(.objc) {
-            if is_list {options.append(.is_list)}
+            //if is_list {options.append(.is_list)}
             if options.contains(.header) {
                 var header_string = ""
                 switch idx {
@@ -229,7 +201,7 @@ class WrapArg: Codable, Equatable {
         }
         
         if options.contains(.swift) {
-            if is_list {options.append(.is_list)}
+            //if is_list {options.append(.is_list)}
             if options.contains(.protocols) {
                 return "\(_name): \(convertPythonType( options: options))"
             }
@@ -245,10 +217,10 @@ class WrapArg: Codable, Equatable {
             }
             return "\(name): \(PurePythonTypeConverter(type: type))"
         }
-        var arg_options = options
-        if is_list {
-            arg_options.append(.is_list)
-        }
+        let arg_options = options
+//        if is_list {
+//            arg_options.append(.is_list)
+//        }
         if type == .other {return "\(other_type) \(_name)"}
         let func_string = "\(convertPythonType(options: arg_options)) \(_name)"
         //let func_string = "\(convertPythonType(type: PurePythonTypeConverter(type: type), options: options)) \(_name)"

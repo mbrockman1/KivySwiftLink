@@ -59,11 +59,7 @@ func generateCythonClass(cls: WrapClass, class_vars: String, dispatch_mode: Bool
 }
 
 
-enum CythonClassOptionTypes {
-    case init_callstruct
-    case event_dispatch
-    case swift_functions
-}
+
 
 func extendCythonClass(cls: WrapClass, options: [CythonClassOptionTypes]) -> String {
     
@@ -97,11 +93,7 @@ func extendCythonClass(cls: WrapClass, options: [CythonClassOptionTypes]) -> Str
     return output.joined(separator: "\n\t")
 }
 
-enum EnumGeneratorOptions {
-    case cython
-    case objc
-    case dispatch_events
-}
+
 
 func generateEnums(cls: WrapClass, options: [EnumGeneratorOptions]) -> String {
     var string: [String] = []
@@ -146,34 +138,6 @@ func generateEnums(cls: WrapClass, options: [EnumGeneratorOptions]) -> String {
 
 
 
-enum FunctionPointersOptions {
-    case exclude_swift_func
-    case exclude_callback
-    case excluded_callbacks
-    case excluded_callbacks_only
-}
-
-
-
-enum StructTypeOptions {
-    case pyx
-    case objc
-    case swift
-    case callbacks
-    case event_dispatch
-    case swift_functions
-}
-
-
-
-
-
-
-
-enum SendFunctionOptions {
-    case objc
-    case python
-}
 
 
 
