@@ -12,12 +12,12 @@ import SwiftyJSON
 
 private let photo_output = AVCapturePhotoOutput()
 private let photoPixelFormatType = kCVPixelFormatType_32BGRA
-class PythonCamaeraControl: NSObject {
+class PythonCameraControl: NSObject {
     
     private let captureSession = AVCaptureSession()
     private let photoSession = AVCaptureSession()
     
-    var py_call: CameraApiCallbacks!
+    var py_call: CameraApiPyCallback!
     
     var kivy_texture: PythonObject!
     
@@ -43,12 +43,12 @@ class PythonCamaeraControl: NSObject {
     
     override init() {
         super.init()
-        InitCameraApi_Delegate(self)
-        add_cemeras()
+        InitCameraApi_Delegate(delegate: self)
+        add_cameras()
         
     }
     
-    func add_cemeras() {
+    func add_cameras() {
         
         cameratypes.append(contentsOf: [.builtInDualCamera, .builtInTelephotoCamera, .builtInWideAngleCamera, .builtInMicrophone])
         
@@ -81,9 +81,9 @@ class PythonCamaeraControl: NSObject {
         let discoveryFront = AVCaptureDevice.DiscoverySession.init(deviceTypes: cameratypes, mediaType: .video, position: .front)
         inputCameras_back.append(contentsOf: discoveryBack.devices)
         //print("targets", available_back_cams.map({$0.rawValue}))
-        let backs = discoveryBack.devices.map({$0.deviceType.rawValue.replacingOccurrences(of: "AVCaptureDeviceTypeBuiltIn", with: "")}).asJsonBytes()!
-        let fronts = discoveryFront.devices.map({$0.deviceType.rawValue.replacingOccurrences(of: "AVCaptureDeviceTypeBuiltIn", with: "")}).asJsonBytes()!
-        py_call.get_camera_types(fronts,backs)
+        let backs = discoveryBack.devices.map({$0.deviceType.rawValue.replacingOccurrences(of: "AVCaptureDeviceTypeBuiltIn", with: "")})
+        let fronts = discoveryFront.devices.map({$0.deviceType.rawValue.replacingOccurrences(of: "AVCaptureDeviceTypeBuiltIn", with: "")})
+        py_call.get_camera_types(front: fronts.asData(), back: backs.asData())
         if let captureDevice = AVCaptureDevice.default(for: .video) {
             videoDevice = captureDevice
             do {
@@ -141,7 +141,7 @@ class PythonCamaeraControl: NSObject {
     }
 }
 
-extension PythonCamaeraControl: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate {
+extension PythonCameraControl: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate {
     
     
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
@@ -151,8 +151,8 @@ extension PythonCamaeraControl: AVCaptureVideoDataOutputSampleBufferDelegate, AV
                 let (data,data_size,width,height) = imageBuffer.TextureData()
                 let pixel_data = PythonData(ptr: data,size: data_size)
                 
-                DispatchQueue.main.async {
-                    self.py_call.returned_pixel_data(
+                DispatchQueue.main.async { [self] in
+                    py_call.returned_pixel_data(
                         pixel_data,
                         width,
                         height,
@@ -171,7 +171,7 @@ extension PythonCamaeraControl: AVCaptureVideoDataOutputSampleBufferDelegate, AV
 }
 
 
-extension PythonCamaeraControl: AVCapturePhotoCaptureDelegate {
+extension PythonCameraControl: AVCapturePhotoCaptureDelegate {
     
     func photoOutput(_ output: AVCapturePhotoOutput, willBeginCaptureFor resolvedSettings: AVCaptureResolvedPhotoSettings) {
         
@@ -188,9 +188,11 @@ extension PythonCamaeraControl: AVCapturePhotoCaptureDelegate {
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let previewbuffer = photo.previewPixelBuffer {
             let (buff, size, width, height) = previewbuffer.TextureData()
+            //py_call.returned_thumbnail_data(PythonData(ptr: buff, size: size), width, height)
             py_call.returned_thumbnail_data(PythonData(ptr: buff, size: size), width, height)
         }
         if let pixelbuffer = photo.pixelBuffer {
+            
             let (buff, size, width, height) = pixelbuffer.TextureData()
             py_call.returned_image_data(PythonData(ptr: buff, size: size), width, height)
         }
@@ -199,94 +201,105 @@ extension PythonCamaeraControl: AVCapturePhotoCaptureDelegate {
     
 }
 
-extension PythonCamaeraControl: CameraApi_Delegate {
+
+extension PythonCameraControl: CameraApi_Delegate {
+    func set_CameraApi_Callback(callback: CameraApiPyCallback) {
+        py_call = callback
+        setupCaptureSession()
+
+
+        py_call.set_preview_presets(presets: try! available_video_presets.rawData())
+    }
     
-    func auto_exposure(_ state: Bool) {
+    func encode_image(image: Data) {
+
+    }
+
+    func send_(image: [UInt8]) {
+
+    }
+
+
+
+    func auto_exposure(state: Bool) {
         try! videoDevice.lockForConfiguration()
         if state {
             videoDevice.exposureMode = .locked
         } else {
             videoDevice.exposureMode = .autoExpose
         }
-        
+
         videoDevice.unlockForConfiguration()
-        
-        
+
+
     }
-    
-    func set_exposure(_ value: Double) {
+
+    func set_exposure(value: Double) {
         try! videoDevice.lockForConfiguration()
         videoDevice.setExposureTargetBias(Float(value)) { (time) in
             print(time)
         }
         videoDevice.unlockForConfiguration()
     }
-    
-    func zoom_camera(_ zoom: Double) {
+
+    func zoom_camera(zoom: Double) {
         try! videoDevice.lockForConfiguration()
         videoDevice.videoZoomFactor = CGFloat(zoom)
         videoDevice.unlockForConfiguration()
     }
-    
-    func set_focus_point(_ x: Double, _ y: Double) {
+
+    func set_focus_point(x: Double, y: Double) {
         let focus_point = CGPoint(x: x, y: 1 - y)
         print(focus_point)
         print(videoDevice.isFocusPointOfInterestSupported)
         try! videoDevice.lockForConfiguration()
-        
+
         videoDevice.focusPointOfInterest = focus_point
         videoDevice.exposurePointOfInterest = focus_point
         videoDevice.focusMode = .autoFocus
         videoDevice.exposureMode = .autoExpose
         videoDevice.unlockForConfiguration()
     }
-    
-    
-    func set_CameraApi_Callback(_ callback: CameraApiCallbacks) {
-        py_call = callback
-        setupCaptureSession()
-        
-        
-        py_call.set_preview_presets(available_video_presets.rawBytes()!)
-    }
-    func set_preview_texture(_ tex: PythonObject) {
+
+
+
+    func set_preview_texture(tex: PythonObject) {
         kivy_texture = tex
     }
 
-    func select_preview_preset(_ preset: PythonString) {
-        let _preset = preset.string
-        
+    func select_preview_preset(preset: String) {
+
         DispatchQueue.global().async {
-            
+
             if self.captureSession.isRunning {
                 self.stopCapture()
-                
+
                 //DispatchQueue.main.asyncAfter(deadline: .now() + 0.5 , execute: {
-                    self.captureSession.sessionPreset = .init(rawValue: _preset)
+                    self.captureSession.sessionPreset = .init(rawValue: preset)
                     self.startCapture()
                 //})
             } else {
-                self.captureSession.sessionPreset = .init(rawValue: preset.string)
-                
+                self.captureSession.sessionPreset = .init(rawValue: preset)
+
             }
         }
-        
-        
+
+
     }
-    
-    func start_capture(_ mode: PythonString) {
+
+    func start_capture(mode: String) {
         self.startCapture()
     }
-    
-    func stop_capture(_ mode: PythonString) {
+
+    func stop_capture(mode: String) {
         self.stopCapture()
     }
-    
-    func set_camera_mode(_ mode: PythonString) {
-        
+
+    func set_camera_mode(mode: String) {
+
     }
-    
-    func select_camera(_ index: Int) {
+
+    func select_camera(index: Int) {
         captureSession.removeInput(currentInputDevice)
         //photoSession.removeInput(currentInputDevice)
         videoDevice = inputCameras_back[index]
@@ -295,16 +308,16 @@ extension PythonCamaeraControl: CameraApi_Delegate {
         //photoSession.addInput(currentInputDevice)
         //
     }
-    
+
     func take_photo() {
         capturePhoto()
     }
-    
-    func take_multi_photo(_ count: Int) {
-        
+
+    func take_multi_photo(count: Int) {
+
     }
-    
-    
+
+
 }
 
 

@@ -1,8 +1,5 @@
 //
 //  Extensions_Helpers.swift
-//  KivySwiftLink
-//
-//  Created by MusicMaker on 08/12/2021.
 //
 
 import Foundation
@@ -142,4 +139,74 @@ fileprivate func showInFinderAndSelectLastComponent(of url: URL) {
 func getDocumentsDirectory() -> URL {
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     return paths[0]
+}
+
+
+
+
+extension Collection {
+@inlinable
+public __consuming func split_(
+    maxSplits: Int = Int.max,
+    omittingEmptySubsequences: Bool = true,
+    includeSeparator: Bool = false,
+    whereSeparator isSeparator: (Element) throws -> Bool
+) rethrows -> [SubSequence] {
+    var result: [SubSequence] = []
+    var subSequenceStart: Index = startIndex
+
+    func appendSubsequence(end: Index) -> Bool {
+        if subSequenceStart == end && omittingEmptySubsequences {
+            return false
+        }
+        result.append(self[subSequenceStart..<end])
+        return true
+    }
+
+    if maxSplits == 0 || isEmpty {
+        _ = appendSubsequence(end: endIndex)
+        return result
+    }
+
+    var subSequenceEnd = subSequenceStart
+    let cachedEndIndex = endIndex
+    while subSequenceEnd != cachedEndIndex {
+        if try isSeparator(self[subSequenceEnd]) {
+            let didAppend = appendSubsequence(end: subSequenceEnd)
+            if includeSeparator {
+                subSequenceStart = subSequenceEnd
+                formIndex(after: &subSequenceEnd)
+            } else {
+                formIndex(after: &subSequenceEnd)
+                subSequenceStart = subSequenceEnd
+            }
+
+            if didAppend && result.count == maxSplits {
+                break
+            }
+            continue
+        }
+        formIndex(after: &subSequenceEnd)
+    }
+
+    if subSequenceStart != cachedEndIndex || !omittingEmptySubsequences {
+        result.append(self[subSequenceStart..<cachedEndIndex])
+    }
+
+    return result
+}
+
+}
+
+
+extension String {
+    func titleCase() -> String {
+        return self
+            .replacingOccurrences(of: "([A-Z])",
+                                  with: "_$1",
+                                  options: .regularExpression,
+                                  range: range(of: self))
+            // If input is in llamaCase
+            .lowercased()
+    }
 }

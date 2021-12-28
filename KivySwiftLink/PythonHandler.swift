@@ -1,8 +1,5 @@
 //
 //  PythonHandler.swift
-//  KivySwiftLink
-//
-//  Created by MusicMaker on 25/10/2021.
 //
 
 import Foundation

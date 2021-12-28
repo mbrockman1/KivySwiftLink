@@ -46,11 +46,11 @@ class WrapModule: WrapModuleBase {
             var class_ext_options: [CythonClassOptionTypes] = [.init_callstruct]
             //var EnumStrings: String = ""
             var swift_funcs_struct = ""
-            if dispatchEnabled {
-                let dis_dec = cls.decorators.filter({$0.type=="EventDispatch"})[0]
-                let events = (dis_dec.dict[0]["events"] as! [String]).map({"\"\($0)\""})
+            if cls.dispatch_mode {
+//                let dis_dec = cls.decorators.filter({$0.type=="EventDispatch"})[0]
+//                let events = (dis_dec.dict[0]["events"] as! [String]).map({"\"\($0)\""})
                 class_vars.append("""
-                \tevents = [\(events.joined(separator: ", "))]
+                \t__events__ = \(cls.title)_events
 
                 """)
                 class_ext_options.append(.event_dispatch)
@@ -58,71 +58,78 @@ class WrapModule: WrapModuleBase {
             }
             if cls.has_swift_functions {
                 class_ext_options.append(.swift_functions)
-                class_vars.append("\t" + cls.functions.filter{$0.swift_func && !$0.is_callback}.map{"cdef \($0.function_pointer) _\($0.name)_"}.joined(separator: "\n\t") + newLine)
-                swift_funcs_struct = generateStruct(module: self, options: [.swift_functions])
-                swift_funcs_struct.append("\n\t\(generateFunctionPointers(module: self, objc: false, options: [.excluded_callbacks_only]))")
+                class_vars.append("\t" + cls.functions.filter{$0.has_option(option: .swift_func) && !$0.has_option(option: .callback)}.map{"cdef \($0.function_pointer) _\($0.name)_"}.joined(separator: "\n\t") + newLine)
+                swift_funcs_struct = generateStruct(options: [.swift_functions])
+                swift_funcs_struct.append("\n\t\(generateFunctionPointers(objc: false, options: [.excluded_callbacks_only]))")
             }
-            
             let pyx_string = """
             cdef extern from "_\(filename).h":
                 ######## cdef extern Callback Function Pointers: ########
-                \(generateFunctionPointers(module: self, objc: false, options: [.excluded_callbacks]))
+                \(if: cls.dispatch_mode, generateEnums(cls: cls, options: [.cython,.dispatch_events]))
+                \(generateFunctionPointers(objc: false, options: [.excluded_callbacks]))
 
                 ######## cdef extern Callback Struct: ########
                 \(swift_funcs_struct)
                 
-                \(generateStruct(module: self, options: [.callbacks]))
+                \(generateStruct(options: [.callbacks]))
                 
                 ######## cdef extern Send Functions: ########
                 void set_\(cls.title)_Callback(\(cls.title)Callbacks callback)
-                \(generateSendFunctions(module: self, objc: false))
+                \(generateSendFunctions(objc: false))
                 
-                \(if: cls.dispatch_mode, generateEnums(cls: cls, options: [.cython,.dispatch_events]))
+            
             ######## Callbacks Functions: ########
-            \(generateCallbackFunctions(module: self, options: [.header]))
+            \(generateCallbackFunctions(options: [.header]))
             
             ######## Cython Class: ########
-            \(generateCythonClass(_class: cls.title, class_vars: class_vars.joined(separator: newLine), dispatch_mode: cls.dispatch_mode))
+            \(generateCythonClass(cls: cls, class_vars: class_vars.joined(separator: newLine), dispatch_mode: cls.dispatch_mode))
 
                 ######## Cython Class Extensions: ########
                 \(extendCythonClass(cls: cls, options: class_ext_options))
                 ######## Class Functions: ########
-            \(generatePyxClassFunctions(module: self)  )
+            \(generatePyxClassFunctions)
             """
             pyx_strings.append(pyx_string)
         }
         return pyx_strings.joined(separator: newLine).replacingOccurrences(of: "    ", with: "\t")
-        
+        //
+        //\(generatePyxClassFunctions(module: self)  )
+        //\(generateStruct(module: self, options: [.swift]))
     }
     
     var h: String {
         //let cls = self.classes[0]
-        var h_string = """
-        #import <Foundation/Foundation.h>
-        #import "wrapper_typedefs.h"
-
-        """
+        var h_string = ["""
+        #ifndef \(filename)_h
+        #define \(filename)_h
+        #include "wrapper_typedefs.h"
+        #include <stdbool.h>
+        
+        """]
         for cls in self.classes{
             h_string.append( """
             //insert enums / Structs
             \(if: cls.dispatch_mode,generateEnums(cls: cls, options: [.dispatch_events, .objc]))
             //######## cdef extern Callback Function Pointers: ########//
-            \(generateFunctionPointers(module: self, objc: true, options: [.excluded_callbacks]))
+            \(generateFunctionPointers(objc: true, options: [.excluded_callbacks]))
             
             //######## cdef extern Callback Struct: ########//
-            \(if: cls.has_swift_functions, generateStruct(module: self, options: [.swift_functions, .objc]) )
-            \(if: cls.has_swift_functions, generateFunctionPointers(module: self, objc: true, options: [.excluded_callbacks_only]) )
-            \(generateStruct(module: self, options: [.objc, .callbacks]))
-            
+            \(if: cls.has_swift_functions, generateStruct(options: [.swift_functions, .objc]) )
+            \(if: cls.has_swift_functions, generateFunctionPointers(objc: true, options: [.excluded_callbacks_only]) )
+            \(generateStruct(options: [.objc, .callbacks]))
+                        
             //######## Send Functions Protocol: ########//
-            \(generateSendProtocol(module: self))
-            \(generateHandlerFuncs(cls: cls, options: [.objc_h, .init_delegate, .callback]))
+            \(generateHandlerFuncs(cls: cls, options: [.objc_h]))
             //######## Send Functions: ########//
-            \(generateSendFunctions(module: self, objc: true))
+            \(generateSendFunctions(objc: true))
             """)
+            //\(generateSendProtocol(module: self))
+            //\(generateStruct(module: self, options: [.objc, .swift]))
+            //\(generateHandlerFuncs(cls: cls, options: [.objc_h, .init_delegate, .callback]))
+            //
         }
-        
-        return h_string
+        h_string.append("#endif /* \(filename)_h */")
+        return h_string.joined(separator: newLine)
     }
     
     var m: String {
@@ -134,6 +141,32 @@ class WrapModule: WrapModuleBase {
             m_string.append("\(generateHandlerFuncs(cls: cls, options: [.objc_m, .init_delegate, .callback, .send]))")
         }
         return m_string
+        }
+    
+    var c: String {
+        var c_string = """
+        #import "_\(filename).h"
+        """
+        for cls in self.classes {
+            c_string.append("\(generateHandlerFuncs(cls: cls, options: [.objc_m, .init_delegate, .callback, .send]))")
+        }
+        return c_string
+    }
+    
+    var swift: String {
+        var swift_string = """
+        import Foundation
+        
+        //######## Send Functions Protocol: ########//
+        \(generateSwiftSendProtocol)
+        
+        \(generateSwiftCallbackWrap)
+        
+        """
+        for cls in self.classes {
+            swift_string.append("\(generateHandlerFuncs(cls: cls, options: [.swift, .init_delegate, .callback, .send]))")
+        }
+        return swift_string
         }
     
     func build() {
@@ -168,18 +201,17 @@ class WrapModule: WrapModuleBase {
             //var has_swift_functions = false
             for function in cls.functions {
                 let returns = function.returns
-                if (returns.is_list || returns.is_data) && !["object","void"].contains(returns.type.rawValue) {
-                    fatalError("\n\t\(if: returns.is_list,"list[\(returns.type.rawValue)]",returns.type.rawValue) as return type is not supported atm")
+                if (returns.has_option(.list) || returns.has_option(.data)) && !["object","void"].contains(returns.type.rawValue) {
+                    fatalError("\n\t\(if: returns.has_option(.list),"list[\(returns.type.rawValue)]",returns.type.rawValue) as return type is not supported atm")
                 }
-                if !usedTypes.contains(where: {$0.type == returns.type && ($0.is_list == returns.is_list)}) {
+                if !usedTypes.contains(where: {$0.type == returns.type && ($0.has_option(.list) == returns.has_option(.list))}) {
                     //check for supported return list
                     
                     
-                    if returns.is_list || returns.is_data || returns.is_json || test_types.contains(returns.type.rawValue) {
+                    if returns.has_option(.list) || returns.has_option(.data) || returns.has_option(.json) || test_types.contains(returns.type.rawValue) {
                         
                         usedTypes.append(returns)
-                        if !usedTypes.contains(where: {$0.type == returns.type && !$0.is_list}) {
-                            //print("list type not found", returns.type)
+                        if !usedTypes.contains(where: {$0.type == returns.type && !$0.has_option(.list)}) {
                             usedTypes.append(add_missing_arg_type(type: returns.type.rawValue))
                         }
                     }
@@ -187,10 +219,10 @@ class WrapModule: WrapModuleBase {
                 }
                                     
                 for arg in function.args {
+                    let is_list = arg.has_option(.list)
                     
-                    
-                    if !usedTypes.contains(where: {$0.type == arg.type && ($0.is_list == arg.is_list)}) {
-                        if arg.is_list || arg.is_data || arg.is_json || test_types.contains(arg.type.rawValue){
+                    if !usedTypes.contains(where: {$0.type == arg.type && ($0.has_option(.list) == is_list)}) {
+                        if is_list || arg.has_option(.data) || arg.has_option(.json) || test_types.contains(arg.type.rawValue){
                             usedTypes.append(arg)
                         }
                     }
