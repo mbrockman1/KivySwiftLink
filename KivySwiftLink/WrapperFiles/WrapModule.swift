@@ -8,24 +8,54 @@
 import Foundation
 import SwiftyJSON
 
-class WrapModuleBase: Codable {
+//class WrapModuleBase: Codable {
+//    var filename: String
+//    var classes: [WrapClass]
+//
+//}
+
+
+
+class WrapModule: Codable {
     var filename: String
     var classes: [WrapClass]
-    
-}
-
-class WrapModule: WrapModuleBase {
-    
+    var custom_structs: [CustomStruct]
     var dispatchEnabled = false
 
     var usedTypes: [WrapArg] = []
     var usedListTypes: [WrapArg] = []
     let working_dir = FileManager().currentDirectoryPath
     
+    private enum CodingKeys: CodingKey {
+        case filename
+        case classes
+        case custom_structs
+    }
     required init(from decoder: Decoder) throws {
-        try super.init(from: decoder)
+        
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        filename = try container.decode(String.self, forKey: .filename)
+        classes = try container.decode([WrapClass].self, forKey: .classes)
+        custom_structs = try container.decode([CustomStruct].self, forKey: .custom_structs)
+        wrap_module_shared = self
+        postProcess()
         build()
     }
+    
+    
+    func postProcess() {
+        for cls in classes {
+            for function in cls.functions {
+                for arg in function.args {
+                    arg.postProcess(mod: self, cls: cls)
+                }
+            }
+        }
+    }
+//    required init(from decoder: Decoder) throws {
+//        try super.init(from: decoder)
+//        build()
+//    }
     var pyx: String {
         
         var imports = """
@@ -77,7 +107,8 @@ class WrapModule: WrapModuleBase {
                 void set_\(cls.title)_Callback(\(cls.title)Callbacks callback)
                 \(generateSendFunctions(objc: false))
                 
-            
+            \(custom_structs.map{$0.export(options: [.python])}.joined(separator: newLine))
+
             ######## Callbacks Functions: ########
             \(generateCallbackFunctions(options: [.header]))
             
@@ -157,6 +188,7 @@ class WrapModule: WrapModuleBase {
         var swift_string = """
         import Foundation
         
+        \(custom_structs.map{$0.export(options: [.swift])}.joined(separator: newLine))
         //######## Send Functions Protocol: ########//
         \(generateSwiftSendProtocol)
         
@@ -243,3 +275,6 @@ class WrapModule: WrapModuleBase {
         return ""
     }
 }
+
+
+var wrap_module_shared: WrapModule!

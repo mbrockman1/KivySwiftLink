@@ -399,7 +399,9 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
                     let return_type = "\(if: objc_m, function.returns.objc_type, function.returns.pyx_type)"
                     output.append("""
                     \(return_type) \(cls.title)_\(function.name)(\(function.export(options: [.use_names, .objc]))) {
-                        \(if: function.returns.name != "void", "return ")[\(cls.title.lowercased()) \(function.name)\(if: has_args, ": ")\(function.args.map{$0.name}.joined(separator: ": "))];
+                        \(if: function.returns.name != "void", "return ")[\(cls.title.lowercased()) \(function.name)\(if: has_args, ": ")\(function.args.map{
+                            $0.name
+                        }.joined(separator: ": "))];
                     }
                     """)
                 }
@@ -438,11 +440,24 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
                 
                 for function in cls.functions.filter({!$0.has_option(option: .callback) && !$0.has_option(option: .swift_func)}) {
                     let swift_return = "\(if: function.returns.type != .void, "-> \(function.returns.swift_type)", "")"
-                    let func_args = function.args.map{"\($0.name): \($0.swiftCallArgs)"}.joined(separator: ", ")
+                    let func_args = function.args.map{
+                        return "\($0.name): \($0.swiftCallArgs)"
+                    }.joined(separator: ", ")
+                    var codelines: [String] = []
+                    if (function.args.first(where: { (arg) -> Bool in arg.has_option(.codable) }) != nil) {
+                        codelines.append("let decoder = JSONDecoder()")
+                        //let wrap_module = try! decoder.decode(WrapModule.self, from: data!)
+                    }
+                    for arg in function.args {
+                        if arg.has_option(.codable) {
+                            codelines.append("let \(arg.other_type.titleCase()) = try! decoder.decode(\(if: arg.has_option(.list), "[\(arg.other_type)]", arg.other_type).self, from: \(arg.name).data)")
+                        }
+                    }
+                    if codelines.count != 0 {codelines.append("")}
                     output.append("""
                     @_silgen_name(\"\(cls.title)_\(function.name)\")
                     func \(cls.title)_\(function.name)(\(function.export(options: [.use_names, .swift]))) \(swift_return) {
-                        \(if: function.returns.type != .void, "return ")\(cls.title.lowercased()).\(function.name)(\(func_args))
+                        \(codelines.joined(separator: newLineTab))\(if: function.returns.type != .void, "return ")\(cls.title.lowercased()).\(function.name)(\(func_args))
                     }
                     """)
                 }
@@ -486,24 +501,6 @@ func createRecipe(title: String) -> String{
     """
 }
 
-func _createSetupPy(title: String) -> String {
-    """
-    from distutils.core import setup, Extension
-
-    setup(name='\(title)',
-          version='1.0',
-          ext_modules=[
-              Extension('\(title)', # Put the name of your extension here
-                        ['\(title).c', '_\(title).m'],
-                        libraries=[],
-                        library_dirs=[],
-                        extra_compile_args=['-ObjC','-w'],
-                        )
-          ]
-        )
-    """
-}
-
 func createSetupPy(title: String) -> String {
     """
     from distutils.core import setup, Extension
@@ -516,6 +513,32 @@ func createSetupPy(title: String) -> String {
                         libraries=[],
                         library_dirs=[],
                         extra_compile_args=['-w'],
+                        )
+          ]
+        )
+    """
+}
+
+
+
+
+
+
+
+
+
+func _createSetupPy(title: String) -> String {
+    """
+    from distutils.core import setup, Extension
+
+    setup(name='\(title)',
+          version='1.0',
+          ext_modules=[
+              Extension('\(title)', # Put the name of your extension here
+                        ['\(title).c', '_\(title).m'],
+                        libraries=[],
+                        library_dirs=[],
+                        extra_compile_args=['-ObjC','-w'],
                         )
           ]
         )

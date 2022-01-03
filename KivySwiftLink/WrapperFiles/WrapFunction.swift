@@ -143,10 +143,27 @@ class WrapFunction: Codable {
     }
     
     var send_args_py: [String] {
-        args.map {
+        args.map { arg -> String in
             var send_options: [PythonSendArgTypes] = []
-            if $0.has_option(.list) {send_options.append(.list)}
-            return $0.convertPythonSendArg(options: send_options)
+            if arg.has_option(.list) {send_options.append(.list)}
+            if arg.type == .other {
+                if let wrap_module = wrap_module_shared {
+                    if let customcstruct = wrap_module.custom_structs.first(where: { (custom) -> Bool in
+                        custom.title == arg.other_type
+                    }) {
+                        for sub in customcstruct.sub_classes {
+                            switch sub {
+                            case .Codable:
+                                //return "json.dumps(\(arg.name).__dict__).encode()"
+                                return "[j_\(arg.name), \(arg.name)_size]"
+                            }
+                        }
+                    }
+                    
+                }
+                
+            }
+            return arg.convertPythonSendArg(options: send_options)
         }.filter({$0 != ""})
     }
     

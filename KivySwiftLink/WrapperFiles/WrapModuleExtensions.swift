@@ -50,6 +50,7 @@ extension WrapModule {
             let call_funcs = functions.filter(
                 {!$0.options.contains(.direct)}).map{ f -> String in
                     let _args = f.args.map{"\($0.swiftCallbackArgs)"}.joined(separator: ", ")
+                    
                     return """
                     func \(f.name)(\(f.export(options: [.use_names, .swift, .protocols]))) {
                             _\(f.name)(\(_args))
@@ -145,7 +146,13 @@ extension WrapModule {
                     }
                     let data_args = function.args.filter{$0.type == .data}
                     output.append(contentsOf: data_args.map{"\t\tcdef long \($0.name)_size = len(\($0.name))"})
-                    
+                    let codable_args = function.args.filter { (arg) -> Bool in arg.has_option(.codable)}
+                    output.append(contentsOf: codable_args.map({ (arg) -> String in
+                        """
+                                cdef bytes j_\(arg.name) = json.dumps(\(arg.name).__dict__).encode()
+                                cdef long \(arg.name)_size = len(j_\(arg.name))
+                        """
+                    }))
                     output.append("\t\t" + generateFunctionCode(title: cls.title, function: function))
                     for arg in list_args {
                         if arg.type == .str {

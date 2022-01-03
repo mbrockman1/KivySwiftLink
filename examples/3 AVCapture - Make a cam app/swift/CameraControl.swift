@@ -203,6 +203,18 @@ extension PythonCameraControl: AVCapturePhotoCaptureDelegate {
 
 
 extension PythonCameraControl: CameraApi_Delegate {
+    func take_multi_photo_with_preset(presets: [CameraPreset]) {
+        
+    }
+    
+    func take_photo_with_preset(preset: CameraPreset) {
+        preset.x
+    }
+    
+    func send2_(image: Data) {
+        
+    }
+    
     func set_CameraApi_Callback(callback: CameraApiPyCallback) {
         py_call = callback
         setupCaptureSession()
@@ -212,7 +224,7 @@ extension PythonCameraControl: CameraApi_Delegate {
     }
     
     func encode_image(image: Data) {
-
+        CameraApi_take
     }
 
     func send_(image: [UInt8]) {
