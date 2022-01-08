@@ -77,13 +77,16 @@ class PythonCameraControl: NSObject {
     
     private func setupCaptureSession() {
         //let captureSession = AVCaptureSession()
-        let discoveryBack = AVCaptureDevice.DiscoverySession.init(deviceTypes: cameratypes, mediaType: .video, position: .back)
-        let discoveryFront = AVCaptureDevice.DiscoverySession.init(deviceTypes: cameratypes, mediaType: .video, position: .front)
-        inputCameras_back.append(contentsOf: discoveryBack.devices)
-        //print("targets", available_back_cams.map({$0.rawValue}))
-        let backs = discoveryBack.devices.map({$0.deviceType.rawValue.replacingOccurrences(of: "AVCaptureDeviceTypeBuiltIn", with: "")})
-        let fronts = discoveryFront.devices.map({$0.deviceType.rawValue.replacingOccurrences(of: "AVCaptureDeviceTypeBuiltIn", with: "")})
-        py_call.get_camera_types(front: fronts.asData(), back: backs.asData())
+        #if !targetEnvironment(simulator)
+            let discoveryBack = AVCaptureDevice.DiscoverySession.init(deviceTypes: self.cameratypes, mediaType: .video, position: .back)
+            let discoveryFront = AVCaptureDevice.DiscoverySession.init(deviceTypes: self.cameratypes, mediaType: .video, position: .front)
+            self.inputCameras_back.append(contentsOf: discoveryBack.devices)
+            //print("targets", available_back_cams.map({$0.rawValue}))
+            let backs = discoveryBack.devices.map({$0.deviceType.rawValue.replacingOccurrences(of: "AVCaptureDeviceTypeBuiltIn", with: "")})
+            let fronts = discoveryFront.devices.map({$0.deviceType.rawValue.replacingOccurrences(of: "AVCaptureDeviceTypeBuiltIn", with: "")})
+            self.py_call.get_camera_types(front: fronts.asData(), back: backs.asData())
+        
+        
         if let captureDevice = AVCaptureDevice.default(for: .video) {
             videoDevice = captureDevice
             do {
@@ -126,6 +129,7 @@ class PythonCameraControl: NSObject {
             videoConnection = videoDataOutput.connection(with: .video)
             //videoConnection.videoOrientation = .landscapeLeft
         }
+        #endif
     }
     
     func capturePhoto() {
@@ -218,13 +222,16 @@ extension PythonCameraControl: CameraApi_Delegate {
     func set_CameraApi_Callback(callback: CameraApiPyCallback) {
         py_call = callback
         setupCaptureSession()
-
+        //swapRootViewController(pythonmain: PythonMain.shared)
 
         py_call.set_preview_presets(presets: try! available_video_presets.rawData())
+        
+        
+        swap_sdl_viewcontroller()
     }
     
     func encode_image(image: Data) {
-        CameraApi_take
+        
     }
 
     func send_(image: [UInt8]) {
