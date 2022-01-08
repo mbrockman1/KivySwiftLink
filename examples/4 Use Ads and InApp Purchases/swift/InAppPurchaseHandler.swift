@@ -10,9 +10,12 @@ class InAppHandler: NSObject {
     
     
     
-    func fetchProducts() {
+    func fetchProducts(product: String) {
         //org.kivy.wraptest.noads
-        let request = SKProductsRequest(productIdentifiers: ["org.kivy.wraptest.noads"])
+        let main_string = "org.kivy.wraptest."
+        let id = main_string.appending(product)
+        print("fetching product \(id)")
+        let request = SKProductsRequest(productIdentifiers: [id])
         request.delegate = self
         request.start()
     }
