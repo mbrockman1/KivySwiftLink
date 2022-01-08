@@ -20,6 +20,7 @@ enum WrapArgOptions: String, CaseIterable, Codable {
     case return_
     case memoryview
     case array
+    case codable
 }
 
 private func WrapArgHasOption(arg: WrapArg,option: WrapArgOptions) -> Bool {
@@ -103,11 +104,13 @@ class WrapArg: Codable, Equatable {
             pyx_type = convertPythonType(options: [])
             objc_type = convertPythonType(options: [.objc])
         }
+        print(other_type)
+        
     }
     
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        name = try! container.decode(String.self, forKey: .name)
+        name = try! container.decode(String.self, forKey: .name).replacingOccurrences(of: "*", with: "")
         idx = try! container.decode(Int.self, forKey: .idx)
         do {
             type = try container.decode(PythonType.self, forKey: .type)
@@ -154,7 +157,6 @@ class WrapArg: Codable, Equatable {
             objc_type = convertPythonType(options: [.objc])
         }
         
-        
                 
     }
     
@@ -166,10 +168,18 @@ class WrapArg: Codable, Equatable {
         return options.contains(option)
     }
     
+    func postProcess(mod: WrapModule, cls: WrapClass) {
+        if mod.custom_structs.first(where: { (custom) -> Bool in custom.title == other_type }) != nil {
+            options.append(.codable)
+            print(name,other_type,options)
+        }
+    }
+    
     func export(options: [PythonTypeConvertOptions]) -> String! {
         //var options = options
         var _name: String
         let is_list = has_option(.list)
+        let codable = has_option(.codable)
         if options.contains(.use_names) {
             _name = name
         } else {
@@ -194,6 +204,7 @@ class WrapArg: Codable, Equatable {
                 //let func_string = "\(convertPythonType(type: type, is_list: is_list, objc: objc, header: header)) \(objc_name!)"
                 return header_string
             } else {
+                if codable {return "PythonData \(_name)"}
                 if type == .other {return "\(other_type) \(_name)"}
                 let func_string = "\(convertPythonType(options: options)) \(_name)"
                 return func_string
@@ -203,8 +214,9 @@ class WrapArg: Codable, Equatable {
         if options.contains(.swift) {
             //if is_list {options.append(.is_list)}
             if options.contains(.protocols) {
-                return "\(_name): \(convertPythonType( options: options))"
+                return "\(_name): \(convertPythonType(options: options))"
             }
+            if codable {return "_ \(_name): PythonData"}
             return "_ \(_name): \(convertPythonType(options: options))"
         }
         
@@ -221,6 +233,7 @@ class WrapArg: Codable, Equatable {
 //        if is_list {
 //            arg_options.append(.is_list)
 //        }
+        
         if type == .other {return "\(other_type) \(_name)"}
         let func_string = "\(convertPythonType(options: arg_options)) \(_name)"
         //let func_string = "\(convertPythonType(type: PurePythonTypeConverter(type: type), options: options)) \(_name)"

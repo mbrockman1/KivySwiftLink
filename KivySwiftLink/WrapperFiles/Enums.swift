@@ -86,8 +86,10 @@ enum FunctionPointersOptions {
 }
 
 enum StructTypeOptions {
+    case python
     case pyx
     case objc
+    case c
     case swift
     case callbacks
     case event_dispatch

@@ -53,6 +53,7 @@ class PythonASTconverter {
     let filename: String
     
     let pyWrapClass: PythonObject
+    let pyWrapModule: PythonObject
     let pbuilder: PythonObject
     
     init(filename: String, site_path: String) {
@@ -64,13 +65,15 @@ class PythonASTconverter {
         //sys.path.append(site_path + "KivySwiftLink")
         pbuilder = Python.import("pythoncall_builder")
         pyWrapClass = pbuilder.PyWrapClass
+        pyWrapModule = pbuilder.PyWrapModule
     }
     
     func generateModule(root: String) -> WrapModule {
         let cur_dir = root
         let wrap_file = try! String.init(contentsOfFile: cur_dir + "/wrapper_sources/" + filename + ".pyi").replacingOccurrences(of: "List[", with: "list[")
         //let module = ast.parse(wrap_file)
-        let wrap_module_string = pyWrapClass.json_export(filename ,wrap_file)
+//        let wrap_module_string = pyWrapClass.json_export(filename ,wrap_file)
+        let wrap_module_string = pyWrapModule(filename, wrap_file).export()
         let data = String(wrap_module_string)?.data(using: .utf8)
         let decoder = JSONDecoder()
         let wrap_module = try! decoder.decode(WrapModule.self, from: data!)

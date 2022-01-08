@@ -1,15 +1,16 @@
 
 import Foundation
 
-
+var convertPythonListType_count = 0
 
 extension WrapArg {
     
     func convertPythonType( options: [PythonTypeConvertOptions]) -> String {
         let list = has_option(.list)
+        let array = has_option(.array)
         if options.contains(.protocols) {
 //            if options.contains(.is_list) {
-            if list {
+            if list || array {
                 return "[\(pyType2Swift)]"
             }
             return pyType2Swift
@@ -18,12 +19,14 @@ extension WrapArg {
             return convertPythonListType(options: options)
         }
         if self.options.contains(.array) {
-            
+            return "\(arrayPtrType())"
         }
         return pythonType2pyx(options: options)
     }
 
     func convertPythonListType(options: [PythonTypeConvertOptions]) -> String {
+        convertPythonListType_count += 1
+        print(name,type.rawValue,convertPythonListType_count)
         if options.contains(.objc) {
     //        return "PythonList_\(SWIFT_TYPES[type]!) _Nonnull"
             return "PythonList_\(SWIFT_TYPES[type.rawValue]!)"
@@ -31,7 +34,10 @@ extension WrapArg {
         if options.contains(.protocols) {
             return "[\(pyType2Swift)]"
         }
-        return "PythonList_\(SWIFT_TYPES[type.rawValue]!)"
+        if has_option(.codable) {
+            return "[\(pyType2Swift)]"
+        }
+        return "PythonList_\(pyType2Swift)"
     }
     
     
@@ -79,11 +85,17 @@ extension WrapArg {
     
     var swiftCallArgs: String {
         let list = has_option(.list)
+        let codable = has_option(.codable)
         switch type {
         case .str:
             return "String(cString: \(name))"
         case .jsondata, .data:
             return "\(name).data"
+        case .other:
+            if codable {
+                return other_type.titleCase()
+            }
+            return name
         default:
             if list {
                 return "pointer2array(data: \(name).ptr, count: \(name).size)"
@@ -94,7 +106,7 @@ extension WrapArg {
 
     var swiftCallbackArgs: String {
         //let list = has_option(.list)
-        
+        let codable = has_option(.codable)
         switch type {
         case .str:
             return "\(name).pythonString"
@@ -102,6 +114,7 @@ extension WrapArg {
             return "\(name).pythonData"
         case .jsondata:
             return "\(name).pythonJsonData"
+        
         default:
             return name
         }
@@ -127,6 +140,31 @@ extension WrapArg {
             
         }
         
+    }
+    
+    func arrayPtrType() -> String {
+        var output = ""
+        switch type {
+        case .int8, .char:
+            output = "char"
+        case .uint8, .uchar:
+            output = "uchar"
+        case .int16, .short:
+            output = "short"
+        case .uint16, .ushort:
+            output = "ushort"
+        case .int32:
+            output = "int"
+        case .uint32:
+            output = "uint"
+        case .long, .int:
+            output = "long"
+        case .ulong, .uint:
+            output = "ulong"
+        default:
+            output = type.rawValue
+        }
+        return output
     }
     
     func pythonType2pyx(options: [PythonTypeConvertOptions]) -> String {
@@ -288,7 +326,8 @@ extension WrapArg {
     
     
     func convertPythonSendArg(options: [PythonSendArgTypes]) -> String {
-        let list = options.contains(.list)
+        let list = has_option(.list)
+        let array = has_option(.array)
         switch type {
         case .str:
             if list {return "\(name)_struct"}
@@ -299,7 +338,7 @@ extension WrapArg {
             return name
             //return "\(name), \(name)_size"
         case .json:
-            return "json.dumps(\(name)).encode('utf-8')"
+            return "json.dumps(\(name)).encode()"
         case .jsondata:
             return "j_\(name)"
         case .object:
@@ -307,6 +346,7 @@ extension WrapArg {
             return "<PythonObject>\(name)"
         default:
             if list {return "\(name)_struct"}
+            if array {return "\(name).data.as_\(arrayPtrType())s"}
             return name
         }
     }
@@ -316,7 +356,7 @@ extension WrapArg {
         let arg_type = convertPythonType(options: [])
         let decode = ""
         return """
-                \(name)_bytes = [x.encode('utf-8') for x in \(name)]
+                \(name)_bytes = [x.encode() for x in \(name)]
                 cdef int \(name)_size = len(\(name))
                 cdef \(arg_type)*\(name)_array = <\(arg_type) *> malloc(\(name)_size  * \(size))
                 cdef int \(name)_i

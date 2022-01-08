@@ -210,3 +210,14 @@ extension String {
             .lowercased()
     }
 }
+
+
+extension String {
+    func lowercaseFirstLetter() -> String {
+        return prefix(1).capitalized + dropFirst()
+    }
+
+    mutating func lowercaseFirstLetter() {
+        self = self.lowercaseFirstLetter()
+    }
+}
