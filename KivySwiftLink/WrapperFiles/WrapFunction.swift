@@ -172,11 +172,11 @@ class WrapFunction: Codable {
             let func_args = args.map({ arg in
                 arg.export(options: options)!
             })
-            if options.contains(.header) {
-                return func_args.joined(separator: " ")
-            } else {
+//            if options.contains(.header) {
+//                return func_args.joined(separator: " ")
+//            } else {
                 return func_args.joined(separator: ", ")
-            }
+//            }
         }
         
         if options.contains(.swift) {

@@ -300,11 +300,11 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
         let list = arg.has_option(.list)
         let data = arg.type == .data
         let jsondata = arg.type == .jsondata
-        
+        let codable = arg.has_option(.codable)
         let dtype = arg.pythonType2pyx(options: [.c_type])
         //
         if list || data || jsondata {
-            if list && (data || jsondata) {
+            if list && (data || jsondata) && !codable {
                 output.append("""
                     ctypedef struct \(arg.pyx_type):
                         const \(arg.convertPythonType(options: [.objc]))\(if: list, "*") ptr
@@ -313,22 +313,24 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
                 """)
             } else {
                 
-                if list && [.object,.str].contains(arg.type) {
-                    output.append("""
-                        ctypedef struct \(arg.pyx_type):
-                            const \(arg.convertPythonType(options: [])) * ptr
-                            long size;
-                    
-                    """)
-                } else {
-                    // Normal types / lists with normal types
-                    //\(if: list, "const ")\(dtype)\(if: list, "*") ptr
-                    output.append("""
-                        ctypedef struct \(arg.pyx_type):
-                            \(if: list, "const ")\(dtype)\(if: list, " *") ptr
-                            long size;
-                    
-                    """)
+                if !codable {
+                    if list && [.object,.str].contains(arg.type) {
+                        output.append("""
+                            ctypedef struct \(arg.pyx_type):
+                                const \(arg.convertPythonType(options: [])) * ptr
+                                long size;
+                        
+                        """)
+                    } else {
+                        // Normal types / lists with normal types
+                        //\(if: list, "const ")\(dtype)\(if: list, "*") ptr
+                        output.append("""
+                            ctypedef struct \(arg.pyx_type):
+                                \(if: list, "const ")\(dtype)\(if: list, " *") ptr
+                                long size;
+                        
+                        """)
+                    }
                 }
                 
             }

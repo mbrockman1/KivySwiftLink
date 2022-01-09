@@ -3,6 +3,10 @@
 import Foundation
 import StoreKit
 
+enum Product: String, CaseIterable {
+    case removeAds = "org.kivy.wraptest.noads0"
+}
+
 
 class InAppHandler: NSObject {
     
@@ -14,8 +18,9 @@ class InAppHandler: NSObject {
         //org.kivy.wraptest.noads
         let main_string = "org.kivy.wraptest."
         let id = main_string.appending(product)
+        
         print("fetching product \(id)")
-        let request = SKProductsRequest(productIdentifiers: [id])
+        let request = SKProductsRequest(productIdentifiers: Set([id]))
         request.delegate = self
         request.start()
     }
@@ -26,6 +31,7 @@ class InAppHandler: NSObject {
 
 extension InAppHandler: SKProductsRequestDelegate, SKPaymentTransactionObserver {
     internal func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
+        print("productsRequest",response.products)
         if let product = response.products.first {
             MyProduct = product
             print(product.productIdentifier)
@@ -34,9 +40,11 @@ extension InAppHandler: SKProductsRequestDelegate, SKPaymentTransactionObserver 
             print(product.localizedDescription)
             print(product.priceLocale)
         }
+        print("MyProduct",MyProduct)
     }
     
     internal func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
+        print("paymentQueue", transactions)
         for transaction in transactions {
             switch transaction.transactionState {
             case .purchasing:

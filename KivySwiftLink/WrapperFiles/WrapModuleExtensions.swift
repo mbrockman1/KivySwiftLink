@@ -77,14 +77,18 @@ extension WrapModule {
     }
 
     
-    func generateSendFunctions(objc: Bool) -> String {
+    func generateSendFunctions(objc: Bool, header: Bool) -> String {
         var send_strings: [String] = []
         var send_options: [PythonTypeConvertOptions] = [.use_names]
         var return_options: [PythonTypeConvertOptions] = []
+        if header {send_options.append(.header)}
         if objc {
             send_options.append(.objc)
             return_options.append(.objc)
         }
+//        else {
+//            send_options.append(.py_mode)
+//        }
         
         
         for cls in classes {
@@ -126,7 +130,7 @@ extension WrapModule {
                     let py_return = "\(if: function.returns.has_option(.list),"list[\(rtn)]",rtn)"
                     output.append("\t"+"def \(function.name)(self, \(function.export(options: [.py_mode]))) -> \(py_return):")
                     //handle list args
-                    let list_args = function.args.filter{$0.has_option(.list)}
+                    let list_args = function.args.filter{$0.has_option(.list) && !$0.has_option(.codable)}
                     
                     for list_arg in list_args {
                         if list_arg.type == .str {

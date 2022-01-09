@@ -11,7 +11,6 @@ public struct versionTuple {
     let major: Int
     let minor: Int
     let micro: Int
-    
 }
 
 

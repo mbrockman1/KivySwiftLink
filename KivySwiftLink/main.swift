@@ -72,7 +72,6 @@ extension KivySwiftLink {
                 abstract: "Download/install newest release of KivySwftLink from github")
         func run() {
             let release = getKslReleases().first!
-            
             if AppVersion.compareVersionWithString(string: release.name) {
                 downloadKslRelease(release: release, forced: false)
             }

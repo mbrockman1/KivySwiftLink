@@ -104,7 +104,6 @@ class WrapArg: Codable, Equatable {
             pyx_type = convertPythonType(options: [])
             objc_type = convertPythonType(options: [.objc])
         }
-        print(other_type)
         
     }
     
@@ -171,7 +170,6 @@ class WrapArg: Codable, Equatable {
     func postProcess(mod: WrapModule, cls: WrapClass) {
         if mod.custom_structs.first(where: { (custom) -> Bool in custom.title == other_type }) != nil {
             options.append(.codable)
-            print(name,other_type,options)
         }
     }
     
@@ -187,28 +185,28 @@ class WrapArg: Codable, Equatable {
         }
         if options.contains(.objc) {
             //if is_list {options.append(.is_list)}
-            if options.contains(.header) {
-                var header_string = ""
-                switch idx {
-                case 0:
-                    if type == .other {
-                        
-                    } else {
-                        header_string.append(":(\(convertPythonType(options: options) ))\(name)")
-                    }
-                    
-                default:
-                    //header_string.append("\(name):(\(convertPythonType(type: type, options: options) ))\(name)")
-                    header_string.append(":(\(convertPythonType(options: options) ))\(name)")
-                }
-                //let func_string = "\(convertPythonType(type: type, is_list: is_list, objc: objc, header: header)) \(objc_name!)"
-                return header_string
-            } else {
+//            if options.contains(.header) {
+//                var header_string = ""
+//                switch idx {
+//                case 0:
+//                    if type == .other {
+//
+//                    } else {
+//                        header_string.append(":(\(convertPythonType(options: options) ))\(name)")
+//                    }
+//
+//                default:
+//                    //header_string.append("\(name):(\(convertPythonType(type: type, options: options) ))\(name)")
+//                    header_string.append(":(\(convertPythonType(options: options) ))\(name)")
+//                }
+//                //let func_string = "\(convertPythonType(type: type, is_list: is_list, objc: objc, header: header)) \(objc_name!)"
+//                return header_string
+//            } else {
                 if codable {return "PythonData \(_name)"}
                 if type == .other {return "\(other_type) \(_name)"}
                 let func_string = "\(convertPythonType(options: options)) \(_name)"
                 return func_string
-            }
+//            }
         }
         
         if options.contains(.swift) {
@@ -222,7 +220,22 @@ class WrapArg: Codable, Equatable {
         
         
         if options.contains(.py_mode) {
-            if is_list {return "\(name): List[\(PurePythonTypeConverter(type: type))]"}
+            
+            if codable {
+                return "PythonData \(name)"
+                
+            }
+            if is_list {
+                var list_type = ""
+                
+                if codable {
+                    return "PythonData"
+                } else {
+                    list_type = PurePythonTypeConverter(type: type)
+                }
+                return "\(name): List[\(list_type)]"
+                
+            }
             
             if type == .other {
                 return "\(name): \(other_type)"
@@ -233,7 +246,7 @@ class WrapArg: Codable, Equatable {
 //        if is_list {
 //            arg_options.append(.is_list)
 //        }
-        
+        if codable { return "PythonData \(_name)" }
         if type == .other {return "\(other_type) \(_name)"}
         let func_string = "\(convertPythonType(options: arg_options)) \(_name)"
         //let func_string = "\(convertPythonType(type: PurePythonTypeConverter(type: type), options: options)) \(_name)"

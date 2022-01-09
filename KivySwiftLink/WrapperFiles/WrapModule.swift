@@ -105,7 +105,7 @@ class WrapModule: Codable {
                 
                 ######## cdef extern Send Functions: ########
                 void set_\(cls.title)_Callback(\(cls.title)Callbacks callback)
-                \(generateSendFunctions(objc: false))
+                \(generateSendFunctions(objc: false, header: true))
                 
             \(custom_structs.map{$0.export(options: [.python])}.joined(separator: newLine))
 
@@ -152,7 +152,7 @@ class WrapModule: Codable {
             //######## Send Functions Protocol: ########//
             \(generateHandlerFuncs(cls: cls, options: [.objc_h]))
             //######## Send Functions: ########//
-            \(generateSendFunctions(objc: true))
+            \(generateSendFunctions(objc: true, header: true))
             """)
             //\(generateSendProtocol(module: self))
             //\(generateStruct(module: self, options: [.objc, .swift]))
