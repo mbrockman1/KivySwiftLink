@@ -9,15 +9,30 @@ import Foundation
 import SwiftyJSON
 
 
+enum ClassPropertyType: String, Codable, CaseIterable {
+    case Property
+    case NumericProperty
+    case StringProperty
+}
+
+class WrapClassProperty: Codable {
+    let name: String
+    let property_type: ClassPropertyType
+    let arg_type: WrapArg
+}
+
+
 class WrapClass: Codable {
     let title: String
     var functions: [WrapFunction]
     var decorators: [WrapClassDecorator]
+    var properties: [WrapClassProperty]
     
     private enum CodingKeys: CodingKey {
         case title
         case functions
         case decorators
+        case properties
     }
     
     var pointer_compare_strings: [String] = []
@@ -25,6 +40,8 @@ class WrapClass: Codable {
     var dispatch_mode = false
     var has_swift_functions = false
     var dispatch_events: [String] = []
+    var class_vars: [String] = []
+    var class_ext_options: [CythonClassOptionTypes] = []
     
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -35,10 +52,15 @@ class WrapClass: Codable {
         } else {
             decorators = []
         }
+        if container.contains(.properties) {
+            properties = try container.decode([WrapClassProperty].self, forKey: .properties)
+        } else {
+            properties = []
+        }
         
         
         
-        
+        print(properties.map{$0.property_type.rawValue})
         handleDecorators()
         for function in functions {
             function.wrap_class = self
@@ -63,7 +85,7 @@ class WrapClass: Codable {
                         "idx": 0
                     ]
                 ],
-                "options": ["swift_func", "callback"],
+                "options": ["swift_func", "callback", "cfunc"],
                 "returns": [
                     "name": "void",
                     "type": "void",
@@ -80,6 +102,13 @@ class WrapClass: Codable {
         
         if dispatch_mode {
             generateDispatchFunctions(cls: self, objc: false)
+            
+            for prop in properties {
+                let getter = WrapFunction(name: "set_\(prop.name)", args: [prop.arg_type], rtn: nil, options: [.property, .callback])
+                self.functions.append(getter)
+                let setter = WrapFunction(name: "get_\(prop.name)", args: [prop.arg_type], rtn: nil, options: [.property])
+                self.functions.append(setter)
+            }
         }
         
         generateFunctionCompares()

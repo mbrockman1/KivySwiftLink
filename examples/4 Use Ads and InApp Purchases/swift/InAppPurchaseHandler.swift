@@ -3,6 +3,10 @@
 import Foundation
 import StoreKit
 
+enum Product: String, CaseIterable {
+    case removeAds = "org.kivy.wraptest.noads0"
+}
+
 
 class InAppHandler: NSObject {
     
@@ -14,8 +18,9 @@ class InAppHandler: NSObject {
         //org.kivy.wraptest.noads
         let main_string = "org.kivy.wraptest."
         let id = main_string.appending(product)
+        
         print("fetching product \(id)")
-        let request = SKProductsRequest(productIdentifiers: [id])
+        let request = SKProductsRequest(productIdentifiers: Set([id]))
         request.delegate = self
         request.start()
     }
@@ -26,17 +31,38 @@ class InAppHandler: NSObject {
 
 extension InAppHandler: SKProductsRequestDelegate, SKPaymentTransactionObserver {
     internal func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
+        print("productsRequest",response.products)
         if let product = response.products.first {
+            product.priceLocale
             MyProduct = product
             print(product.productIdentifier)
             print(product.price)
+            print(product.priceLocale)
             print(product.localizedTitle)
             print(product.localizedDescription)
             print(product.priceLocale)
+//            let localeArray = [
+//                Locale(identifier: "uz_Latn"),
+//                Locale(identifier: "en_BZ"),
+//                Locale(identifier: "nyn_UG"),
+//                Locale(identifier: "ebu_KE"),
+//                Locale(identifier: "en_JM"),
+//                Locale(identifier: "en_US")]
+//                /*I got these at random from the link above, pick the countries
+//                you expect to operate in*/
+//
+//                for locale in localeArray {
+//                    let numberFormatter = NumberFormatter()
+//                    numberFormatter.numberStyle = .currency
+//                    numberFormatter.locale = locale
+//                    print(numberFormatter.string(from: product.price) as Any)
+//                }
         }
+        print("MyProduct",MyProduct as Any)
     }
     
     internal func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
+        print("paymentQueue", transactions)
         for transaction in transactions {
             switch transaction.transactionState {
             case .purchasing:

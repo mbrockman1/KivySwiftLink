@@ -77,7 +77,7 @@ extension CustomStruct {
             
             return """
             cdef class \(title):
-                cdef object __dict__
+                cdef dict __dict__
                 \(args.joined(separator: newLineTab))
             """
         }

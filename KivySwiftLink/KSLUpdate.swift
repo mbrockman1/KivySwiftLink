@@ -114,8 +114,12 @@ func installFromZip(url: URL) {
         print(process)
     } fileOutputHandler: { (furl) in
         let path = furl.path
-        makeExecutable(file: path)
-        copyItem(from: path, to: "/usr/local/bin/ksl", force: true)
+        autoinstall(path: path)
     }
 
+}
+
+func autoinstall(path: String) {
+    makeExecutable(file: path)
+    copyItem(from: path, to: "/usr/local/bin/ksl", force: true)
 }

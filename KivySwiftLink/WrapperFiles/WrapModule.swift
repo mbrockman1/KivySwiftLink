@@ -70,97 +70,134 @@ class WrapModule: Codable {
         let type_imports = """
         \(generateTypeDefImports(imports: usedTypes))
         """
-        var pyx_strings = [imports,type_imports]
+        let pyx_base = """
+        cdef extern from "_\(filename).h":
+            ######## cdef extern Callback Function Pointers: ########
+            \(classes.map{ cls -> String in
+                "\(if: cls.dispatch_mode, generateEnums(cls: cls, options: [.cython,.dispatch_events]))"
+            }.joined(separator: newLine))
+            
+            \(generateFunctionPointers(objc: false, options: [.excluded_callbacks]))
+            ######## cdef extern Callback Struct: ########
+            \(classes.map{ cls -> String in
+                if cls.has_swift_functions {
+                    cls.class_ext_options.append(.init_callstruct)
+                    cls.class_ext_options.append(.swift_functions)
+                    cls.class_vars.append("\t" + cls.functions.filter{$0.has_option(option: .swift_func) && !$0.has_option(option: .callback)}.map{"cdef \($0.function_pointer) _\($0.name)_"}.joined(separator: "\n\t") + newLine)
+                    return """
+                    \(generateStruct(options: [.swift_functions]))
+                        \(generateFunctionPointers(objc: false, options: [.excluded_callbacks_only]))
+                    """
+                }
+                return ""
+            }.joined(separator: newLine))
+            \("#swift_funcs_struct")
+            
+            \(generateStruct(options: [.callbacks]))
+            
+            ######## cdef extern Send Functions: ########
+            \(classes.map{ cls -> String in
+                """
+                void set_\(cls.title)_Callback(\(cls.title)Callbacks callback)
+                    \(generateSendFunctions(cls: cls, objc: false, header: true))
+                """
+            }.joined(separator: newLineTab))
+        
+        \(generateCallbackFunctions(options: [.header]))
+            
+        \(custom_structs.map{$0.export(options: [.python])}.joined(separator: newLine))
+        """
+    
+        
+        var pyx_strings = [imports,type_imports,pyx_base]
         for cls in classes {
-            var class_vars: [String] = []
-            var class_ext_options: [CythonClassOptionTypes] = [.init_callstruct]
-            //var EnumStrings: String = ""
-            var swift_funcs_struct = ""
+            //var swift_funcs_struct = ""
             if cls.dispatch_mode {
-//                let dis_dec = cls.decorators.filter({$0.type=="EventDispatch"})[0]
-//                let events = (dis_dec.dict[0]["events"] as! [String]).map({"\"\($0)\""})
-                class_vars.append("""
+                cls.class_vars.append("""
                 \t__events__ = \(cls.title)_events
 
                 """)
-                class_ext_options.append(.event_dispatch)
+                cls.class_ext_options.append(.event_dispatch)
                 //EnumStrings = generateEnums(cls: cls, options: [.cython,.dispatch_events])
             }
-            if cls.has_swift_functions {
-                class_ext_options.append(.swift_functions)
-                class_vars.append("\t" + cls.functions.filter{$0.has_option(option: .swift_func) && !$0.has_option(option: .callback)}.map{"cdef \($0.function_pointer) _\($0.name)_"}.joined(separator: "\n\t") + newLine)
-                swift_funcs_struct = generateStruct(options: [.swift_functions])
-                swift_funcs_struct.append("\n\t\(generateFunctionPointers(objc: false, options: [.excluded_callbacks_only]))")
-            }
-            let pyx_string = """
-            cdef extern from "_\(filename).h":
-                ######## cdef extern Callback Function Pointers: ########
-                \(if: cls.dispatch_mode, generateEnums(cls: cls, options: [.cython,.dispatch_events]))
-                \(generateFunctionPointers(objc: false, options: [.excluded_callbacks]))
-
-                ######## cdef extern Callback Struct: ########
-                \(swift_funcs_struct)
-                
-                \(generateStruct(options: [.callbacks]))
-                
-                ######## cdef extern Send Functions: ########
-                void set_\(cls.title)_Callback(\(cls.title)Callbacks callback)
-                \(generateSendFunctions(objc: false))
-                
-            \(custom_structs.map{$0.export(options: [.python])}.joined(separator: newLine))
-
-            ######## Callbacks Functions: ########
-            \(generateCallbackFunctions(options: [.header]))
             
+            let class_string = """
             ######## Cython Class: ########
-            \(generateCythonClass(cls: cls, class_vars: class_vars.joined(separator: newLine), dispatch_mode: cls.dispatch_mode))
-
+            \(generateCythonClass(cls: cls, class_vars: cls.class_vars.joined(separator: newLine), dispatch_mode: cls.dispatch_mode))
                 ######## Cython Class Extensions: ########
-                \(extendCythonClass(cls: cls, options: class_ext_options))
+                \(extendCythonClass(cls: cls, options: cls.class_ext_options))
                 ######## Class Functions: ########
-            \(generatePyxClassFunctions)
+            \(generatePyxClassFunctions(cls: cls))
             """
-            pyx_strings.append(pyx_string)
+            pyx_strings.append(class_string)
+
         }
         return pyx_strings.joined(separator: newLine).replacingOccurrences(of: "    ", with: "\t")
-        //
-        //\(generatePyxClassFunctions(module: self)  )
-        //\(generateStruct(module: self, options: [.swift]))
     }
     
     var h: String {
-        //let cls = self.classes[0]
-        var h_string = ["""
+        let enum_structs = """
+        \(classes.filter{$0.dispatch_mode}.map{ cls -> String in
+            generateEnums(cls: cls, options: [.dispatch_events, .objc])
+        }.joined(separator: newLine))
+        """
+        
+        //let swift_function_classes = classes.filter{$0.has_swift_functions}
+        
+        let set_callbacks = classes.map{ cls -> String in
+            generateHandlerFuncs(cls: cls, options: [.objc_h])
+        }.joined(separator: newLine)
+        
+        let send_functions = classes.map{ cls -> String in
+            generateSendFunctions(cls: cls, objc: true, header: true)
+        }.joined(separator: newLine)
+        
+//        for cls in self.classes{
+//            h_string.append( """
+//            //insert enums / Structs
+//            \(if: cls.dispatch_mode,generateEnums(cls: cls, options: [.dispatch_events, .objc]))
+//            //######## cdef extern Callback Function Pointers: ########//
+//            \(generateFunctionPointers(objc: true, options: [.excluded_callbacks]))
+//
+//            //######## cdef extern Callback Struct: ########//
+//            \(if: cls.has_swift_functions, generateStruct(options: [.swift_functions, .objc]) )
+//            \(if: cls.has_swift_functions, generateFunctionPointers(objc: true, options: [.excluded_callbacks_only]) )
+//            \(generateStruct(options: [.objc, .callbacks]))
+//
+//            //######## Send Functions Protocol: ########//
+//            \(generateHandlerFuncs(cls: cls, options: [.objc_h]))
+//            //######## Send Functions: ########//
+//            \(generateSendFunctions(cls: cls, objc: true, header: true))
+//            """)
+//            //\(generateSendProtocol(module: self))
+//            //\(generateStruct(module: self, options: [.objc, .swift]))
+//            //\(generateHandlerFuncs(cls: cls, options: [.objc_h, .init_delegate, .callback]))
+//            //
+//        }
+        //h_string.append("#endif /* \(filename)_h */")
+        return """
         #ifndef \(filename)_h
         #define \(filename)_h
         #include "wrapper_typedefs.h"
         #include <stdbool.h>
         
-        """]
-        for cls in self.classes{
-            h_string.append( """
-            //insert enums / Structs
-            \(if: cls.dispatch_mode,generateEnums(cls: cls, options: [.dispatch_events, .objc]))
-            //######## cdef extern Callback Function Pointers: ########//
-            \(generateFunctionPointers(objc: true, options: [.excluded_callbacks]))
-            
-            //######## cdef extern Callback Struct: ########//
-            \(if: cls.has_swift_functions, generateStruct(options: [.swift_functions, .objc]) )
-            \(if: cls.has_swift_functions, generateFunctionPointers(objc: true, options: [.excluded_callbacks_only]) )
-            \(generateStruct(options: [.objc, .callbacks]))
-                        
-            //######## Send Functions Protocol: ########//
-            \(generateHandlerFuncs(cls: cls, options: [.objc_h]))
-            //######## Send Functions: ########//
-            \(generateSendFunctions(objc: true))
-            """)
-            //\(generateSendProtocol(module: self))
-            //\(generateStruct(module: self, options: [.objc, .swift]))
-            //\(generateHandlerFuncs(cls: cls, options: [.objc_h, .init_delegate, .callback]))
-            //
-        }
-        h_string.append("#endif /* \(filename)_h */")
-        return h_string.joined(separator: newLine)
+        //insert enums / Structs
+        \(enum_structs)
+
+        //######## cdef extern Callback Function Pointers: ########//
+        \(generateFunctionPointers(objc: true, options: [.excluded_callbacks]))
+
+        \(generateStruct(options: [.swift_functions, .objc]))
+        \(generateFunctionPointers(objc: true, options: [.excluded_callbacks_only]))
+        //######## cdef extern Callback Struct: ########//
+        \(generateStruct(options: [.objc, .callbacks]))
+        
+        //######## Set Callback Functions: ########//
+        \(set_callbacks)
+        //######## Send Functions: ########//
+        \(send_functions)
+        #endif /* \(filename)_h */
+        """
     }
     
     var m: String {
@@ -185,9 +222,14 @@ class WrapModule: Codable {
     }
     
     var swift: String {
+        let enum_structs = """
+            \(classes.filter{$0.dispatch_mode}.map{ cls -> String in
+                generateEnums(cls: cls, options: [.dispatch_events, .swift])
+            }.joined(separator: newLine))
+            """
         var swift_string = """
         import Foundation
-        
+        \(enum_structs)
         \(custom_structs.map{$0.export(options: [.swift])}.joined(separator: newLine))
         //######## Send Functions Protocol: ########//
         \(generateSwiftSendProtocol)
@@ -199,6 +241,10 @@ class WrapModule: Codable {
             swift_string.append("\(generateHandlerFuncs(cls: cls, options: [.swift, .init_delegate, .callback, .send]))")
         }
         return swift_string
+        }
+    
+    var classes_has_swift_function: Bool {
+        true
         }
     
     func build() {

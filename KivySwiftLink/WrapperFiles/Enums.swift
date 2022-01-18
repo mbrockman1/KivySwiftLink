@@ -76,6 +76,7 @@ enum EnumGeneratorOptions {
     case cython
     case objc
     case dispatch_events
+    case swift
 }
 
 enum FunctionPointersOptions {

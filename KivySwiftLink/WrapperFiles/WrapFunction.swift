@@ -15,6 +15,8 @@ enum WrapFunctionOption: String, CaseIterable,Codable {
     case swift_func
     case dispatch
     case direct
+    case property
+    case cfunc
 }
 
 class WrapFunction: Codable {
@@ -49,7 +51,19 @@ class WrapFunction: Codable {
     var function_pointer = ""
     var wrap_class: WrapClass!
     
-    
+    init(name: String, args: [WrapArg], rtn: WrapArg!, options: [WrapFunctionOption]) {
+        self.name = name
+        self.args = args
+        if rtn != nil {
+            self.returns = rtn
+        } else {
+            self.returns = WrapArg(name: "", type: .void, other_type: "", idx: 0, arg_options: [.return_])
+        }
+        
+        self.options = options
+        self.call_class = nil
+        self.call_target = nil
+    }
     
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -90,6 +104,20 @@ class WrapFunction: Codable {
     
     func has_option(option: WrapFunctionOption) -> Bool {
         return options.contains(option)
+    }
+    
+    func has_options(options: [WrapFunctionOption]) -> Bool {
+        var state = false
+        
+        for option in options {
+            if self.options.contains(option) {
+                state = true
+            } else {
+                return false
+            }
+            
+        }
+        return state
     }
     
     func set_args_cls(cls: WrapClass) {
@@ -172,11 +200,11 @@ class WrapFunction: Codable {
             let func_args = args.map({ arg in
                 arg.export(options: options)!
             })
-            if options.contains(.header) {
-                return func_args.joined(separator: " ")
-            } else {
+//            if options.contains(.header) {
+//                return func_args.joined(separator: " ")
+//            } else {
                 return func_args.joined(separator: ", ")
-            }
+//            }
         }
         
         if options.contains(.swift) {

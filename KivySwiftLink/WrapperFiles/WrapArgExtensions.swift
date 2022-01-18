@@ -26,7 +26,6 @@ extension WrapArg {
 
     func convertPythonListType(options: [PythonTypeConvertOptions]) -> String {
         convertPythonListType_count += 1
-        print(name,type.rawValue,convertPythonListType_count)
         if options.contains(.objc) {
     //        return "PythonList_\(SWIFT_TYPES[type]!) _Nonnull"
             return "PythonList_\(SWIFT_TYPES[type.rawValue]!)"
@@ -96,6 +95,8 @@ extension WrapArg {
                 return other_type.titleCase()
             }
             return name
+//        case .bytes:
+//            return "pointer2array(data: \(name).ptr, count: \(name).size)"
         default:
             if list {
                 return "pointer2array(data: \(name).ptr, count: \(name).size)"
@@ -106,7 +107,7 @@ extension WrapArg {
 
     var swiftCallbackArgs: String {
         //let list = has_option(.list)
-        let codable = has_option(.codable)
+        //let codable = has_option(.codable)
         switch type {
         case .str:
             return "\(name).pythonString"
@@ -114,7 +115,9 @@ extension WrapArg {
             return "\(name).pythonData"
         case .jsondata:
             return "\(name).pythonJsonData"
-        
+        case .object:
+            if options.contains(.enum_) {return "\(name).rawValue"}
+            return name
         default:
             return name
         }
@@ -379,12 +382,13 @@ extension WrapArg {
     }
     
     var listFunctionLine: String {
-        let arg_type = convertPythonType(options: [])
+        //let arg_type = convertPythonType(options: [])
+        let malloc_type = pythonType2pyx(options: [.c_type])
         //if let size = wrap_arg.size {} else {print(wrap_arg.type)}
         let decode = "\(if: (type == .object) , "<PythonObject>")"
         return """
                 cdef int \(name)_size = len(\(name))
-                cdef \(arg_type)* \(name)_array = <\(arg_type)*> malloc(\(name)_size  * \(size))
+                cdef \(malloc_type)* \(name)_array = <\(malloc_type)*> malloc(\(name)_size  * \(size))
                 cdef int \(name)_i
                 for \(name)_i in range(\(name)_size):
                     \(name)_array[\(name)_i] = \(decode)\(name)[\(name)_i]
