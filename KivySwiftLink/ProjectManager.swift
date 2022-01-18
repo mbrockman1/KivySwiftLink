@@ -160,7 +160,7 @@ class ProjectManager {
             project.set_flags("SWIFT_VERSION","5.0")
             project.set_flags("IPHONEOS_DEPLOYMENT_TARGET","11.0")
             project.add_file(bridge_header.path, parent: classes, force: false)
-            project.add_header_search_paths(cur_dir.appendingPathComponent("wrapper_headers").path, false)
+            project.add_header_search_paths(cur_dir.appendingPathComponent("wrapper_headers/c").path, false)
             
             
             //update_bridging_header(keys: ["joe", "says", "hallo", "fuckers"])

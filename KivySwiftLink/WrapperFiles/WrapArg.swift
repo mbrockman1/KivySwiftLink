@@ -21,6 +21,7 @@ enum WrapArgOptions: String, CaseIterable, Codable {
     case memoryview
     case array
     case codable
+    case dispatch
 }
 
 private func WrapArgHasOption(arg: WrapArg,option: WrapArgOptions) -> Bool {
@@ -178,6 +179,8 @@ class WrapArg: Codable, Equatable {
         var _name: String
         let is_list = has_option(.list)
         let codable = has_option(.codable)
+        let enum_ = has_option(.enum_)
+        let dispatch_object = has_option(.dispatch)
         if options.contains(.use_names) {
             _name = name
         } else {
@@ -212,9 +215,12 @@ class WrapArg: Codable, Equatable {
         if options.contains(.swift) {
             //if is_list {options.append(.is_list)}
             if options.contains(.protocols) {
+                if dispatch_object {return "\(_name): \(other_type)"}
                 return "\(_name): \(convertPythonType(options: options))"
             }
+            
             if codable {return "_ \(_name): PythonData"}
+            //
             return "_ \(_name): \(convertPythonType(options: options))"
         }
         

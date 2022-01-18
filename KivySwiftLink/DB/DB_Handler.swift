@@ -25,13 +25,11 @@ func load_global(realm: Realm) -> GlobalSettings {
     if let global = realm.objects(GlobalSettings.self).first {
         return global
     }
-    print("loading global")
     let global = GlobalSettings()
     global.root_path = root_path
     global.site_path = site_path
-    print("global loaded")
     RealmService.shared.create(in: realm, object: global)
-    print("global written")
+
     return global
 }
 

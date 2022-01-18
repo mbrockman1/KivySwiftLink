@@ -39,5 +39,5 @@ extension versionTuple {
 }
 
 
-public let AppVersion = versionTuple(major: 0, minor: 2, micro: 0)
+public let AppVersion = versionTuple(major: 0, minor: 2, micro: 1)
 

@@ -77,7 +77,7 @@ extension WrapModule {
     }
 
     
-    func generateSendFunctions(objc: Bool, header: Bool) -> String {
+    func generateSendFunctions(cls: WrapClass, objc: Bool, header: Bool) -> String {
         var send_strings: [String] = []
         var send_options: [PythonTypeConvertOptions] = [.use_names]
         var return_options: [PythonTypeConvertOptions] = []
@@ -91,7 +91,7 @@ extension WrapModule {
 //        }
         
         
-        for cls in classes {
+        //for cls in classes {
             
             for function in cls.functions {
                 if !function.has_option(option: .callback) && !function.has_option(option: .swift_func) {
@@ -108,7 +108,7 @@ extension WrapModule {
                     send_strings.append(func_string)
                 }
             }
-        }
+        //}
         if objc {
             return send_strings.joined(separator: newLine)
         } else {
@@ -117,18 +117,21 @@ extension WrapModule {
         
     }
     
-    var generatePyxClassFunctions: String {
+    func generatePyxClassFunctions(cls: WrapClass) -> String {
         var output: [String] = []
         
-        for cls in classes {
+        //for cls in classes {
             
-            for function in cls.functions {
-                if !function.has_option(option: .callback) {
+            //for function in cls.functions.filter({!$0.has_option(option: .property)}) {
+        
+        for function in cls.functions.filter({!$0.has_option(option: .callback) && !$0.has_option(option: .property) && !$0.has_option(option: .cfunc)}) {
+                //if !function.has_option(option: .callback) {
+                    
                     let return_type = function.returns.type
                     var rtn: String
                     if return_type == .void {rtn = "None"} else {rtn = PurePythonTypeConverter(type: return_type)}
                     let py_return = "\(if: function.returns.has_option(.list),"list[\(rtn)]",rtn)"
-                    output.append("\t"+"def \(function.name)(self, \(function.export(options: [.py_mode]))) -> \(py_return):")
+            output.append("\t"+"def \(function.name)(self, \(function.export(options: [.py_mode]))) -> \(py_return): #\(function.options.map{$0.rawValue}.joined(separator: ", "))")
                     //handle list args
                     let list_args = function.args.filter{$0.has_option(.list) && !$0.has_option(.codable)}
                     
@@ -168,10 +171,11 @@ extension WrapModule {
                     }
                     output.append("")
                 }
-            }
-        }
+            //}
+        //}
         return output.joined(separator: newLine)
     }
+    
     
     
     func generateStruct(options: [StructTypeOptions]) -> String {
@@ -179,6 +183,13 @@ extension WrapModule {
         var ending = ""
         let objc = options.contains(.objc)
         let swift_mode = options.contains(.swift_functions)
+        if swift_mode {
+            if !classes.contains(where: { cls -> Bool in
+                cls.has_swift_functions
+            }) {
+                return "//abc"
+            }
+        }
         let callback_mode = options.contains(.callbacks)
         if swift_mode {ending = "SwiftFuncs"}
         else if callback_mode {ending = "Callbacks"}

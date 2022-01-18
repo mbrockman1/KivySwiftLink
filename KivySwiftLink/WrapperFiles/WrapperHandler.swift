@@ -62,8 +62,6 @@ func BuildWrapperFile(root_path: String, site_path: String, py_name: String) {
     _toolchain(path: root_path, command: .build, args: [py_name, "--add-custom-recipe" ,recipe_dir.path])
 
     copyItem(from: h_file.path, to: wrapper_header.path, force: true)
+
     
-    print(wrap_module.custom_structs.map({ (c) -> String in
-        return "\(c.title) \(c.assigns.map{"\($0.name): \($0.type.rawValue)"}.joined(separator: ", "))"
-    }))
 }

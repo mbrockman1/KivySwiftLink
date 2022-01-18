@@ -14,7 +14,7 @@ func generateCythonClass(cls: WrapClass, class_vars: String, dispatch_mode: Bool
     cdef public void* \(_class)_voidptr
     #cdef public void* \(_class)_dispatch
     cdef public \(_class) \(_class)_shared
-    cdef list \(_class)_events = [\(events.joined(separator: ", "))]
+    cdef list \(_class)_events = [_default, \(events.joined(separator: ", "))]
 
     cdef class \(_class)(EventDispatcher):
     \(class_vars)
@@ -97,34 +97,61 @@ func extendCythonClass(cls: WrapClass, options: [CythonClassOptionTypes]) -> Str
 
 func generateEnums(cls: WrapClass, options: [EnumGeneratorOptions]) -> String {
     var string: [String] = []
-    for option in options {
-        if option == .dispatch_events {
+    //for option in options {
+    if options.contains(.dispatch_events) {
             if let dis_dec = cls.decorators.filter({$0.type=="EventDispatch"}).first {
                 let events = (dis_dec.dict[0]["events"] as! [String])
                 if options.contains(.cython) {
                     string.append("""
                     ctypedef enum \(cls.title)Events:
+                        \t_default
                         \(tab + events.joined(separator: newLineTabTab))
-
+                        
                     """)
                 }
-                if options.contains(.objc) {
+                else if options.contains(.objc) {
 //                    string.append("""
 //                    typedef NS_ENUM(NSUInteger, \(cls.title)Events) {
 //                        \(events.joined(separator: "," + newLineTab))
 //                    };
 //                    """)
+                    
                     string.append("""
-                    typedef enum \(cls.title)Events {
-                        \(events.joined(separator: "," + newLineTab))
-                    } \(cls.title)Events;
+                    typedef enum { _default\(if: events.count != 0, ",") \(events.joined(separator: "," + newLineTab)) } \(cls.title)Events;
                     """)
                 }
+                
+                else if options.contains(.swift) {
+                    let dispatch_event_title = "\(cls.title)DispatchEvent"
+                    let dis_events = events.map{ e -> String in
+                        "static let on_\(e) = \(dispatch_event_title)(rawValue: \"on_\(e)\")!"
+                    }
+                    string.append("""
+                struct \(cls.title)DispatchEvent: RawRepresentable {
+                    init?(rawValue: UnsafeMutablePointer<PyObject>) {
+                        self.rawValue = rawValue
+                    }
+                    
+                    init?(rawValue: String) {
+                        self.rawValue = PyUnicode_FromString(rawValue)!
+                    }
+                    
+                    var rawValue: UnsafeMutablePointer<PyObject>
+                    
+                    typealias RawValue = UnsafeMutablePointer<PyObject>
+                    
+                    static let on_default = \(dispatch_event_title)(rawValue: \"on_default\")!
+                    \(dis_events.joined(separator: newLineTab))
+                }
+                """)
+                }
+            }
+            else {
+                
             }
             
-            
         }
-    }
+    //}
     return string.joined(separator: newLineTab)
 }
 
@@ -151,9 +178,9 @@ func generateDispatchFunctions(cls: WrapClass, objc: Bool) {
             "args": [
                 [
                     "name":"event",
-                    "type":"other",
-                    "other_type": "\(cls.title)Events",
-                    "options": ["enum_"],
+                    "type":"object",
+                    "other_type": "\(cls.title)DispatchEvent",
+                    "options": ["enum_", "dispatch"],
                     "idx": 0
                 ],
                 [
@@ -457,6 +484,7 @@ func generateHandlerFuncs(cls: WrapClass, options: [handlerFunctionCodeType]) ->
                     }
                     if codelines.count != 0 {codelines.append("")}
                     output.append("""
+                    //\(function.name)
                     @_silgen_name(\"\(cls.title)_\(function.name)\")
                     func \(cls.title)_\(function.name)(\(function.export(options: [.use_names, .swift]))) \(swift_return) {
                         \(codelines.joined(separator: newLineTab))\(if: function.returns.type != .void, "return ")\(cls.title.lowercased()).\(function.name)(\(func_args))

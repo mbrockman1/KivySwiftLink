@@ -95,6 +95,8 @@ extension WrapArg {
                 return other_type.titleCase()
             }
             return name
+//        case .bytes:
+//            return "pointer2array(data: \(name).ptr, count: \(name).size)"
         default:
             if list {
                 return "pointer2array(data: \(name).ptr, count: \(name).size)"
@@ -105,7 +107,7 @@ extension WrapArg {
 
     var swiftCallbackArgs: String {
         //let list = has_option(.list)
-        let codable = has_option(.codable)
+        //let codable = has_option(.codable)
         switch type {
         case .str:
             return "\(name).pythonString"
@@ -113,7 +115,9 @@ extension WrapArg {
             return "\(name).pythonData"
         case .jsondata:
             return "\(name).pythonJsonData"
-        
+        case .object:
+            if options.contains(.enum_) {return "\(name).rawValue"}
+            return name
         default:
             return name
         }
@@ -378,7 +382,7 @@ extension WrapArg {
     }
     
     var listFunctionLine: String {
-        let arg_type = convertPythonType(options: [])
+        //let arg_type = convertPythonType(options: [])
         let malloc_type = pythonType2pyx(options: [.c_type])
         //if let size = wrap_arg.size {} else {print(wrap_arg.type)}
         let decode = "\(if: (type == .object) , "<PythonObject>")"

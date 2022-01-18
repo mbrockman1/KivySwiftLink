@@ -207,7 +207,6 @@ struct Build: ParsableCommand {
         @Flag(name: .shortAndLong, help: "Build Changes Only")
         var update = false
         func run() {
-            print("building all command used", update)
             if update {
                 updateWrappers()
             } else {

@@ -207,6 +207,14 @@ extension PythonCameraControl: AVCapturePhotoCaptureDelegate {
 
 
 extension PythonCameraControl: CameraApi_Delegate {
+    func get_a(value: Int) {
+        
+    }
+    
+    func get_b(value: String) {
+        
+    }
+    
     func take_multi_photo_with_preset(presets: [CameraPreset]) {
         
     }

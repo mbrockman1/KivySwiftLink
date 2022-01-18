@@ -167,8 +167,10 @@ func InitWorkingFolder() {
     createFolder(name: "wrapper_sources")
     createFolder(name: "wrapper_builds")
     createFolder(name: "wrapper_headers")
-    copyItem(from: "KivySwiftSupportFiles/project_support_files/wrapper_typedefs.h", to: "wrapper_headers/wrapper_typedefs.h")
-    copyItem(from: "KivySwiftSupportFiles/swift_types.py", to: "venv/lib/python3.9/site-packages/swift_types.py")
+    createFolder(name: "wrapper_headers/c")
+    createFolder(name: "wrapper_headers/swift")
+    copyItem(from: "KivySwiftSupportFiles/project_support_files/wrapper_typedefs.h", to: "wrapper_headers/c/wrapper_typedefs.h")
+    copyItem(from: "KivySwiftSupportFiles/swift_types.pyi", to: "venv/lib/python3.9/site-packages/swift_types.pyi")
     let fileman = FileManager()
     do {
         //try fileman.removeItem(atPath: "KivySwiftLink")
@@ -184,15 +186,17 @@ func InitWorkingFolder() {
 
 func UpdateWorkingFolder() {
     let fm = FileManager()
+    if fm.fileExists(atPath: "KivySwiftSupportFiles") {try! fm.removeItem(atPath: "KivySwiftSupportFiles")}
     try! Process().clone(repo: "https://github.com/psychowasp/KivySwiftSupportFiles.git", path: "KivySwiftSupportFiles")
     
-    copyItem(from: "KivySwiftSupportFiles/swift_types.py", to: "venv/lib/python3.9/site-packages/swift_types.py",force: true)
+    //copyItem(from: "KivySwiftSupportFiles/swift_types.py", to: "venv/lib/python3.9/site-packages/swift_types.py",force: true)
     
     copyItem(from: "KivySwiftSupportFiles/project_support_files", to: "project_support_files",force: true)
     copyItem(from: "KivySwiftSupportFiles/pythoncall_builder.py", to: "venv/lib/python3.9/site-packages/pythoncall_builder.py", force: true)
-    
-    copyItem(from: "KivySwiftSupportFiles/project_support_files/wrapper_typedefs.h", to: "wrapper_headers/wrapper_typedefs.h", force: true)
-    copyItem(from: "KivySwiftSupportFiles/swift_types.py", to: "venv/lib/python3.9/site-packages/swift_types.py", force: true)
+    if !fm.fileExists(atPath: "wrapper_headers/c") {createFolder(name: "wrapper_headers/c")}
+    if !fm.fileExists(atPath: "wrapper_headers/swift") {createFolder(name: "wrapper_headers/swift")}
+    copyItem(from: "KivySwiftSupportFiles/project_support_files/wrapper_typedefs.h", to: "wrapper_headers/c/wrapper_typedefs.h", force: true)
+    copyItem(from: "KivySwiftSupportFiles/swift_types.pyi", to: "venv/lib/python3.9/site-packages/swift_types.pyi", force: true)
     do {
         try fm.removeItem(atPath: "KivySwiftSupportFiles")
     } catch {
@@ -250,6 +254,8 @@ func buildAllWrappers() {
         if files.count != 0 {
             update_project(files: files)
         }
+    } else {
+        print("No Project Selected - use 'ksl project select <project name (no -ios)>'")
     }
 }
 
@@ -285,6 +291,9 @@ func updateWrappers(path: String! = nil) {
                 print(filename)
                 BuildWrapperFile(root_path: rpath, site_path: spath, py_name: filename )
             }
+        } else {
+            print(filename)
+            BuildWrapperFile(root_path: rpath, site_path: spath, py_name: filename )
         }
         
     }
