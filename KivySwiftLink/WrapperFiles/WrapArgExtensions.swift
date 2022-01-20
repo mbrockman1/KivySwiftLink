@@ -8,6 +8,7 @@ extension WrapArg {
     func convertPythonType( options: [PythonTypeConvertOptions]) -> String {
         let list = has_option(.list)
         let array = has_option(.array)
+        let ignore_list = options.contains(.ignore_list)
         if options.contains(.protocols) {
 //            if options.contains(.is_list) {
             if list || array {
@@ -15,7 +16,10 @@ extension WrapArg {
             }
             return pyType2Swift
         }
-        if list {
+        if list && !ignore_list{
+            if type == .str {return "PythonList_PythonString"}
+            if type == .object {return "PythonList_PythonObject"}
+            
             return convertPythonListType(options: options)
         }
         if self.options.contains(.array) {
@@ -65,7 +69,7 @@ extension WrapArg {
         case .other:
             return convertOtherCallArg
         default:
-            if is_list_data {return "[\(name).ptr[x].decode('utf8') for x in range(\(size_arg_name))]"}
+            if is_list_data {return "[\(name).ptr[x] for x in range(\(size_arg_name))]"}
             return name
         }
     }
@@ -119,6 +123,9 @@ extension WrapArg {
             if options.contains(.enum_) {return "\(name).rawValue"}
             return name
         default:
+            if has_option(.list) {
+                return "\(pyx_type)(ptr: \(name).unsafePointer(), size: \(name).count)"
+            }
             return name
         }
     }
@@ -356,15 +363,17 @@ extension WrapArg {
     
     
     var strlistFunctionLine: String {
-        let arg_type = convertPythonType(options: [])
+        //let arg_type = convertPythonType(options: [])
+        let arg_type = "char*"
         let decode = ""
         return """
                 \(name)_bytes = [x.encode() for x in \(name)]
                 cdef int \(name)_size = len(\(name))
-                cdef \(arg_type)*\(name)_array = <\(arg_type) *> malloc(\(name)_size  * \(size))
+                cdef \(arg_type)* \(name)_array = <\(arg_type) *> malloc(\(name)_size  * \(size))
                 cdef int \(name)_i
                 for \(name)_i in range(\(name)_size):
                     \(name)_array[\(name)_i] = \(decode)\(name)_bytes[\(name)_i]
+                cdef \(pyx_type) \(name)_struct = [\(name)_array, \(name)_size]
         """}
     
     var dataFunctionLine: String {

@@ -19,6 +19,7 @@ enum PythonTypeConvertOptions {
     case protocols
     case call
     case send
+    case ignore_list
 }
 
 enum PythonSendArgTypes {

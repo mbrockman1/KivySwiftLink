@@ -81,7 +81,7 @@ class WrapModule: Codable {
             ######## cdef extern Callback Struct: ########
             \(classes.map{ cls -> String in
                 if cls.has_swift_functions {
-                    cls.class_ext_options.append(.init_callstruct)
+                    if !cls.class_ext_options.contains(.init_callstruct) {cls.class_ext_options.append(.init_callstruct)}
                     cls.class_ext_options.append(.swift_functions)
                     cls.class_vars.append("\t" + cls.functions.filter{$0.has_option(option: .swift_func) && !$0.has_option(option: .callback)}.map{"cdef \($0.function_pointer) _\($0.name)_"}.joined(separator: "\n\t") + newLine)
                     return """
@@ -112,10 +112,11 @@ class WrapModule: Codable {
         var pyx_strings = [imports,type_imports,pyx_base]
         for cls in classes {
             //var swift_funcs_struct = ""
+            //\t__events__ = \(cls.title)_events
             if cls.dispatch_mode {
                 cls.class_vars.append("""
                 \t__events__ = \(cls.title)_events
-
+                    
                 """)
                 cls.class_ext_options.append(.event_dispatch)
                 //EnumStrings = generateEnums(cls: cls, options: [.cython,.dispatch_events])

@@ -51,6 +51,7 @@ class JsonStorage {
 }
 let BRIDGE_STRING = """
 #import \"runMain.h\"
+#include \"Python.h\"
 //#Wrappers Start"
 #include "wrapper_typedefs.h"
 //#Wrappers End

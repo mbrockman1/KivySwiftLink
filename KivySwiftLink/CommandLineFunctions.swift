@@ -245,7 +245,7 @@ func buildAllWrappers() {
         let fm = FileManager()
         let wrapper_sources = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("wrapper_sources")
         print("building all")
-        let files = try! fm.contentsOfDirectory(atPath: wrapper_sources.path).map{$0.fileName()}
+        let files = try! fm.contentsOfDirectory(atPath: wrapper_sources.path).map{$0.fileName()}.filter{!$0.fileName().contains(".DS_Store")}
         print(files)
         for file in files {
             print(file)
