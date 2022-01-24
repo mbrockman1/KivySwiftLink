@@ -114,12 +114,19 @@ class ProjectManager {
         let file_man = FileManager()
         let cur_dir = URL(fileURLWithPath: file_man.currentDirectoryPath)
         let support_files = cur_dir.appendingPathComponent("project_support_files")
+        let global = ProjectHandler(db_path: nil).global
         if let project = self.project {
-            project.remove_framework_search_paths([
-                "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator14.4.sdk/System/Library/Frameworks",
-                
-            ])
-            project.remove_library_search_paths(["/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator14.4.sdk/usr/lib"])
+            let xcode_path = global.xcode_path
+            
+            //let xcode_path = "/Volumes/WorkSSD/Xcode.app"
+            for i in 0...9 {
+                project.remove_framework_search_paths([
+                    "\(xcode_path)/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator14.\(i).sdk/System/Library/Frameworks",
+                    
+                ])
+                project.remove_library_search_paths(["\(xcode_path)/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator14.\(i).sdk/usr/lib"])
+            }
+            
             let sources = project.get_or_create_group("Sources")
             //let sources_list = sources.children.map{String($0._get_comment())!}
             for src in sources.children {

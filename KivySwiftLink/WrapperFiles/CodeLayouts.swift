@@ -9,12 +9,12 @@ import Foundation
 func generateCythonClass(cls: WrapClass, class_vars: String, dispatch_mode: Bool) -> String {
     let _class = cls.title
     if dispatch_mode {
-        let events = cls.dispatch_events.map{"\"\($0)\""}
+        let events = cls.dispatch_events.map{"\"on_\($0)\""}
     let string = """
     cdef public void* \(_class)_voidptr
     #cdef public void* \(_class)_dispatch
     cdef public \(_class) \(_class)_shared
-    cdef list \(_class)_events = [\"\(cls.title)_default\", \(events.joined(separator: ", "))]
+    cdef list \(_class)_events = [\"on_\(cls.title)_default\", \(events.joined(separator: ", "))]
 
     cdef class \(_class)(EventDispatcher):
     \(class_vars)

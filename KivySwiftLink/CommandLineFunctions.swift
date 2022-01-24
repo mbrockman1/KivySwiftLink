@@ -62,8 +62,15 @@ func toolchain_venv(path: String, command: String, args: [String]) -> Int32 {
     //print("toolchain_venv running")
     //var targs: [String] = ["-c","source venv/bin/activate", "&&", "python --version"]
     let targs = ["-c", """
+    echo "path: \(path)"
     source \(path)/venv/bin/activate
     toolchain \(command) \(args.joined(separator: " "))
+    """]
+    let debug_args = ["-c", """
+    #source \(path)/venv/bin/activate
+    #toolchain \(command) \(args.joined(separator: " "))
+    echo "path: \(path)"
+    echo $PWD
     """]
     //targs.append(contentsOf: args)
     let task = Process()
@@ -130,9 +137,10 @@ func pip_install(arg: String) -> Int32 {
 }
 
 @discardableResult
-func create_venv() -> Int32 {
+func create_venv(python: String) -> Int32 {
     let task = Process()
-    task.launchPath = "/usr/local/bin/python3"
+    task.launchPath = python
+    //task.launchPath = "/usr/local/bin/python3"
     task.arguments = ["-m","venv", "venv"]
     task.launch()
     task.waitUntilExit()
@@ -140,17 +148,26 @@ func create_venv() -> Int32 {
 }
 
 
-func InitWorkingFolder() {
-    if !checkPythonVersion() {
-        downloadPython()
-        return
+func InitWorkingFolder(python_path: String!, python_version: String!) {
+    var py_path = "/usr/local/bin/python3"
+    var py_version_major = "3.9"
+    var py_version_full = "3.9.2"
+    if let ppath = python_path {py_path = ppath}
+    if let pversion = python_version {
+        py_version_full = pversion
+        py_version_major = python_version.split(separator: ".")[0...1].joined(separator: ".")
     }
-    
+
+//    if !checkPythonVersion() {
+//        downloadPython()
+//        return
+//    }
+    //return
     //try! Process().clone(repo: "https://github.com/psychowasp/KivySwiftLink.git", path: "KivySwiftLinkPack")
     try! Process().clone(repo: "https://github.com/psychowasp/KivySwiftSupportFiles.git", path: "KivySwiftSupportFiles")
     //try! Process().clone(repo: "https://github.com/meow464/kivy-ios.git", path: "kivy-ios-modded")
     
-    create_venv()
+    create_venv(python: py_path)
     //pip_install(arg: "git+\(toolchain_py_url)")
     //https://github.com/kivy/kivy-ios
     //https://github.com/meow464/kivy-ios.git@custom_recipes
@@ -160,17 +177,18 @@ func InitWorkingFolder() {
     }
     //copyItem(from: "KivySwiftSupportFiles/toolchain.py", to: "venv/lib/python3.9/site-packages/kivy_ios/toolchain.py", force: true)
     
-    copyItem(from: "KivySwiftSupportFiles/swift_types.py", to: "venv/lib/python3.9/site-packages/swift_types.py")
+    //copyItem(from: "KivySwiftSupportFiles/swift_types.py", to: "venv/lib/python\(py_version_major)/site-packages/swift_types.py")
 
     copyItem(from: "KivySwiftSupportFiles/project_support_files", to: "project_support_files")
-    copyItem(from: "KivySwiftSupportFiles/pythoncall_builder.py", to: "venv/lib/python3.9/site-packages/pythoncall_builder.py")
+    copyItem(from: "KivySwiftSupportFiles/pythoncall_builder.py", to: "venv/lib/python\(py_version_major)/site-packages/pythoncall_builder.py")
+    copyItem(from: "KivySwiftSupportFiles/swift_types.pyi", to: "venv/lib/python\(py_version_major)/site-packages/swift_types.pyi")
     createFolder(name: "wrapper_sources")
     createFolder(name: "wrapper_builds")
     createFolder(name: "wrapper_headers")
     createFolder(name: "wrapper_headers/c")
     createFolder(name: "wrapper_headers/swift")
     copyItem(from: "KivySwiftSupportFiles/project_support_files/wrapper_typedefs.h", to: "wrapper_headers/c/wrapper_typedefs.h")
-    copyItem(from: "KivySwiftSupportFiles/swift_types.pyi", to: "venv/lib/python3.9/site-packages/swift_types.pyi")
+    
     let fileman = FileManager()
     do {
         //try fileman.removeItem(atPath: "KivySwiftLink")
@@ -178,8 +196,12 @@ func InitWorkingFolder() {
     } catch {
         print("cant delete folders")
     }
-    _toolchain(path: root_path, command: .build, args: ["python3==3.9.2", "kivy"])
+    _toolchain(path: root_path, command: .build, args: ["python3==\(py_version_full)", "kivy"])
     //toolchain(command: "build", args: ["kivy"])
+    let proj_settings = ProjectHandler(db_path: nil)
+    proj_settings.current_python_path = py_path
+    proj_settings.current_python_version = py_version_full.split(separator: ".").map{Int($0)!}
+    proj_settings.save()
     print("Setup done")
 
 }
@@ -188,15 +210,16 @@ func UpdateWorkingFolder() {
     let fm = FileManager()
     if fm.fileExists(atPath: "KivySwiftSupportFiles") {try! fm.removeItem(atPath: "KivySwiftSupportFiles")}
     try! Process().clone(repo: "https://github.com/psychowasp/KivySwiftSupportFiles.git", path: "KivySwiftSupportFiles")
-    
+    let proj_settings = ProjectHandler(db_path: nil)
+    let py_major = proj_settings.python_major_version
     //copyItem(from: "KivySwiftSupportFiles/swift_types.py", to: "venv/lib/python3.9/site-packages/swift_types.py",force: true)
     
     copyItem(from: "KivySwiftSupportFiles/project_support_files", to: "project_support_files",force: true)
-    copyItem(from: "KivySwiftSupportFiles/pythoncall_builder.py", to: "venv/lib/python3.9/site-packages/pythoncall_builder.py", force: true)
+    copyItem(from: "KivySwiftSupportFiles/pythoncall_builder.py", to: "venv/lib/python\(py_major)/site-packages/pythoncall_builder.py", force: true)
+    copyItem(from: "KivySwiftSupportFiles/swift_types.pyi", to: "venv/lib/python\(py_major)/site-packages/swift_types.pyi", force: true)
     if !fm.fileExists(atPath: "wrapper_headers/c") {createFolder(name: "wrapper_headers/c")}
     if !fm.fileExists(atPath: "wrapper_headers/swift") {createFolder(name: "wrapper_headers/swift")}
     copyItem(from: "KivySwiftSupportFiles/project_support_files/wrapper_typedefs.h", to: "wrapper_headers/c/wrapper_typedefs.h", force: true)
-    copyItem(from: "KivySwiftSupportFiles/swift_types.pyi", to: "venv/lib/python3.9/site-packages/swift_types.pyi", force: true)
     do {
         try fm.removeItem(atPath: "KivySwiftSupportFiles")
     } catch {
@@ -224,7 +247,8 @@ func resourceURL(to path: String) -> URL? {
 
 func buildWrapper(name: String) {
     //if JsonStorage().current_project() != nil {
-    if ProjectHandler(db_path: nil).current_project != nil {
+    let p_handler = ProjectHandler(db_path: nil)
+    if p_handler.current_project != nil {
         print("building \(name).pyi")
         let file_man = FileManager()
         let file_url = URL(fileURLWithPath: file_man.currentDirectoryPath).appendingPathComponent("wrapper_sources").appendingPathComponent("\(name).pyi")
@@ -232,6 +256,7 @@ func buildWrapper(name: String) {
             print("\(file_url.path) dont exist")
             return
         }
+        let site_path = root_path + "/venv/lib/python\(p_handler.python_major_version)/site-packages/"
         BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: name)
         update_project(files: [name])
         print("Done")
@@ -241,12 +266,15 @@ func buildWrapper(name: String) {
 }
 
 func buildAllWrappers() {
-    if ProjectHandler(db_path: nil).current_project != nil {
+    let p_handler = ProjectHandler(db_path: nil)
+    if p_handler.current_project != nil {
         let fm = FileManager()
         let wrapper_sources = URL(fileURLWithPath: fm.currentDirectoryPath).appendingPathComponent("wrapper_sources")
         print("building all")
         let files = try! fm.contentsOfDirectory(atPath: wrapper_sources.path).map{$0.fileName()}.filter{!$0.fileName().contains(".DS_Store")}
         print(files)
+        let site_path = root_path + "/venv/lib/python\(p_handler.python_major_version)/site-packages/"
+        print(site_path)
         for file in files {
             print(file)
             BuildWrapperFile(root_path: root_path, site_path: site_path, py_name: file )
@@ -278,7 +306,6 @@ func updateWrappers(path: String! = nil) {
         rpath = root_path
         spath = site_path
     }
-    
     let wrapper_files = try! fm.contentsOfDirectory(at: wrapper_sources, includingPropertiesForKeys: [], options: .skipsHiddenFiles)
     
     for file in wrapper_files {
@@ -292,8 +319,8 @@ func updateWrappers(path: String! = nil) {
                 BuildWrapperFile(root_path: rpath, site_path: spath, py_name: filename )
             }
         } else {
-            print(filename)
-            BuildWrapperFile(root_path: rpath, site_path: spath, py_name: filename )
+            //print(filename)
+            //BuildWrapperFile(root_path: rpath, site_path: spath, py_name: filename )
         }
         
     }

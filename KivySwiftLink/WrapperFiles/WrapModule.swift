@@ -126,8 +126,11 @@ class WrapModule: Codable {
             ######## Cython Class: ########
             \(generateCythonClass(cls: cls, class_vars: cls.class_vars.joined(separator: newLine), dispatch_mode: cls.dispatch_mode))
                 ######## Cython Class Extensions: ########
+                
                 \(extendCythonClass(cls: cls, options: cls.class_ext_options))
                 ######## Class Functions: ########
+                \(if: cls.dispatch_mode, "def on_\(cls.title)_default(self, *args, **kwargs):...")
+                \(if: cls.dispatch_mode, cls.dispatch_events.map{"def on_\($0)(self, *args, **kwargs):..."}.joined(separator: newLineTab))
             \(generatePyxClassFunctions(cls: cls))
             """
             pyx_strings.append(class_string)

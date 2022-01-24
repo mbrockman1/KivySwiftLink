@@ -55,6 +55,7 @@ enum PythonType: String, CaseIterable,Codable {
     case jsondata
     case list
     case tuple
+    case byte_tuple
     case object
     case bool
     case void
