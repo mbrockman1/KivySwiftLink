@@ -23,7 +23,7 @@ struct KivySwiftLink: ParsableCommand {
     static let configuration = CommandConfiguration(
             abstract: "KivySwiftLink",
         version: AppVersion.string,
-        subcommands: [Setup.self,Build.self, Toolchain.self,Install.self, UpdateApp.self, Project.self, Helper.self].sorted(by: {$0._commandName < $1._commandName})
+        subcommands: [Setup.self,Build.self, Toolchain.self,Install.self, UpdateApp.self, Project.self, Helper.self, Xcode.self].sorted(by: {$0._commandName < $1._commandName})
     )
     
 }
@@ -44,6 +44,8 @@ extension KivySwiftLink {
     struct Setup: ParsableCommand {
         static let configuration = CommandConfiguration(
                 abstract: "Setup working folder")
+        @Argument var python_path: String!
+        @Argument var kivy_ios_python_version: String!
         @Flag(name: .shortAndLong, help: "overwrite ksl if it already exist")
         var update_only = false
         
@@ -54,7 +56,7 @@ extension KivySwiftLink {
                 UpdateWorkingFolder()
             } else {
                 print("Installing KivySwiftLink Components")
-                InitWorkingFolder()
+                InitWorkingFolder(python_path: python_path, python_version: kivy_ios_python_version)
             }
         }
     }
@@ -120,8 +122,23 @@ extension KivySwiftLink {
 
 
 
-
-
+struct Xcode: ParsableCommand {
+    static let configuration = CommandConfiguration(
+                abstract: "Project options",
+        subcommands: [Set.self]
+                )
+    struct Set: ParsableCommand {
+        static let configuration = CommandConfiguration(
+                        abstract: "set custom xcode.app path")
+        @Argument() var path: String
+        func run() throws {
+            let ph = ProjectHandler(db_path: nil)
+            ph.xcode_path = path
+        }
+    }
+    
+    
+}
 
 
 struct Project: ParsableCommand {
@@ -206,12 +223,22 @@ struct Build: ParsableCommand {
     struct All: ParsableCommand {
         @Flag(name: .shortAndLong, help: "Build Changes Only")
         var update = false
+        @Flag(name: .shortAndLong, help: "Build Changes From Xcode")
+        var Xcode_mode = false
+        @Argument() var path: String?
         func run() {
-            if update {
-                updateWrappers()
+            if Xcode_mode {
+                print(path)
+                //updateWrappers(path: path)
             } else {
-                buildAllWrappers()
+                if update {
+                    updateWrappers()
+                } else {
+                    buildAllWrappers()
+                }
             }
+            
+            
             
         }
     }

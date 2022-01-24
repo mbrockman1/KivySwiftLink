@@ -110,6 +110,7 @@ func installRelease(url: URL,error: Error?, forced: Bool) -> Void {
 }
 
 func installFromZip(url: URL) {
+    //print(url)
     try! Zip.unzipFile(url, destination: url.deletingLastPathComponent(), overwrite: true, password: nil) { (process) in
         print(process)
     } fileOutputHandler: { (furl) in
@@ -120,6 +121,7 @@ func installFromZip(url: URL) {
 }
 
 func autoinstall(path: String) {
+    print("making executable: \(path)")
     makeExecutable(file: path)
     copyItem(from: path, to: "/usr/local/bin/ksl", force: true)
 }

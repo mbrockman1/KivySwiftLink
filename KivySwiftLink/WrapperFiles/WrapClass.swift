@@ -41,7 +41,7 @@ class WrapClass: Codable {
     var has_swift_functions = false
     var dispatch_events: [String] = []
     var class_vars: [String] = []
-    var class_ext_options: [CythonClassOptionTypes] = []
+    var class_ext_options: [CythonClassOptionTypes] = [.init_callstruct]
     
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)

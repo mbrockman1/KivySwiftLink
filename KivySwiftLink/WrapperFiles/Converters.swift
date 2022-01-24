@@ -177,6 +177,9 @@ func PurePythonTypeConverter(type: PythonType) -> String{
     
     case .void:
         return "None"
+    
+    case .byte_tuple:
+        return ""
 
     case .bool, .tuple, .list, .None, .other:
         return type.rawValue

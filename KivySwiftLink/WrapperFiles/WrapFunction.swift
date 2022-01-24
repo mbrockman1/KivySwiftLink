@@ -19,6 +19,14 @@ enum WrapFunctionOption: String, CaseIterable,Codable {
     case cfunc
 }
 
+enum WrapFunctionDecoratorType: String, Codable {
+    case direct_arg
+}
+
+class WrapFunctionDecorator: Codable {
+    let type: WrapFunctionDecoratorType
+}
+
 class WrapFunction: Codable {
     let name: String
     var args: [WrapArg]

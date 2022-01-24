@@ -9,12 +9,12 @@ import Foundation
 func generateCythonClass(cls: WrapClass, class_vars: String, dispatch_mode: Bool) -> String {
     let _class = cls.title
     if dispatch_mode {
-        let events = cls.dispatch_events.map{"\"\($0)\""}
+        let events = cls.dispatch_events.map{"\"on_\($0)\""}
     let string = """
     cdef public void* \(_class)_voidptr
     #cdef public void* \(_class)_dispatch
     cdef public \(_class) \(_class)_shared
-    cdef list \(_class)_events = [_default, \(events.joined(separator: ", "))]
+    cdef list \(_class)_events = [\"on_\(cls.title)_default\", \(events.joined(separator: ", "))]
 
     cdef class \(_class)(EventDispatcher):
     \(class_vars)
@@ -103,8 +103,8 @@ func generateEnums(cls: WrapClass, options: [EnumGeneratorOptions]) -> String {
                 let events = (dis_dec.dict[0]["events"] as! [String])
                 if options.contains(.cython) {
                     string.append("""
-                    ctypedef enum \(cls.title)Events:
-                        \t_default
+                    ctypedef enum \(cls.title)Event:
+                        \t\(cls.title)_default
                         \(tab + events.joined(separator: newLineTabTab))
                         
                     """)
@@ -117,7 +117,7 @@ func generateEnums(cls: WrapClass, options: [EnumGeneratorOptions]) -> String {
 //                    """)
                     
                     string.append("""
-                    typedef enum { _default\(if: events.count != 0, ",") \(events.joined(separator: "," + newLineTab)) } \(cls.title)Events;
+                    typedef enum { \(cls.title)_default\(if: events.count != 0, ",") \(events.joined(separator: "," + newLineTab)) } \(cls.title)Events;
                     """)
                 }
                 
@@ -333,6 +333,7 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
         if list || data || jsondata {
             if list && (data || jsondata) && !codable {
                 output.append("""
+                    #list
                     ctypedef struct \(arg.pyx_type):
                         const \(arg.convertPythonType(options: [.objc]))\(if: list, "*") ptr
                         long size;
@@ -342,16 +343,28 @@ func generateTypeDefImports(imports: [WrapArg]) -> String {
                 
                 if !codable {
                     if list && [.object,.str].contains(arg.type) {
-                        output.append("""
-                            ctypedef struct \(arg.pyx_type):
-                                const \(arg.convertPythonType(options: [])) * ptr
-                                long size;
+                        if arg.has_option(.list) {
+                            output.append("""
+                                ctypedef struct \(arg.pyx_type):
+                                    const \(arg.convertPythonType(options: [.ignore_list])) * ptr
+                                    long size;
+                            
+                            """)
+                        } else {
+                            output.append("""
+                                ctypedef struct \(arg.pyx_type):
+                                    const \(arg.convertPythonType(options: [])) * ptr
+                                    long size;
+                            
+                            """)
+                        }
                         
-                        """)
                     } else {
                         // Normal types / lists with normal types
                         //\(if: list, "const ")\(dtype)\(if: list, "*") ptr
+                        
                         output.append("""
+                            #not codable
                             ctypedef struct \(arg.pyx_type):
                                 \(if: list, "const ")\(dtype)\(if: list, " *") ptr
                                 long size;
