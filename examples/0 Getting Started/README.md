@@ -4,7 +4,7 @@
 
 
 ```sh
-ksl create <project-name> <path-of-your-python-main.py-folder>
+ksl project create <project-name> <path-of-your-python-main.py-folder>
 ```
 make a folder inside the working folder and call it py_src. u can call it whatever u feel like and place it anywhere you want, but for the sake of this tutorial we just use an internal folder as source.
 ```sh
